@@ -1,0 +1,10 @@
+claude
+-p
+<judge prompt>
+--resume
+<session id>
+--model
+<manager model>
+--effort
+high
+--dangerously-skip-permissions

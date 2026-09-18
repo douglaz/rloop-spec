@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# A logging `git` (CNF-19): records every subcommand the executable under test runs, then
+# forwards to the real git named by RLOOP_FAKE_REAL_GIT. Installed first on PATH by
+# conformance/run for the git items only.
+set -u
+echo "$1" >> "${RLOOP_FAKE_GIT_LOG:?}"
+exec "${RLOOP_FAKE_REAL_GIT:?}" "$@"

@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+"""Requirement-identifier gate.
+
+  * every requirement id is defined exactly once      (duplicate ids)
+  * every cited id is defined somewhere               (dangling citations)
+  * no id is missing from a namespace's sequence      (renumbering / gaps)
+  * every cited ADR exists on disk                    (bad ADR references)
+
+Identifiers are append-only (README.md, *Requirement conventions*). A withdrawn id may be absent
+from the documents only if the README's "Withdrawn identifiers" table lists it.
+
+Exit 0 = clean, 1 = failures.
+"""
+
+import glob
+import os
+import re
+import sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+NAMESPACES = ["OVR", "RUN", "AGT", "PRM", "DIR", "SEQ", "CNF", "F"]
+NS = "|".join(NAMESPACES)
+
+# A requirement is defined as `**RUN-7** ...` at the start of a line, optionally as a bullet
+# (`- **CNF-1** ...`), or as a heading `### F1`.
+DEF_RE = re.compile(
+    r"^(?:[-*]\s+(?:\[[ x]\]\s+)?)?\*\*((?:%s)-?\d+[a-z]?)\*\*"
+    r"|^#{1,6}\s+\**((?:%s)-?\d+[a-z]?)\**" % (NS, NS),
+    re.M,
+)
+CITE_RE = re.compile(r"`((?:%s)-?\d+[a-z]?)`" % NS)
+ADR_RE = re.compile(r"`?ADR-(\d{4})`?")
+WITHDRAWN_RE = re.compile(r"^\|\s*`?((?:%s)-?\d+[a-z]?)`?\s*\|" % NS, re.M)
+
+
+def number(rid):
+    return int(re.match(r"[A-Z]+-?(\d+)", rid).group(1))
+
+
+def prefix(rid):
+    return re.match(r"([A-Z]+)", rid).group(1)
+
+
+def main():
+    os.chdir(ROOT)
+    root_md = sorted(glob.glob("*.md"))
+    adr_md = sorted(glob.glob("docs/adr/*.md"))
+
+    defined, dupes = {}, []
+    for f in root_md:
+        for m in DEF_RE.finditer(open(f).read()):
+            rid = m.group(1) or m.group(2)
+            if rid in defined:
+                dupes.append((rid, defined[rid], f))
+            else:
+                defined[rid] = f
+
+    cited = set()
+    for f in root_md + adr_md:
+        cited.update(m.group(1) for m in CITE_RE.finditer(open(f).read()))
+
+    withdrawn = set()
+    if os.path.exists("README.md"):
+        readme = open("README.md").read()
+        idx = readme.find("Withdrawn identifiers")
+        if idx != -1:
+            withdrawn = {m.group(1) for m in WITHDRAWN_RE.finditer(readme[idx:])}
+
+    dangling = sorted(c for c in cited if c not in defined and c not in withdrawn)
+
+    gaps, outliers = {}, {}
+    for ns in NAMESPACES:
+        nums = sorted(number(k) for k in defined if prefix(k) == ns)
+        if not nums:
+            continue
+        body = nums
+        while len(body) > 1 and body[-1] - body[-2] > 50:
+            outliers.setdefault(ns, []).append(body[-1])
+            body = body[:-1]
+        sep = "" if ns == "F" else "-"
+        missing = [n for n in range(1, max(body) + 1)
+                   if n not in body and f"{ns}{sep}{n}" not in withdrawn]
+        if missing:
+            gaps[ns] = missing[:20] + ([f"... and {len(missing) - 20} more"] if len(missing) > 20 else [])
+
+    adrs = {os.path.basename(p)[:4] for p in adr_md}
+    bad_adrs = set()
+    for f in root_md + adr_md:
+        for m in ADR_RE.finditer(open(f).read()):
+            if m.group(1) not in adrs:
+                bad_adrs.add(m.group(1))
+
+    items = sum(1 for k in defined if prefix(k) == "CNF")
+    print(f"requirements: {len(defined)} | md files: {len(root_md)} | ADRs: {len(adrs)}")
+    print(f"conformance items: {items}")
+    print("DUPES:", dupes or "none")
+    print("DANGLING:", dangling or "none")
+    print("NUMBER GAPS:", gaps or "none")
+    print("OUTLIER IDS:", outliers or "none")
+    print("BAD ADR REFS:", sorted(bad_adrs) or "none")
+    return 1 if (dupes or dangling or gaps or outliers or bad_adrs) else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

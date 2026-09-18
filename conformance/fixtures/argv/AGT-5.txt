@@ -1,0 +1,4 @@
+claude
+-p
+<implementer prompt>
+--dangerously-skip-permissions

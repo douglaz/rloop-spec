@@ -1,0 +1,186 @@
+import Rloop.Req
+/-! # The Run
+
+The model of one Run (`01-run-lifecycle.md`), as `ADR-0002` decided: one total decision function
+over what a Manager call left behind, and a Run as the fold of that function over a scripted
+behaviour of the agents. Everything an Implementation must do between two agent calls is here;
+nothing an agent does is — an agent's behaviour is an input, `Behaviour`, and every theorem below
+holds for all of them.
+
+The model carries no bytes, processes or git. A Task File is a content identity (`Nat`); a
+Finished File is the `Status` its first line parses to; a Panel is the class of how many
+Reviewers succeeded; interference by a non-Manager (`ADR-0003`) is an input at two points of a
+Round. What the model omits is written on the theorem that depends on it. -/
+
+namespace Rloop
+
+/-- The first line of a Finished File, parsed. `other` is any line that is not exactly one of the
+three (`RUN-9`). -/
+inductive Status | done | blocked | idle | other
+  deriving DecidableEq, Repr
+
+/-- rloop's exit codes (`RUN-10`). -/
+inductive Exit | e0 | e1 | e2 | e3
+  deriving DecidableEq, Repr
+
+/-- Which Manager call is being judged: the pick, or a judge call after a Round. -/
+inductive Phase | pick | judge
+  deriving DecidableEq, Repr
+
+/-- What one Manager call left behind: whether the process exited 0 in time, what it wrote as the
+Finished File, and what it wrote as the Task File. `none` in either means it did not write that
+file. The identities are of content: two writes of equal bytes are equal `Nat`s. -/
+structure ManagerResult where
+  ok : Bool
+  writesFinished : Option Status
+  writesTask : Option Nat
+  deriving DecidableEq, Repr
+
+/-- How many Reviewers of the Panel succeeded, reduced to the classes the decision reads
+(`RUN-15`). -/
+inductive Panel | all | some | none
+  deriving DecidableEq, Repr
+
+/-- What a non-Manager may have done to the Manager's files (`ADR-0003`). -/
+inductive Interference
+  | none
+  | editTask (content : Nat)
+  | writeFinished (s : Status)
+  | both (content : Nat) (s : Status)
+  deriving DecidableEq, Repr
+
+/-- The two points of a Round where the Checkpoint runs (`DIR-6`). -/
+inductive Point | afterImplementer | afterPanel
+  deriving DecidableEq, Repr
+
+/-- The guards a dated decision added, each a parameter so its absence has a witness
+(`ADR-0002`): the no-decision comparison (`RUN-12`), the round cap (`RUN-13`), the zero-survivor
+abort (`RUN-15`) and the Checkpoint (`DIR-6`). A theorem takes `Guards.all`; a witness turns one
+off. -/
+structure Guards where
+  noDecision : Bool := true
+  cap : Bool := true
+  panelAbort : Bool := true
+  checkpoint : Bool := true
+  deriving DecidableEq, Repr
+
+def Guards.all : Guards := {}
+
+/-- The decision after a Manager call (`RUN-11`): the phase, the Task File content the Manager was
+given (the snapshot, `none` at the pick), the content on disk when the call started (equal to the
+snapshot under `Guards.all`), the Round just judged (`0` at the pick), the cap, and
+what the call left behind — including a Finished File a non-Manager left that the Checkpoint did
+not remove (`leftover`, always `none` under `Guards.all`). -/
+inductive Verdict | next | exit (code : Exit)
+  deriving DecidableEq, Repr
+
+def decide (g : Guards) (phase : Phase) (prev current : Option Nat) (round maxRounds : Nat)
+    (leftover : Option Status) (r : ManagerResult) : Verdict :=
+  if !r.ok then .exit .e2
+  else match r.writesFinished.or leftover with
+    | some .done => .exit .e0
+    | some .blocked => .exit .e1
+    | some .idle => match phase with
+      | .pick => .exit .e3
+      | .judge => .exit .e2
+    | some .other => .exit .e2
+    | none =>
+      match r.writesTask.or current with
+      | none => .exit .e2
+      | some t =>
+        if g.noDecision && prev == some t then .exit .e2
+        else if g.cap && round + 1 > maxRounds then .exit .e2
+        else .next
+
+/-- One agent process rloop started, in the order it started them. A `panel` entry is the whole
+Panel: its Reviewers run at once and the Conformance Suite compares them as a set (`ADR-0002`). -/
+inductive Spawn
+  | pick
+  | implementer (round : Nat) (ok : Bool)
+  | panel (round : Nat) (p : Panel)
+  | judge (round : Nat)
+  deriving DecidableEq, Repr
+
+/-- The agents' behaviour, as a total function of the Round so that no Round is ever "off the end
+of the script". -/
+structure Behaviour where
+  pick : ManagerResult
+  implementer : Nat → Bool
+  panel : Nat → Panel
+  judge : Nat → ManagerResult
+  interference : Nat → Point → Interference
+
+/-- A Behaviour with the interference removed: what the Checkpoint is supposed to make every Run
+equivalent to. -/
+def Behaviour.quiet (b : Behaviour) : Behaviour :=
+  { b with interference := fun _ _ => .none }
+
+/-- What is on disk between calls: the Task File content, the snapshot the Manager last left
+(`task-<round>.md`), and a Finished File no Manager wrote. -/
+structure Disk where
+  task : Option Nat
+  snapshot : Option Nat
+  leftover : Option Status
+  deriving DecidableEq, Repr
+
+/-- Interference lands on the disk; the Checkpoint, when guarded, undoes it entirely, so under
+`Guards.all` this is the identity (`DIR-6`, `DIR-7`). -/
+def applyInterference (g : Guards) (d : Disk) : Interference → Disk
+  | .none => d
+  | .editTask c => if g.checkpoint then d else { d with task := some c }
+  | .writeFinished s => if g.checkpoint then d else { d with leftover := some s }
+  | .both c s => if g.checkpoint then d else { d with task := some c, leftover := some s }
+
+/-- The Manager's write lands on the disk; when the Run continues, its Task File is the next
+snapshot. -/
+def afterManager (d : Disk) (r : ManagerResult) : Disk :=
+  let t := r.writesTask.or d.task
+  { task := t, snapshot := t, leftover := d.leftover }
+
+/-- The Rounds, with `fuel` the Rounds the cap still allows; `round` is the one about to run. -/
+def rounds (g : Guards) (b : Behaviour) (maxRounds : Nat) :
+    (fuel round : Nat) → Disk → List Spawn → Exit × List Spawn
+  | 0, _, _, trace => (.e2, trace.reverse)
+  | fuel + 1, round, d, trace =>
+    let ok := b.implementer round
+    let d := applyInterference g d (b.interference round .afterImplementer)
+    let p := b.panel round
+    let trace := .panel round p :: .implementer round ok :: trace
+    if g.panelAbort && p == .none then (.e2, trace.reverse)
+    else
+      let d := applyInterference g d (b.interference round .afterPanel)
+      let r := b.judge round
+      let trace := .judge round :: trace
+      match decide g .judge d.snapshot d.task round maxRounds d.leftover r with
+      | .exit e => (e, trace.reverse)
+      | .next => rounds g b maxRounds fuel (round + 1) (afterManager d r) trace
+
+/-- One Run: the pick, then the Rounds. The fuel is one more than the cap so that a Run with the cap
+guard off is distinguishable from one that hit it: `RUN-13`'s witness runs `maxRounds + 1`
+Implementers. -/
+def run (g : Guards) (b : Behaviour) (maxRounds : Nat) : Exit × List Spawn :=
+  let d0 : Disk := { task := none, snapshot := none, leftover := none }
+  match decide g .pick none none 0 maxRounds none b.pick with
+  | .exit e => (e, [.pick])
+  | .next => rounds g b maxRounds (maxRounds + 1) 1 (afterManager d0 b.pick) [.pick]
+
+/-! ## Counting -/
+
+def Spawn.isImplementer : Spawn → Bool
+  | .implementer _ _ => true
+  | _ => false
+
+def Spawn.isManager : Spawn → Bool
+  | .pick => true
+  | .judge _ => true
+  | _ => false
+
+def Spawn.isJudge : Spawn → Bool
+  | .judge _ => true
+  | _ => false
+
+def implementers (t : List Spawn) : Nat := (t.filter Spawn.isImplementer).length
+def managers (t : List Spawn) : Nat := (t.filter Spawn.isManager).length
+def judges (t : List Spawn) : Nat := (t.filter Spawn.isJudge).length
+
+end Rloop

@@ -1,0 +1,4 @@
+codex
+exec
+--dangerously-bypass-approvals-and-sandbox
+<implementer prompt>

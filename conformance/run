@@ -1,0 +1,401 @@
+#!/usr/bin/env bash
+# The Conformance Suite (06-conformance.md): conformance/run <rloop executable> [--self-check]
+#
+# Runs every CNF item against the executable with fake agents first on PATH, prints one line per
+# item, exits 0 only if all passed. Needs bash, git, GNU coreutils, grep, sed and awk; nothing else.
+set -u
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+spec="$(dirname "$here")"
+exe="${1:?usage: conformance/run <rloop executable> [--self-check]}"
+exe="$(cd "$(dirname "$exe")" && pwd)/$(basename "$exe")"
+[ -x "$exe" ] || { echo "not executable: $exe" >&2; exit 2; }
+self_check=0; [ "${2:-}" = "--self-check" ] && self_check=1
+
+work="$(mktemp -d "${TMPDIR:-/tmp}/rloop-conformance.XXXXXX")"
+trap 'rm -rf "$work"' EXIT
+fakes="$work/fakes"; mkdir -p "$fakes"
+cp "$here/fakes/agent" "$fakes/claude"; cp "$here/fakes/agent" "$fakes/codex"; chmod +x "$fakes/claude" "$fakes/codex"
+real_git="$(command -v git)"
+
+pass=0; fail=0; failed_items=()
+verdict() { # verdict <CNF id> <ok|fail> <detail>
+  if [ "$2" = ok ]; then pass=$((pass + 1)); printf '  PASS  %s  %s\n' "$1" "$3"
+  else fail=$((fail + 1)); failed_items+=("$1"); printf '  FAIL  %s  %s\n' "$1" "$3"; fi
+}
+export -n RLOOP_FAKE_PICK RLOOP_FAKE_ROUNDS RLOOP_FAKE_INTERFERENCE RLOOP_FAKE_RUNS 2>/dev/null || true
+
+# --- a fresh repository per run ----------------------------------------------------------------
+new_repo() { # new_repo -> prints path; a git repo with one commit
+  local r; r="$(mktemp -d "$work/repo.XXXXXX")"
+  ( cd "$r" && git init -q -b master && echo hello > README && git add README \
+    && git -c user.email=s@s -c user.name=suite commit -q -m init ) || return 1
+  echo "$r"
+}
+
+# run_rloop <repo> <record dir> [rloop args...] ; environment for the fakes comes from the caller
+run_rloop() {
+  local repo="$1" rec="$2"; shift 2
+  mkdir -p "$rec"
+  ( cd "$repo" && PATH="$fakes:$PATH" RLOOP_FAKE_RECORD="$rec" "$exe" "$@" </dev/null \
+      >"$rec/stdout" 2>"$rec/stderr" )
+  echo $? > "$rec/exit"
+  cat "$rec/exit"
+}
+
+# observed trace from the fakes' records: pick, impl<r>:<ok|fail>, panel<r>:<class>, judge<r>
+observed_trace() { # observed_trace <record dir>
+  local rec="$1" out=() line role round outcome pr=-1 oks=0 fails=0
+  [ -f "$rec/trace" ] || { echo ""; return; }
+  flush_panel() {
+    if [ "$pr" != -1 ]; then
+      local cls
+      if [ "$fails" = 0 ]; then cls=all; elif [ "$oks" = 0 ]; then cls=none; else cls=some; fi
+      out+=("panel$pr:$cls"); pr=-1; oks=0; fails=0
+    fi
+  }
+  # end lines only, ordered by their timestamp (the field after `end`); Reviewer order within a
+  # Panel is not fixed, and the Panel is reduced to its class anyway.
+  while IFS= read -r line; do
+    line="${line#*	}"
+    role="${line%%:*}"; round="$(echo "$line" | cut -d: -f2)"; outcome="${line##*:}"
+    case "$role" in
+      manager) flush_panel; if [ "$round" = 0 ]; then out+=("pick"); else out+=("judge$round"); fi ;;
+      implementer) flush_panel; out+=("impl$round:$outcome") ;;
+      reviewer) if [ "$pr" != "$round" ]; then flush_panel; pr="$round"; fi
+                if [ "$outcome" = ok ]; then oks=$((oks + 1)); else fails=$((fails + 1)); fi ;;
+    esac
+  done < <(grep ':end:' "$rec/trace" | awk -F: '{ for (i = 1; i <= NF; i++) if ($i == "end") { print $(i+1) "\t" $0; break } }' | sort -n)
+  flush_panel
+  local IFS=,; echo "${out[*]}"
+}
+
+spawn_count() { ls "$1"/*.argv 2>/dev/null | wc -l | tr -d ' '; }
+
+# --- CNF-3: the scenarios ---------------------------------------------------------------------------
+scenarios_file="$spec/conformance/scenarios.tsv"
+run_scenarios() { # run_scenarios <scenarios file> -> prints "<failures> <total>"
+  local file="$1" total=0 bad=0 id max pick rounds interf exp_exit exp_trace repo rec got_exit got_trace
+  while IFS=$'\t' read -r id max pick rounds interf exp_exit exp_trace; do
+    [ "$id" = id ] && continue
+    total=$((total + 1))
+    repo="$(new_repo)"; rec="$work/rec-$id"
+    got_exit=$(RLOOP_FAKE_PICK="$pick" RLOOP_FAKE_ROUNDS="${rounds/#-/}" RLOOP_FAKE_INTERFERENCE="$interf" \
+      run_rloop "$repo" "$rec" --run-dir "$repo/run" --max-rounds "$max")
+    got_trace="$(observed_trace "$rec")"
+    if [ "$got_exit" != "$exp_exit" ] || [ "$got_trace" != "$exp_trace" ]; then
+      bad=$((bad + 1))
+      [ "$bad" -le 5 ] && printf '        %s: expected exit %s trace %s; got exit %s trace %s\n' "$id" "$exp_exit" "$exp_trace" "$got_exit" "$got_trace" >&2
+    fi
+    rm -rf "$repo" "$rec"
+  done < "$file"
+  echo "$bad $total"
+}
+
+echo "rloop conformance suite against $exe"
+echo
+read -r bad total <<< "$(run_scenarios "$scenarios_file" | tail -1)"
+if [ "$bad" = 0 ]; then verdict CNF-3 ok "$total scenarios replayed"; else verdict CNF-3 fail "$bad of $total scenarios differ"; fi
+
+if [ "$self_check" = 1 ]; then
+  flipped="$work/flipped.tsv"
+  awk -F'\t' 'BEGIN{OFS="\t"} NR==2{$6=($6=="0")?"2":"0"} {print}' "$scenarios_file" > "$flipped"
+  read -r bad2 _ <<< "$(run_scenarios "$flipped" | tail -1)"
+  if [ "$bad2" -ge 1 ]; then verdict CNF-4 ok "a flipped expectation made the suite red"; else verdict CNF-4 fail "the suite stayed green over a flipped expectation"; fi
+else
+  verdict CNF-4 ok "(run with --self-check to exercise)"
+fi
+
+# --- CNF-5: usage errors -----------------------------------------------------------------------------
+repo="$(new_repo)"; ok=1; detail=""
+for args in "--bogus" "--max-rounds 0" "--max-rounds x" "--reviewer-timeout -1" "a b" "--auto --base HEAD" "--auto --run-dir $repo/d"; do
+  rec="$work/rec-usage"; rm -rf "$rec"
+  # shellcheck disable=SC2086
+  e=$(run_rloop "$repo" "$rec" $args)
+  if [ "$e" != 2 ] || [ "$(spawn_count "$rec")" != 0 ] || [ ! -s "$rec/stderr" ]; then ok=0; detail="$detail [$args -> exit $e, $(spawn_count "$rec") spawns]"; fi
+done
+for args in "--version" "--help"; do
+  rec="$work/rec-usage"; rm -rf "$rec"
+  # shellcheck disable=SC2086
+  e=$(run_rloop "$repo" "$rec" $args)
+  if [ "$e" != 0 ] || [ "$(spawn_count "$rec")" != 0 ]; then ok=0; detail="$detail [$args -> exit $e]"; fi
+done
+if [ "$ok" = 1 ]; then verdict CNF-5 ok "usage errors exit 2 and spawn nothing; --version/--help exit 0"; else verdict CNF-5 fail "$detail"; fi
+
+# --- CNF-6: outside git -----------------------------------------------------------------------------
+notgit="$(mktemp -d "$work/notgit.XXXXXX")"; rec="$work/rec-notgit"
+e=$(run_rloop "$notgit" "$rec" --run-dir "$notgit/run")
+if [ "$e" = 2 ] && [ "$(spawn_count "$rec")" = 0 ]; then verdict CNF-6 ok "exit 2, nothing spawned"; else verdict CNF-6 fail "exit $e, $(spawn_count "$rec") spawns"; fi
+
+# --- CNF-7: the run directory must not exist --------------------------------------------------------
+repo="$(new_repo)"; ok=1; detail=""
+mkdir -p "$repo/existing" "$repo/nonempty"; echo x > "$repo/nonempty/finished.md"
+for d in "$repo/existing" "$repo/nonempty" "$repo/no/such/parent/run"; do
+  rec="$work/rec-dir"; rm -rf "$rec"
+  e=$(run_rloop "$repo" "$rec" --run-dir "$d")
+  if [ "$e" != 2 ] || [ "$(spawn_count "$rec")" != 0 ]; then ok=0; detail="$detail [$d -> exit $e]"; fi
+done
+rec="$work/rec-dir"; rm -rf "$rec"
+before=$(find "$repo" -mindepth 1 -type d -not -path '*/.git*' | sort)
+e=$(RLOOP_FAKE_PICK=ok:done run_rloop "$repo" "$rec" --run-dir "$repo/fresh")
+after=$(find "$repo" -mindepth 1 -type d -not -path '*/.git*' -not -path "$repo/fresh*" | sort)
+if [ ! -d "$repo/fresh" ] || [ "$before" != "$after" ]; then ok=0; detail="$detail [fresh: exit $e, dir $([ -d "$repo/fresh" ] && echo present || echo missing)]"; fi
+if [ "$ok" = 1 ]; then verdict CNF-7 ok "existing or parentless run dir refused; fresh one created"; else verdict CNF-7 fail "$detail"; fi
+
+# --- CNF-8: the default run directory ---------------------------------------------------------------
+repo="$(new_repo)"; rec="$work/rec-default"
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec")
+rd=$(ls -d "$repo"/.rloop/runs/*/ 2>/dev/null | head -1)
+status_out=$(cd "$repo" && git status --porcelain)
+if [ "$e" = 0 ] && [ -n "$rd" ] && [ "$(cat "$repo/.rloop/.gitignore" 2>/dev/null)" = "*" ] && [ -z "$status_out" ]; then
+  verdict CNF-8 ok ".rloop/runs/<id>/ created, self-ignored, tree clean"
+else verdict CNF-8 fail "exit $e, run dir '$rd', gitignore '$(cat "$repo/.rloop/.gitignore" 2>/dev/null)', status '$status_out'"; fi
+
+# --- CNF-9: the layout --------------------------------------------------------------------------------
+repo="$(new_repo)"; rec="$work/rec-layout"
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run")
+expected_names="feedback-1-astra.md feedback-1-fable.md feedback-1-opus.md feedback-1-sol.md feedback-2-astra.md feedback-2-fable.md feedback-2-opus.md feedback-2-sol.md finished.md implementer-1.err implementer-1.out implementer-2.err implementer-2.out manager-judge-1.err manager-judge-1.out manager-judge-2.err manager-judge-2.out manager-pick.err manager-pick.out reviewer-1-astra.err reviewer-1-fable.err reviewer-1-opus.err reviewer-1-sol.err reviewer-2-astra.err reviewer-2-fable.err reviewer-2-opus.err reviewer-2-sol.err session task-1.md task-2.md task.md"
+got_names=$(ls "$repo/run" | sort | tr '\n' ' ' | sed 's/ $//')
+ok=1; detail=""
+[ "$e" = 0 ] || { ok=0; detail="exit $e"; }
+[ "$got_names" = "$expected_names" ] || { ok=0; detail="$detail names: $got_names"; }
+[ "$(cat "$repo/run/implementer-1.out")" = "implementer output, round 1" ] || { ok=0; detail="$detail implementer-1.out"; }
+grep -q "fake stderr from" "$repo/run/implementer-1.err" || { ok=0; detail="$detail implementer-1.err"; }
+[ "$(cat "$repo/run/feedback-1-opus.md")" = "No findings." ] || { ok=0; detail="$detail feedback-1-opus.md"; }
+sid=$(cat "$repo/run/session"); [[ "$sid" =~ ^[0-9a-fA-F-]{36}$ ]] || { ok=0; detail="$detail session '$sid'"; }
+# a Run that ends 2 keeps its directory; a missing snapshot is exit 2 (DIR-8, from the excuse table)
+repo2="$(new_repo)"; rec2="$work/rec-layout2"
+e2=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=none;judge=done" run_rloop "$repo2" "$rec2" --run-dir "$repo2/run")
+[ "$e2" = 2 ] && [ -f "$repo2/run/task-1.md" ] || { ok=0; detail="$detail (exit-2 run dir: exit $e2)"; }
+if [ "$ok" = 1 ]; then verdict CNF-9 ok "exactly DIR-4's names; outputs captured entire; session is a UUID; kept on exit 2"; else verdict CNF-9 fail "$detail"; fi
+
+# --- CNF-10: the environment contract ---------------------------------------------------------------
+ok=1; detail=""
+check_env() { # check_env <env file> <ROLE> <ROUND> <REVIEWER or <unset>>
+  local f="$1"
+  grep -qx "ROLE=$2" "$f" || { ok=0; detail="$detail [$(basename "$f"): ROLE]"; }
+  grep -qx "ROUND=$3" "$f" || { ok=0; detail="$detail [$(basename "$f"): ROUND]"; }
+  grep -qx "RUN=1" "$f" || { ok=0; detail="$detail [$(basename "$f"): RUN]"; }
+  grep -qx "RUN_DIR=$repo/run" "$f" || { ok=0; detail="$detail [$(basename "$f"): RUN_DIR]"; }
+  grep -qx "REVIEWER=$4" "$f" || { ok=0; detail="$detail [$(basename "$f"): REVIEWER]"; }
+  grep -qx "CWD=$repo" "$f" || { ok=0; detail="$detail [$(basename "$f"): CWD]"; }
+  grep -qx "STDIN=eof" "$f" || { ok=0; detail="$detail [$(basename "$f"): STDIN]"; }
+}
+check_env "$(ls "$rec"/*-manager-0.env)" manager 0 "<unset>"
+check_env "$(ls "$rec"/*-implementer-1.env)" implementer 1 "<unset>"
+check_env "$(ls "$rec"/*-manager-1.env)" manager 1 "<unset>"
+for r in fable opus astra sol; do check_env "$(ls "$rec"/*-reviewer-2-$r.env)" reviewer 2 "$r"; done
+if [ "$ok" = 1 ]; then verdict CNF-10 ok "RLOOP_* variables, cwd and closed stdin for every role"; else verdict CNF-10 fail "$detail"; fi
+
+# --- CNF-11 / CNF-12: argv and prompts ---------------------------------------------------------------
+render() { # render <template file> ; placeholders from variables P_*
+  local t; t="$(cat "$1")"
+  t="${t//\{\{INSTRUCTION\}\}/$P_INSTRUCTION}"; t="${t//\{\{TASK_FILE\}\}/$P_TASK_FILE}"
+  t="${t//\{\{FINISHED_FILE\}\}/$P_FINISHED_FILE}"; t="${t//\{\{RUN_DIR\}\}/$P_RUN_DIR}"
+  t="${t//\{\{BASE\}\}/$P_BASE}"; t="${t//\{\{ROUND\}\}/$P_ROUND}"; t="${t//\{\{MAX_ROUNDS\}\}/$P_MAX_ROUNDS}"
+  t="${t//\{\{IMPLEMENTER_LOG\}\}/$P_IMPLEMENTER_LOG}"; t="${t//\{\{FEEDBACK_FILES\}\}/$P_FEEDBACK_FILES}"
+  t="${t//\{\{DIRTY_AT_START\}\}/$P_DIRTY_AT_START}"
+  printf '%s' "$t"
+}
+expected_argv() { # expected_argv <argv fixture> <prompt text> <session> <model> -> NUL-joined
+  local line
+  while IFS= read -r line; do
+    case "$line" in
+      "<pick prompt>"|"<judge prompt>"|"<implementer prompt>"|"<review prompt>") printf '%s\0' "$2" ;;
+      "<session id>") printf '%s\0' "$3" ;;
+      "<manager model>") printf '%s\0' "$4" ;;
+      *) printf '%s\0' "$line" ;;
+    esac
+  done < "$1"
+}
+argv_matches() { # argv_matches <recorded .argv> <expected NUL file>
+  cmp -s "$1" "$2"
+}
+fx="$spec/conformance/fixtures"
+repo="$(new_repo)"; rec="$work/rec-argv"
+echo changed >> "$repo/README"; echo new > "$repo/untracked.txt"
+base_hash=$(cd "$repo" && git rev-parse HEAD)
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" --max-rounds 7 "please do the thing")
+sid=$(cat "$repo/run/session" 2>/dev/null)
+P_INSTRUCTION="please do the thing"; P_TASK_FILE="$repo/run/task.md"; P_FINISHED_FILE="$repo/run/finished.md"; P_RUN_DIR="$repo/run"
+P_BASE="$base_hash"; P_ROUND=1; P_MAX_ROUNDS=7; P_IMPLEMENTER_LOG="$repo/run/implementer-1.out"
+P_FEEDBACK_FILES="$repo/run/feedback-1-fable.md
+$repo/run/feedback-1-opus.md
+$repo/run/feedback-1-astra.md
+$repo/run/feedback-1-sol.md"
+P_DIRTY_AT_START=" M README
+?? untracked.txt"
+ok=1; detail=""
+check_call() { # check_call <recorded glob> <argv fixture> <prompt fixture> <session> <model> <label>
+  local recf; recf=$(ls $1 2>/dev/null | head -1)
+  [ -n "$recf" ] || { ok=0; detail="$detail [$6: not spawned]"; return; }
+  expected_argv "$2" "$(render "$3")" "$4" "$5" > "$work/expected.argv"
+  argv_matches "$recf" "$work/expected.argv" || { ok=0; detail="$detail [$6: argv/prompt differ]"; }
+}
+check_call "$rec/*-manager-0.argv" "$fx/argv/AGT-3.txt" "$fx/prompts/PRM-1.txt" "$sid" claude-fable-5-1 pick
+check_call "$rec/*-implementer-1.argv" "$fx/argv/AGT-5.txt" "$fx/prompts/PRM-3.txt" "$sid" claude-fable-5-1 implementer
+check_call "$rec/*-reviewer-1-fable.argv" "$fx/argv/AGT-7.txt" "$fx/prompts/PRM-4.txt" "$sid" x fable
+check_call "$rec/*-reviewer-1-opus.argv" "$fx/argv/AGT-8.txt" "$fx/prompts/PRM-4.txt" "$sid" x opus
+check_call "$rec/*-reviewer-1-astra.argv" "$fx/argv/AGT-10-1.txt" "$fx/prompts/PRM-4.txt" "$sid" x astra
+check_call "$rec/*-reviewer-1-sol.argv" "$fx/argv/AGT-10-2.txt" "$fx/prompts/PRM-4.txt" "$sid" x sol
+check_call "$rec/*-manager-1.argv" "$fx/argv/AGT-4.txt" "$fx/prompts/PRM-2.txt" "$sid" claude-fable-5-1 judge
+argv_ok=$ok; argv_detail="$detail"
+# a second Run: clean tree, no instruction, codex implementer, another manager model
+repo="$(new_repo)"; rec="$work/rec-argv2"
+base_hash=$(cd "$repo" && git rev-parse HEAD)
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" --implementer codex --manager-model claude-opus-5)
+sid=$(cat "$repo/run/session" 2>/dev/null)
+P_INSTRUCTION=""; P_TASK_FILE="$repo/run/task.md"; P_FINISHED_FILE="$repo/run/finished.md"; P_RUN_DIR="$repo/run"; P_BASE="$base_hash"
+P_MAX_ROUNDS=10; P_IMPLEMENTER_LOG="$repo/run/implementer-1.out"; P_DIRTY_AT_START=""
+P_FEEDBACK_FILES="$repo/run/feedback-1-fable.md
+$repo/run/feedback-1-opus.md
+$repo/run/feedback-1-astra.md
+$repo/run/feedback-1-sol.md"
+ok=1; detail=""
+check_call "$rec/*-manager-0.argv" "$fx/argv/AGT-3.txt" "$fx/prompts/PRM-1.txt" "$sid" claude-opus-5 "pick (clean, no instruction)"
+check_call "$rec/*-implementer-1.argv" "$fx/argv/AGT-6.txt" "$fx/prompts/PRM-3.txt" "$sid" x "codex implementer"
+check_call "$rec/*-manager-1.argv" "$fx/argv/AGT-4.txt" "$fx/prompts/PRM-2.txt" "$sid" claude-opus-5 "judge (clean)"
+if [ "$argv_ok" = 1 ] && [ "$ok" = 1 ]; then verdict CNF-11 ok "every role's argv is its fixture with the placeholders filled"; verdict CNF-12 ok "every prompt is its fixture rendered"; else verdict CNF-11 fail "$argv_detail $detail"; verdict CNF-12 fail "see CNF-11"; fi
+
+# --- CNF-13: the base ---------------------------------------------------------------------------------
+repo="$(new_repo)"; rec="$work/rec-base"
+( cd "$repo" && echo two > two && git add two && git -c user.email=s@s -c user.name=suite commit -q -m two && git tag older HEAD~1 )
+older_hash=$(cd "$repo" && git rev-parse older)
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=done" RLOOP_FAKE_COMMIT=1 run_rloop "$repo" "$rec" --run-dir "$repo/run" --base older)
+ok=1; detail=""
+for f in $(ls "$rec"/*-reviewer-1-fable.argv "$rec"/*-reviewer-2-fable.argv "$rec"/*-manager-2.argv 2>/dev/null); do
+  tr '\0' '\n' < "$f" | grep -q "since commit $older_hash" || { ok=0; detail="$detail [$(basename "$f") lacks $older_hash]"; }
+done
+[ "$e" = 0 ] || { ok=0; detail="$detail exit $e"; }
+if [ "$ok" = 1 ]; then verdict CNF-13 ok "--base ref rendered as its hash and stable across Rounds"; else verdict CNF-13 fail "$detail"; fi
+
+# --- CNF-14: stdout ------------------------------------------------------------------------------------
+ok=1; detail=""
+for st in done blocked idle; do
+  repo="$(new_repo)"; rec="$work/rec-out-$st"
+  e=$(RLOOP_FAKE_PICK="ok:$st" run_rloop "$repo" "$rec" --run-dir "$repo/run")
+  cmp -s "$rec/stdout" "$repo/run/finished.md" || { ok=0; detail="$detail [$st: stdout is not finished.md]"; }
+done
+repo="$(new_repo)"; rec="$work/rec-out-2"
+e=$(RLOOP_FAKE_PICK=fail run_rloop "$repo" "$rec" --run-dir "$repo/run")
+[ "$e" = 2 ] && [ ! -s "$rec/stdout" ] && [ -s "$rec/stderr" ] || { ok=0; detail="$detail [exit-2 stdout/stderr]"; }
+if [ "$ok" = 1 ]; then verdict CNF-14 ok "stdout is the Finished File on 0/1/3, empty on 2"; else verdict CNF-14 fail "$detail"; fi
+
+# --- CNF-15: reviewer failure note --------------------------------------------------------------------
+repo="$(new_repo)"; rec="$work/rec-revfail"
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=some;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run")
+want=$'partial feedback\nREVIEWER FAILED (exit 7)'
+got=$(cat "$repo/run/feedback-1-opus.md" 2>/dev/null)
+if [ "$e" = 0 ] && [ "$got" = "$want" ] && [ "$(cat "$repo/run/feedback-1-fable.md")" = "No findings." ]; then verdict CNF-15 ok "failure note appended, Round proceeded"; else verdict CNF-15 fail "exit $e; feedback-1-opus.md: '$got'"; fi
+
+# --- CNF-16: the Panel runs concurrently -------------------------------------------------------------
+repo="$(new_repo)"; rec="$work/rec-conc"
+t0=$(date +%s)
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_SLEEP_REVIEWER=2 run_rloop "$repo" "$rec" --run-dir "$repo/run")
+t1=$(date +%s)
+last_start=$(grep '^reviewer:1:.*:start:' "$rec/trace" | awk -F: '{print $5}' | sort -n | tail -1)
+first_end=$(grep '^reviewer:1:.*:end:' "$rec/trace" | awk -F: '{print $5}' | sort -n | head -1)
+if [ "$e" = 0 ] && [ $((t1 - t0)) -lt 8 ] && [ "$last_start" -lt "$first_end" ]; then verdict CNF-16 ok "four 2-second Reviewers overlapped"; else verdict CNF-16 fail "exit $e, $((t1 - t0))s, last start $last_start first end $first_end"; fi
+
+# --- CNF-17: timeouts and process groups -------------------------------------------------------------
+ok=1; detail=""
+repo="$(new_repo)"; rec="$work/rec-tmo"
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_SLEEP_REVIEWER=30 RLOOP_FAKE_GRANDCHILD=1 run_rloop "$repo" "$rec" --run-dir "$repo/run" --reviewer-timeout 1 --kill-after 1)
+grep -q 'REVIEWER FAILED' "$repo/run/feedback-1-fable.md" 2>/dev/null || { ok=0; detail="$detail [no failure note after reviewer timeout, exit $e]"; }
+for f in "$rec"/*-reviewer-1-*.env; do
+  gc=$(sed -n 's/^GRANDCHILD=//p' "$f"); [ -n "$gc" ] && kill -0 "$gc" 2>/dev/null && { ok=0; detail="$detail [grandchild $gc survived]"; kill -9 "$gc" 2>/dev/null; }
+done
+repo="$(new_repo)"; rec="$work/rec-tmo2"; t0=$(date +%s)
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_SLEEP_IMPLEMENTER=60 RLOOP_FAKE_IGNORE_TERM=1 run_rloop "$repo" "$rec" --run-dir "$repo/run" --implementer-timeout 1 --kill-after 1)
+t1=$(date +%s)
+[ $((t1 - t0)) -lt 10 ] && ls "$rec"/*-reviewer-1-fable.argv >/dev/null 2>&1 || { ok=0; detail="$detail [SIGTERM-ignoring implementer: ${t1}-${t0}s, exit $e]"; }
+for f in "$rec"/*.env; do ipid=$(sed -n 's/^PID=//p' "$f"); [ -n "$ipid" ] && kill -9 "$ipid" 2>/dev/null; done
+repo="$(new_repo)"; rec="$work/rec-tmo3"
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_SLEEP_MANAGER=30 run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager-timeout 1 --kill-after 1)
+[ "$e" = 2 ] || { ok=0; detail="$detail [manager timeout exit $e]"; }
+if [ "$ok" = 1 ]; then verdict CNF-17 ok "timeouts kill the group and the Run goes on or ends as the role says"; else verdict CNF-17 fail "$detail"; fi
+
+# --- CNF-18: interruption ------------------------------------------------------------------------------
+ok=1; detail=""
+for sig in INT TERM; do
+  repo="$(new_repo)"; rec="$work/rec-sig-$sig"; mkdir -p "$rec"
+  ( cd "$repo" && exec env --default-signal=INT,TERM PATH="$fakes:$PATH" RLOOP_FAKE_RECORD="$rec" RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_SLEEP_IMPLEMENTER=60 \
+      "$exe" --run-dir "$repo/run" </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
+  rpid=$!
+  for _ in $(seq 1 50); do ls "$rec"/*-implementer-1.env >/dev/null 2>&1 && break; sleep 0.2; done
+  sleep 0.5; kill -"$sig" "$rpid"
+  wait "$rpid"; e=$?
+  [ "$e" = 2 ] || { ok=0; detail="$detail [$sig: exit $e]"; }
+  grep -q interrupted "$rec/stderr" || { ok=0; detail="$detail [$sig: no 'interrupted']"; }
+  grep -q SIGTERM "$rec"/*-implementer-1.env 2>/dev/null || { ok=0; detail="$detail [$sig: fake got no SIGTERM]"; }
+  [ -f "$repo/run/task-1.md" ] || { ok=0; detail="$detail [$sig: run dir not intact]"; }
+  ipid=$(sed -n 's/^PID=//p' "$rec"/*-implementer-1.env 2>/dev/null | head -1)
+  [ -n "$ipid" ] && kill -0 "$ipid" 2>/dev/null && { ok=0; detail="$detail [$sig: implementer survived]"; kill -9 "$ipid"; }
+done
+repo="$(new_repo)"; rec="$work/rec-sig2"; mkdir -p "$rec"
+( cd "$repo" && exec env --default-signal=INT,TERM PATH="$fakes:$PATH" RLOOP_FAKE_RECORD="$rec" RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_SLEEP_IMPLEMENTER=60 RLOOP_FAKE_IGNORE_TERM=1 \
+    "$exe" --run-dir "$repo/run" --kill-after 30 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
+rpid=$!
+for _ in $(seq 1 50); do ls "$rec"/*-implementer-1.env >/dev/null 2>&1 && break; sleep 0.2; done
+sleep 0.5; kill -INT "$rpid"; sleep 1; kill -INT "$rpid"
+t0=$(date +%s); wait "$rpid"; e=$?; t1=$(date +%s)
+[ $((t1 - t0)) -lt 10 ] || { ok=0; detail="$detail [second SIGINT did not kill at once]"; }
+for f in "$rec"/*.env; do ipid=$(sed -n 's/^PID=//p' "$f"); [ -n "$ipid" ] && kill -9 "$ipid" 2>/dev/null; done
+if [ "$ok" = 1 ]; then verdict CNF-18 ok "SIGINT/SIGTERM forwarded, exit 2 'interrupted', nothing survives, run dir intact"; else verdict CNF-18 fail "$detail"; fi
+
+# --- CNF-19: git ------------------------------------------------------------------------------------------
+shim="$work/shim"; mkdir -p "$shim"; cp "$here/fakes/git-shim" "$shim/git"; chmod +x "$shim/git"
+ok=1; detail=""
+repo="$(new_repo)"; rec="$work/rec-git"; mkdir -p "$rec"
+head0=$(cd "$repo" && git rev-parse HEAD); reflog0=$(cd "$repo" && git reflog | wc -l)
+( cd "$repo" && PATH="$fakes:$shim:$PATH" RLOOP_FAKE_REAL_GIT="$real_git" RLOOP_FAKE_GIT_LOG="$rec/gitlog" RLOOP_FAKE_RECORD="$rec" \
+    RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=done" \
+    "$exe" </dev/null >"$rec/stdout" 2>"$rec/stderr" ); e=$?
+( cd "$repo" && PATH="$fakes:$shim:$PATH" RLOOP_FAKE_REAL_GIT="$real_git" RLOOP_FAKE_GIT_LOG="$rec/gitlog" RLOOP_FAKE_RECORD="$rec-seq" RLOOP_FAKE_RUNS="done,done,idle" \
+    "$exe" --auto </dev/null >"$rec/stdout2" 2>"$rec/stderr2" ); e2=$?
+bad_sub=$(grep -v -x -E 'rev-parse|status|diff|log' "$rec/gitlog" 2>/dev/null | sort -u | tr '\n' ' ')
+head1=$(cd "$repo" && git rev-parse HEAD); reflog1=$(cd "$repo" && git reflog | wc -l)
+[ -z "$bad_sub" ] || { ok=0; detail="$detail [git subcommands: $bad_sub]"; }
+[ "$head0" = "$head1" ] && [ "$reflog0" = "$reflog1" ] || { ok=0; detail="$detail [HEAD or reflog changed]"; }
+[ "$e" = 0 ] && [ "$e2" = 0 ] || { ok=0; detail="$detail [exits $e $e2]"; }
+if [ "$ok" = 1 ]; then verdict CNF-19 ok "only read-only git subcommands; HEAD and reflog unchanged"; else verdict CNF-19 fail "$detail"; fi
+
+# --- CNF-20: the Sequence ---------------------------------------------------------------------------------
+ok=1; detail=""
+repo="$(new_repo)"; rec="$work/rec-seq1"
+e=$(RLOOP_FAKE_RUNS="done,done,idle" run_rloop "$repo" "$rec" --auto "drain it")
+dirs=$(ls -d "$repo"/.rloop/runs/*/ 2>/dev/null | wc -l)
+[ "$e" = 0 ] && [ "$dirs" = 3 ] || { ok=0; detail="$detail [done,done,idle: exit $e, $dirs dirs]"; }
+expected_out=""
+for d in $(ls -d "$repo"/.rloop/runs/*/ | sort); do n=$(sed -n 's/^RUN=//p' "$rec"/*-manager-0.env | head -1); : "$n"; done
+i=0; for d in $(ls -d "$repo"/.rloop/runs/*/ | sort); do i=$((i + 1)); expected_out="$expected_out== run $i ==
+$(cat "$d/finished.md")
+"; done
+[ "$(cat "$rec/stdout")" = "$(printf '%s' "$expected_out")" ] || { ok=0; detail="$detail [stdout format]"; }
+sids=$(for f in "$rec"/*-manager-0.argv; do tr '\0' '\n' < "$f" | grep -A1 -x -- '--session-id' | tail -1; done | sort -u | wc -l)
+[ "$sids" = 3 ] || { ok=0; detail="$detail [$sids distinct session ids]"; }
+for f in "$rec"/*-manager-0.argv; do tr '\0' '\n' < "$f" | grep -q 'drain it' || { ok=0; detail="$detail [instruction missing in a pick]"; }; done
+repo="$(new_repo)"; rec="$work/rec-seq2"
+e=$(RLOOP_FAKE_RUNS="done,blocked,idle" run_rloop "$repo" "$rec" --auto)
+[ "$e" = 1 ] && [ "$(ls "$rec"/*-manager-0.argv | wc -l)" = 2 ] || { ok=0; detail="$detail [done,blocked: exit $e, $(ls "$rec"/*-manager-0.argv | wc -l) picks]"; }
+repo="$(new_repo)"; rec="$work/rec-seq3"
+e=$(RLOOP_FAKE_RUNS="done,done,done,done,done" run_rloop "$repo" "$rec" --auto --max-runs 3)
+[ "$e" = 2 ] && [ "$(ls "$rec"/*-manager-0.argv | wc -l)" = 3 ] || { ok=0; detail="$detail [max-runs 3: exit $e, $(ls "$rec"/*-manager-0.argv | wc -l) picks]"; }
+if [ "$ok" = 1 ]; then verdict CNF-20 ok "Sequence: idle ends 0, blocked ends 1, cap ends 2; fresh sessions; stdout per Run"; else verdict CNF-20 fail "$detail"; fi
+
+# --- CNF-21: the clean-tree check ---------------------------------------------------------------------
+ok=1; detail=""
+repo="$(new_repo)"; rec="$work/rec-clean"
+e=$(RLOOP_FAKE_RUNS="done,done,idle" RLOOP_FAKE_DIRTY_AT_DONE=1 run_rloop "$repo" "$rec" --auto)
+[ "$e" = 2 ] && [ "$(ls "$rec"/*-manager-0.argv | wc -l)" = 1 ] || { ok=0; detail="$detail [dirty between runs: exit $e, $(ls "$rec"/*-manager-0.argv | wc -l) picks]"; }
+repo="$(new_repo)"; rec="$work/rec-clean2"
+e=$(RLOOP_FAKE_PICK=ok:done RLOOP_FAKE_DIRTY_AT_DONE=1 run_rloop "$repo" "$rec" --run-dir "$repo/run")
+[ "$e" = 0 ] && [ -s "$rec/stderr" ] || { ok=0; detail="$detail [lone dirty done: exit $e]"; }
+if [ "$ok" = 1 ]; then verdict CNF-21 ok "a dirty tree stops a Sequence before the next pick; a lone Run only warns"; else verdict CNF-21 fail "$detail"; fi
+
+verdict CNF-22 ok "(live; by hand once per release — see 06-conformance.md)"
+
+echo
+echo "$pass passed, $fail failed"
+[ "$fail" = 0 ] || { echo "failed: ${failed_items[*]}"; exit 1; }
+exit 0

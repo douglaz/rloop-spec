@@ -1,0 +1,10 @@
+claude
+-p
+<pick prompt>
+--session-id
+<session id>
+--model
+<manager model>
+--effort
+high
+--dangerously-skip-permissions

@@ -1,0 +1,138 @@
+#!/usr/bin/env bash
+# The fake agent (CNF-2). Installed as `claude` and `codex` first on PATH by conformance/run. It
+# never reads its prompt and never parses a flag: it reads rloop's environment contract (AGT-13)
+# to learn which agent it is standing in for, looks up its scripted part, records what it
+# received, and acts.
+#
+# Script, from the environment conformance/run sets:
+#   RLOOP_FAKE_PICK          ok:task | ok:done | ok:blocked | ok:idle | ok:other | ok:nothing | fail
+#   RLOOP_FAKE_ROUNDS        impl=<ok|fail>;panel=<all|some|none>;judge=<...>  joined by |, one per Round
+#   RLOOP_FAKE_INTERFERENCE  - | <round>:<afterImplementer|afterPanel>:<editTask|writeFinished|both>
+#   RLOOP_FAKE_RUNS          for a Sequence: pick outcomes per Run, comma-separated (done,done,idle);
+#                            each Run's Rounds are then RLOOP_FAKE_ROUNDS
+#   RLOOP_FAKE_SLEEP_<ROLE>  seconds to sleep before acting (ROLE = MANAGER|IMPLEMENTER|REVIEWER)
+#   RLOOP_FAKE_IGNORE_TERM   1 = trap and ignore SIGTERM
+#   RLOOP_FAKE_GRANDCHILD    1 = spawn a background sleeper and record its pid
+#   RLOOP_FAKE_DIRTY_AT_DONE 1 = the Manager leaves an untracked file in the tree when it writes done
+#   RLOOP_FAKE_COMMIT        1 = the Implementer commits a file during its call
+#   RLOOP_FAKE_RECORD        directory the fake records into (required)
+set -u
+
+rec="${RLOOP_FAKE_RECORD:?}"
+role="${RLOOP_ROLE:-unset}"
+round="${RLOOP_ROUND:-unset}"
+run="${RLOOP_RUN:-unset}"
+reviewer="${RLOOP_REVIEWER:-}"
+run_dir="${RLOOP_RUN_DIR:-}"
+tag="$role-$round${reviewer:+-$reviewer}"
+seq=$(( $(ls "$rec" 2>/dev/null | grep -c '\.argv$') + 1 ))
+tag="$(printf '%03d' "$seq")-$tag"
+
+# --- record what we were given ------------------------------------------------------------------
+printf '%s\0' "$(basename "$0")" "$@" > "$rec/$tag.argv"
+{
+  echo "ROLE=$role"; echo "ROUND=$round"; echo "RUN=$run"; echo "RUN_DIR=$run_dir"
+  echo "REVIEWER=${RLOOP_REVIEWER-<unset>}"; echo "CWD=$PWD"; echo "PID=$$"
+} > "$rec/$tag.env"
+# stdin: at EOF now, or open? A read that returns instantly with no data is EOF (AGT-12).
+if timeout 1 head -c1 </dev/stdin >/dev/null 2>&1; then echo "STDIN=eof" >> "$rec/$tag.env"; else echo "STDIN=open" >> "$rec/$tag.env"; fi
+now() { date +%s%N; }
+
+# --- the scripted part ----------------------------------------------------------------------------
+upper_role=$(echo "$role" | tr a-z A-Z)
+sleep_var="RLOOP_FAKE_SLEEP_$upper_role"
+sleep_for="${!sleep_var:-0}"
+
+if [ "${RLOOP_FAKE_IGNORE_TERM:-0}" = 1 ]; then trap '' TERM; else trap 'echo "SIGTERM" >> "$rec/$tag.env"; exit 143' TERM; fi
+if [ "${RLOOP_FAKE_GRANDCHILD:-0}" = 1 ]; then sleep 300 & echo "GRANDCHILD=$!" >> "$rec/$tag.env"; fi
+
+pick="${RLOOP_FAKE_PICK:-ok:task}"
+if [ -n "${RLOOP_FAKE_RUNS:-}" ] && [ "$run" != unset ]; then
+  IFS=, read -r -a runs <<< "$RLOOP_FAKE_RUNS"
+  idx=$(( run - 1 ))
+  if [ "$idx" -lt "${#runs[@]}" ]; then pick="ok:${runs[$idx]}"; else pick="ok:idle"; fi
+fi
+rounds="${RLOOP_FAKE_ROUNDS:-}"
+interf="${RLOOP_FAKE_INTERFERENCE:--}"
+
+round_field() { # round_field <round> <impl|panel|judge>
+  local r="$1" key="$2" spec
+  spec=$(echo "$rounds" | tr '|' '\n' | sed -n "${r}p")
+  echo "$spec" | tr ';' '\n' | sed -n "s/^$key=//p"
+}
+
+write_finished() { # write_finished <status word>
+  case "$1" in
+    done|blocked|idle) printf 'STATUS: %s\nreport from the fake %s, round %s\n' "$1" "$role" "$round" > "$run_dir/finished.md" ;;
+    other) printf 'STATUS: maybe\n' > "$run_dir/finished.md" ;;
+  esac
+}
+
+interfere() { # interfere <point>
+  local point="$1" r p kind
+  [ "$interf" = "-" ] && return 0
+  IFS=: read -r r p kind <<< "$interf"
+  [ "$r" = "$round" ] && [ "$p" = "$point" ] || return 0
+  case "$kind" in
+    editTask) printf -- '- [x] ticked by the %s\n' "$role" >> "$run_dir/task.md" ;;
+    writeFinished) printf 'STATUS: done\nforged by the %s\n' "$role" > "$run_dir/finished.md" ;;
+    both) printf -- '- [x] ticked by the %s\n' "$role" >> "$run_dir/task.md"; printf 'STATUS: done\nforged by the %s\n' "$role" > "$run_dir/finished.md" ;;
+  esac
+}
+
+echo "$role:$round${reviewer:+:$reviewer}:start:$(now)" >> "$rec/trace"
+[ "$sleep_for" != 0 ] && sleep "$sleep_for"
+
+status=0
+case "$role" in
+  manager)
+    if [ "$round" = 0 ]; then
+      case "$pick" in
+        fail) status=1 ;;
+        ok:task) printf 'brief 1 (run %s)\n' "$run" > "$run_dir/task.md" ;;
+        ok:nothing) : ;;
+        ok:*) write_finished "${pick#ok:}" ;;
+      esac
+      outcome="$pick"
+    else
+      judge=$(round_field "$round" judge)
+      case "$judge" in
+        fail) status=1 ;;
+        rewrite) printf 'brief %s (run %s)\n' "$(( round + 1 ))" "$run" > "$run_dir/task.md" ;;
+        same) : ;;
+        *) write_finished "$judge" ;;
+      esac
+      outcome="$judge"
+    fi
+    if [ "${RLOOP_FAKE_DIRTY_AT_DONE:-0}" = 1 ] && grep -q '^STATUS: done' "$run_dir/finished.md" 2>/dev/null; then
+      echo leftover > "$PWD/leftover-from-run-$run.txt"
+    fi
+    echo "manager output, round $round"
+    ;;
+  implementer)
+    o=$(round_field "$round" impl); o="${o:-ok}"
+    if [ "${RLOOP_FAKE_COMMIT:-0}" = 1 ]; then
+      echo "work $round" > "work-$round.txt" && git add "work-$round.txt" && git -c user.email=f@f -c user.name=fake commit -q -m "fake work $round"
+    fi
+    interfere afterImplementer
+    echo "implementer output, round $round"
+    [ "$o" = fail ] && status=1
+    outcome="$o"
+    ;;
+  reviewer)
+    p=$(round_field "$round" panel); p="${p:-all}"
+    case "$p" in
+      all) o=ok ;;
+      none) o=fail ;;
+      some) if [ "$reviewer" = fable ]; then o=ok; else o=fail; fi ;;
+    esac
+    [ "$reviewer" = fable ] && interfere afterPanel
+    if [ "$o" = ok ]; then echo "No findings."; else echo "partial feedback"; status=7; fi
+    outcome="$o"
+    ;;
+  *)
+    echo "fake agent: no RLOOP_ROLE" >&2; status=99; outcome=unknown ;;
+esac
+echo "fake stderr from $tag" >&2
+echo "$role:$round${reviewer:+:$reviewer}:end:$(now):$outcome" >> "$rec/trace"
+exit "$status"

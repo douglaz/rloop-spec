@@ -1,0 +1,15 @@
+claude
+-p
+<review prompt>
+--model
+claude-fable-5-1
+--effort
+high
+--dangerously-skip-permissions
+--disallowedTools
+Edit,Write,NotebookEdit,Bash(git
+checkout:*),Bash(git
+stash:*),Bash(git
+reset:*),Bash(git
+commit:*),Bash(git
+clean:*)

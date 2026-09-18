@@ -1,0 +1,1 @@
+/goal implement the task defined in {{TASK_FILE}} until it is fully implemented. Read the repository's instructions for agents first and follow them, including whatever they say about committing. Do not create, modify or delete anything under {{RUN_DIR}} except the file this prompt tells you to write.

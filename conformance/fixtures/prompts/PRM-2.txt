@@ -1,0 +1,17 @@
+Round {{ROUND}} of at most {{MAX_ROUNDS}} is over. An Implementer worked from {{TASK_FILE}}; its output is in {{IMPLEMENTER_LOG}} (a last line `IMPLEMENTER FAILED (exit N)` means it crashed or timed out). Four independent Reviewers then read the repository's changes since commit {{BASE}} against the brief; their feedback is in:
+{{FEEDBACK_FILES}}
+A file holding `REVIEWER FAILED` is a Reviewer that crashed or timed out. Files named `rejected-*` in {{RUN_DIR}}, if any, were written over your files by another agent and set aside; read them as evidence about that agent.
+
+Review the implementation yourself, then read the feedback. Feedback is advice, not orders: send back only what makes the implementation fail the brief as written, or is a genuine defect. Reject findings that add scope, over-engineer, or ask for machinery the brief does not need. File what is worth keeping for later as an issue in the repository's tracker, following its conventions.
+
+Then do exactly one of:
+
+A. The task is done, or cannot be completed. Create the follow-up issues the repository's conventions call for; close the task in the tracker if it has one. Make sure the accepted work is in history and the tree is clean: commit what is not yet committed, tracker files included, following the repository's commit conventions — no tool or assistant attribution, no squashing or rewriting of history, no empty commit. Never edit code to get a commit past a hook or signing, and never bypass either: if a commit needs a code change, that is a finding — choose B instead. Do not commit work you did not accept. These paths were already modified or untracked before this Run started and are not yours to commit:
+{{DIRTY_AT_START}}
+Then write {{FINISHED_FILE}} with a first line of exactly `STATUS: done` or exactly `STATUS: blocked`, followed by your report: what was done; what is committed and what is left in the tree; the base commit {{BASE}} and the commit HEAD names now; your notes and questions for whoever started this Run.
+
+B. Another Round is needed. Rewrite {{TASK_FILE}} in place as a self-contained brief for a new Implementer that has no memory of this conversation and will not see the feedback: describe the current state of the repository, what is still wrong or missing, and what done looks like. Do not write {{FINISHED_FILE}}. Do not write the code yourself.
+
+If you write neither file, rloop treats it as no decision and stops.
+
+Do not create, modify or delete anything under {{RUN_DIR}} except the file this prompt tells you to write.

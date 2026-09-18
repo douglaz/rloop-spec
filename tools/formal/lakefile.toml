@@ -1,0 +1,25 @@
+# The formal layer of the specification set (ADR-0002). No dependencies: every theorem so far
+# closed on core Lean, and Mathlib is added only in a commit naming the theorem that needs it.
+name = "rloop-formal"
+defaultTargets = ["Rloop", "gate", "render", "scenarios"]
+
+[[lean_lib]]
+name = "Rloop"
+
+# `lake exe gate`: the axiom policy and the requirement index, emitted from the @[req] attributes.
+[[lean_exe]]
+name = "gate"
+root = "Gate"
+supportInterpreter = true
+
+# `lake exe render`: the marked regions, emitted from `Rloop.Render.regions`.
+[[lean_exe]]
+name = "render"
+root = "Render"
+
+# `lake exe scenarios`: every scripted agent behaviour up to the enumeration cap, with the exit
+# code and spawn trace the model gives it — `conformance/scenarios.tsv` is this output, committed.
+[[lean_exe]]
+name = "scenarios"
+root = "Scenarios"
+supportInterpreter = true

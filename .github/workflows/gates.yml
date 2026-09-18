@@ -1,0 +1,61 @@
+name: gates
+
+# A green check that asserts nothing is worse than no check, so this workflow runs gates that
+# can fail, and then proves each one can by breaking a scratch copy of the set and requiring red.
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  gates:
+    name: specification gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The formal layer (ADR-0002) needs Lean; flake.nix is the one place the toolchain is
+      # pinned, so CI enters the same shell a developer does.
+      - uses: cachix/install-nix-action@v31
+
+      - name: Run all gates
+        run: nix develop --command bash tools/check-all.sh
+
+      - name: Prove the identifier gate can fail
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"; cp -r . "$tmp/repo"; cd "$tmp/repo"
+          printf '\n**RUN-9999** A citation to `DIR-9999`, which does not exist.\n' >> 00-overview.md
+          if python3 tools/check_ids.py; then echo "::error::identifier gate passed a dangling citation"; exit 1; fi
+
+      - name: Prove the coverage gate can fail
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"; cp -r . "$tmp/repo"; cd "$tmp/repo"
+          printf '\n**SEQ-11** rloop MUST do a thing no item proves.\n' >> 05-sequence.md
+          if python3 tools/check_coverage.py; then echo "::error::coverage gate passed an uncited requirement"; exit 1; fi
+
+      - name: Prove the fixture gate can fail
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"; cp -r . "$tmp/repo"; cd "$tmp/repo"
+          printf 'x' >> conformance/fixtures/prompts/PRM-1.txt
+          if python3 tools/check_fixtures.py; then echo "::error::fixture gate passed a drifted fixture"; exit 1; fi
+
+      - name: Prove the regions and scenarios gates can fail
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"; cp -r . "$tmp/repo"; cd "$tmp/repo"
+          sed -i 's/| judge | 0 | none | unchanged | no | \*\*exit 2\*\* |/| judge | 0 | none | unchanged | no | **next Round** |/' 01-run-lifecycle.md
+          if python3 tools/check_regions.py; then echo "::error::regions gate passed a drifted table"; exit 1; fi
+          sed -i '2s/\t0\t/\t2\t/; 2s/\t2\tpick/\t0\tpick/' conformance/scenarios.tsv
+          if python3 tools/check_scenarios.py; then echo "::error::scenarios gate passed a drifted file"; exit 1; fi
+
+      - name: Prove the formal gate refuses sorry
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"; cp -r . "$tmp/repo"; cd "$tmp/repo"
+          sed -i 's/^theorem cap_off_overruns :$/theorem cap_off_overruns : True ∧/; s/implementers (run { Guards.all with cap := false } restless 1).2 = 2 := by decide/implementers (run { Guards.all with cap := false } restless 1).2 = 2 := ⟨trivial, sorry⟩/' tools/formal/Rloop/Properties.lean
+          if nix develop --command bash tools/check_formal.sh; then echo "::error::formal gate passed a sorry"; exit 1; fi

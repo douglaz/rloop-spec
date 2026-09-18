@@ -1,0 +1,9 @@
+codex
+exec
+-s
+read-only
+-m
+gpt-5.6-sol
+-c
+model_reasoning_effort=xhigh
+<review prompt>

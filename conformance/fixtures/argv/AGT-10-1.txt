@@ -1,0 +1,9 @@
+codex
+exec
+-s
+read-only
+-m
+gpt-6-astra
+-c
+model_reasoning_effort=high
+<review prompt>

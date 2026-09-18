@@ -1,0 +1,5 @@
+tools/formal/.lake/
+.beads/beads.db
+.beads/*.db-*
+tools/__pycache__/
+result
