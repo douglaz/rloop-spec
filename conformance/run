@@ -381,6 +381,9 @@ e=$(RLOOP_FAKE_RUNS="done,blocked,idle" run_rloop "$repo" "$rec" --auto)
 repo="$(new_repo)"; rec="$work/rec-seq3"
 e=$(RLOOP_FAKE_RUNS="done,done,done,done,done" run_rloop "$repo" "$rec" --auto --max-runs 3)
 [ "$e" = 2 ] && [ "$(ls "$rec"/*-manager-0.argv | wc -l)" = 3 ] || { ok=0; detail="$detail [max-runs 3: exit $e, $(ls "$rec"/*-manager-0.argv | wc -l) picks]"; }
+repo="$(new_repo)"; rec="$work/rec-seq4"
+e=$(RLOOP_FAKE_RUNS="done,done,fail" run_rloop "$repo" "$rec" --auto)
+[ "$e" = 2 ] && [ "$(grep -c '^== run' "$rec/stdout")" = 2 ] || { ok=0; detail="$detail [done,done,fail: exit $e, $(grep -c '^== run' "$rec/stdout") run headers on stdout]"; }
 if [ "$ok" = 1 ]; then verdict CNF-20 ok "Sequence: idle ends 0, blocked ends 1, cap ends 2; fresh sessions; stdout per Run"; else verdict CNF-20 fail "$detail"; fi
 
 # --- CNF-21: the clean-tree check ---------------------------------------------------------------------

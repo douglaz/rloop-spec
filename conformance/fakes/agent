@@ -51,6 +51,7 @@ if [ -n "${RLOOP_FAKE_RUNS:-}" ] && [ "$run" != unset ]; then
   IFS=, read -r -a runs <<< "$RLOOP_FAKE_RUNS"
   idx=$(( run - 1 ))
   if [ "$idx" -lt "${#runs[@]}" ]; then pick="ok:${runs[$idx]}"; else pick="ok:idle"; fi
+  [ "$pick" = ok:fail ] && pick=fail
 fi
 rounds="${RLOOP_FAKE_ROUNDS:-}"
 interf="${RLOOP_FAKE_INTERFERENCE:--}"

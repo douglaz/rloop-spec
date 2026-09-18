@@ -124,8 +124,9 @@ no fake commits. (`OVR-3`, `RUN-18`, `SEQ-9`)
 three Run Directories; standard output is `== run 1 ==`, the first Finished File, `== run 2 ==`,
 …, and nothing else; the three picks carry three distinct session ids; and the instruction is
 rendered into all three pick prompts. Scripted done, blocked, idle: exit 1 after two Runs.
-Scripted done forever with `--max-runs 3`: exit 2 after three Runs. (`SEQ-1`, `SEQ-2`, `SEQ-5`,
-`SEQ-6`, `SEQ-7`)
+Scripted done forever with `--max-runs 3`: exit 2 after three Runs. Scripted done, done, then a
+pick that fails: exit 2, and standard output holds exactly two `== run` blocks. (`SEQ-1`, `SEQ-2`,
+`SEQ-5`, `SEQ-6`, `SEQ-7`)
 
 **CNF-21** With `--auto` and a Run 1 Manager fake that writes `STATUS: done` and leaves an
 untracked file in the tree: exit 2 before Run 2's pick, with no second pick spawned. A lone Run
