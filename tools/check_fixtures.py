@@ -8,8 +8,9 @@ two identical so that neither can drift from the other.
 
   prompts/PRM-n.txt       the block's lines joined by newlines, no trailing newline -- the bytes
                           of the one argument the prompt is passed as (PRM-6)
-  argv/AGT-n[-k].txt      one argument per line; a `<placeholder>` is one argument however many
-                          words it holds; k numbers the blocks of a requirement that has several
+  argv/AGT-n[-k].txt      one argument per line; a `<placeholder>` or a "double-quoted" span is
+                          one argument however many words it holds (the quotes are stripped); k
+                          numbers the blocks of a requirement that has several
 
 `--write` regenerates the fixtures from the documents. Exit 0 = identical, 1 = drift or a
 fixture with no block (or a block with no fixture).
@@ -24,7 +25,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FIX = os.path.join(ROOT, "conformance", "fixtures")
 
 HEAD = re.compile(r"^\*\*((?:PRM|AGT)-\d+)\*\*")
-ARG = re.compile(r"<[^>]+>|\S+")
+# An argument is a `<placeholder>`, a "double-quoted" span (the quotes mark its extent and are
+# stripped: AGT-7's deny list holds spaces), or a run of non-blanks.
+ARG = re.compile(r'<[^>]+>|"[^"]*"|\S+')
 
 
 def blocks(path, fence):
@@ -61,7 +64,8 @@ def expected():
     for rid, lines in per_req.items():
         for k, line in enumerate(lines, 1):
             name = f"{rid}.txt" if len(lines) == 1 else f"{rid}-{k}.txt"
-            want[os.path.join("argv", name)] = "\n".join(ARG.findall(line)) + "\n"
+            args = [a[1:-1] if a.startswith('"') and a.endswith('"') else a for a in ARG.findall(line)]
+            want[os.path.join("argv", name)] = "\n".join(args) + "\n"
     return want
 
 

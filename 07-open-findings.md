@@ -34,3 +34,17 @@ argued depth 2 suffices because the decision is memoryless apart from the Round 
 asked for cap 3 and the default of 10 as explicit lines. Cap 10 is `CNF-3`'s job only through
 `--max-rounds`; a cap-3 enumeration was not added. Revisit if an Implementation passes the suite
 and fails live on a Round-3 behaviour.
+
+## F5 — The first Implementation's findings (closed 2026-09-18)
+
+The first `rloop-bash` build from the documents alone, by an implementer with no knowledge of
+how they were written, reached 18 of 20 executable items and stopped on one specification
+defect rather than working around it: `AGT-7`'s deny list holds a space (`Bash(git checkout:*)`)
+and `tools/check_fixtures.py` split it into six arguments, so `CNF-11` demanded an argv that
+`AGT-9` forbids — and that would have handed the real CLI broken patterns. Closed by quoting
+the argument in `02-agents.md` and teaching the gate the quotes. Three ambiguities from the same
+report are closed in place: `SEQ-7` now defers to `RUN-10` for a Run that ended 2; `DIR-2` now
+requires a timestamp fine enough to tell two Runs of one Sequence apart; `AGT-16` accepts a
+process group without a session. *The set had been validated against a stub that read the same
+split fixtures, which is why the defect survived: a check and its subject built from one
+misreading agree with each other.*

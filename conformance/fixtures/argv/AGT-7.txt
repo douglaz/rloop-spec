@@ -7,9 +7,4 @@ claude-fable-5-1
 high
 --dangerously-skip-permissions
 --disallowedTools
-Edit,Write,NotebookEdit,Bash(git
-checkout:*),Bash(git
-stash:*),Bash(git
-reset:*),Bash(git
-commit:*),Bash(git
-clean:*)
+Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)

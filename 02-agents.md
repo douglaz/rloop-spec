@@ -38,7 +38,9 @@ after the first agent call has already spent money.*
 ## The agent command lines
 
 Each is written as an argument list; `<angle brackets>` are values rloop supplies and everything
-else is literal, including the order. A prompt is one argument, however many lines it holds.
+else is literal, including the order. A prompt is one argument, however many lines it holds, and
+a `"double-quoted"` span is one argument however many spaces it holds — the quotes mark the
+argument's extent and are not part of it.
 
 **AGT-3** The pick MUST be:
 
@@ -77,16 +79,17 @@ carries a model flag: the CLI's configured default is the Implementer's model.*
 **AGT-7** Reviewer `fable` MUST be:
 
 ```text
-claude -p <review prompt> --model claude-fable-5-1 --effort high --dangerously-skip-permissions --disallowedTools Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)
+claude -p <review prompt> --model claude-fable-5-1 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
 ```
 
 **AGT-8** Reviewer `opus` MUST be:
 
 ```text
-claude -p <review prompt> --model claude-opus-5 --effort xhigh --dangerously-skip-permissions --disallowedTools Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)
+claude -p <review prompt> --model claude-opus-5 --effort xhigh --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
 ```
 
-**AGT-9** The deny list in `AGT-7` and `AGT-8` is one argument. It holds because
+**AGT-9** The deny list in `AGT-7` and `AGT-8` is one argument — the quotes above mark it, and
+`Bash(git checkout:*)` holds a space that must not split it. It holds because
 `--disallowedTools` is honoured under `--dangerously-skip-permissions` — verified on Claude Code
 2.1.274: a run under both flags asked to `Write` a file answered `DENIED` and wrote nothing, and one
 asked to `git commit` was denied while `git status` ran. *The Reviewers keep a shell so they can
@@ -148,8 +151,9 @@ SIGTERM it MUST send SIGTERM to every live agent group, wait for them (with `--k
 SIGKILL), and exit 2 with `interrupted` on standard error. A second SIGINT during that wait MUST
 send SIGKILL at once. The Run Directory is left as it is (`RUN-17`).
 
-**AGT-16** Each agent process MUST be started in its own process group (its own session, as
-`setsid` gives), so that `AGT-14` and `AGT-15` reach every descendant.
+**AGT-16** Each agent process MUST be started in its own process group, so that `AGT-14` and
+`AGT-15` reach every descendant. A new session (`setsid`) satisfies this; so does what
+`timeout` does for the command it runs.
 
 ## Versions
 

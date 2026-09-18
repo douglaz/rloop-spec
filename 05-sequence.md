@@ -49,9 +49,9 @@ first that ends it:
 `Rloop.exit0_means_all_done_then_idle` proves exit 0 means every Run ended done and the last ended
 idle; `Rloop.blocked_stops` shows nothing follows a blocked Run.
 
-**SEQ-7** Standard output of a Sequence MUST be every Run's Finished File in order, each preceded
-by a line `== run <n> ==`, and nothing else — including the Finished File of the Run that ended the
-Sequence, whatever its status. Standard error carries progress.
+**SEQ-7** Standard output of a Sequence MUST be, for every Run that ended 0, 1 or 3, a line
+`== run <n> ==` followed by that Run's Finished File, in order, and nothing else. A Run that ended
+2 prints nothing, as `RUN-10` says of a lone one. Standard error carries progress.
 
 ## Committing
 

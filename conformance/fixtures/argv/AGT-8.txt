@@ -7,9 +7,4 @@ claude-opus-5
 xhigh
 --dangerously-skip-permissions
 --disallowedTools
-Edit,Write,NotebookEdit,Bash(git
-checkout:*),Bash(git
-stash:*),Bash(git
-reset:*),Bash(git
-commit:*),Bash(git
-clean:*)
+Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)

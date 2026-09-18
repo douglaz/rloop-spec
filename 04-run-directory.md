@@ -13,7 +13,9 @@ existing directory is yesterday's Run; a Finished File found in it would end tod
 yesterday's report. There is no emptiness scan and no resume.*
 
 **DIR-2** When `--run-dir` is omitted, the Run Directory MUST be
-`<toplevel>/.rloop/runs/<UTC timestamp>-<pid>/` under the git toplevel, and rloop MUST ensure
+`<toplevel>/.rloop/runs/<UTC timestamp>-<pid>/` under the git toplevel — the timestamp precise
+enough that two Runs of one Sequence, which share the pid, get distinct names — and rloop MUST
+ensure
 `<toplevel>/.rloop/.gitignore` exists containing the single line `*` before creating it. *The
 directory ignores itself: no tracked file changes, `.git` is never touched, and it works in a
 worktree, where `.git` is a file.* In a Sequence each Run gets its own directory this way and
