@@ -23,7 +23,10 @@ Do this now:
    - If the task needs an implementation decision the specifications leave to the implementer — a choice of how, not of what — do not make it alone. Put the question and the options to two advisers by running, in this repository, exactly these two commands:
      claude -p "<your question>" --model claude-fable-5-1 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
      codex exec -s read-only -m gpt-6-astra -c model_reasoning_effort=high "<your question>"
-     Then choose, and record the question, both answers and your choice in the brief. A choice the brief does not need to settle is the Implementer's to make.
+     If the two agree, choose with them. If they disagree, put the same question to two more advisers:
+     claude -p "<your question>" --model claude-opus-5 --effort xhigh --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
+     codex exec -s read-only -m gpt-5.6-sol -c model_reasoning_effort=xhigh "<your question>"
+     If the four do not settle it, it is not an implementation decision after all: stop and write {{FINISHED_FILE}} with `STATUS: blocked`, and below it the question, every answer, and what you recommend. Record the question, the answers and your choice in the brief. A choice the brief does not need to settle is the Implementer's to make.
 5. Write the brief to {{TASK_FILE}}: a self-contained Markdown document that an Implementer with no memory of this conversation can build from, and that Reviewers who have never seen the tracker can judge the result against. Say what to build, what done looks like, how to verify it, and what is out of scope. Do not write the code yourself.
 
 Or, instead of a brief, write {{FINISHED_FILE}} with a first line of exactly one of:
@@ -51,7 +54,10 @@ Review the implementation yourself, then read the feedback. Feedback is advice, 
 Two kinds of question are not yours to answer alone. If this Round surfaced a point the repository's specifications or instructions leave ambiguous or contradictory — two readings that lead to different behaviour — do not choose a reading: choose A below with `STATUS: blocked`, and put the document, the passage, the readings and the clarification you recommend in the report. If it surfaced an implementation decision the specifications leave to the implementer — a choice of how, not of what — that the next brief must settle, put the question and the options to two advisers before you write it, by running, in this repository, exactly these two commands:
 claude -p "<your question>" --model claude-fable-5-1 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
 codex exec -s read-only -m gpt-6-astra -c model_reasoning_effort=high "<your question>"
-Then choose, and record the question, both answers and your choice in the brief.
+If the two agree, choose with them. If they disagree, put the same question to two more advisers:
+claude -p "<your question>" --model claude-opus-5 --effort xhigh --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
+codex exec -s read-only -m gpt-5.6-sol -c model_reasoning_effort=xhigh "<your question>"
+If the four do not settle it, it is not an implementation decision after all: choose A below with `STATUS: blocked`, and put the question, every answer and what you recommend in the report. Otherwise record the question, the answers and your choice in the brief.
 
 Then do exactly one of:
 

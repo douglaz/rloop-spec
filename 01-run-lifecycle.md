@@ -167,8 +167,11 @@ human is asked first.*
 **RUN-20** An implementation decision the specifications leave to the implementer — a choice of
 how, not of what — that a brief must settle MUST NOT be made by the Manager alone: the prompts
 tell it to put the question and the options to two advisers, `fable` and `astra`, read-only, by
-running the two command lines `PRM-1` states, and to record the question, both answers and its
-choice in the Task File. A choice the brief does not need to settle is the Implementer's. *This
+running the two command lines `PRM-1` states, and to record the question, the answers and its
+choice in the Task File. When the two advisers disagree the Manager puts the same question to two
+more, `opus` and `sol`; when the four do not settle it, the question was not an implementation
+decision and the Run ends `blocked` as under `RUN-19`, the answers in the report. A choice the
+brief does not need to settle is the Implementer's. *This
 is a Consultation, not a Panel: rloop does not run it, the Manager does, in its own session,
 which is why it costs the control flow nothing and why only a live Run can show it happens
 (`CNF-22`).*
