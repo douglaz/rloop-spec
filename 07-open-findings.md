@@ -83,3 +83,14 @@ Reviewers found a real defect in Round 1 (awk comparing numeric-looking names nu
 `tally 01` deleted the `1` counter), the Manager reproduced it, rewrote the brief with the exact
 line and a reproduction, Round 2 fixed it, four Reviewers passed it, `done` after two Rounds, five
 suggestions rejected as outside the brief and listed in the report.
+
+## F8 — The first real-project Run (closed 2026-09-19)
+
+rloop-bash#1: a lone Run on `provisiond-spec`, three Rounds, a 1068-line Lean module landed with
+the repository's seven gates green, sixty-one minutes. Four observations: the PID `nix run`
+hands back is the wrapper's (rloop-bash now prints its own; the README says how to keep a
+detached Run's exit status); the codex Reviewers' read-only sandbox could not run the
+repository's nix gates and only one of the two said so (`PRM-4` now has every Reviewer state up
+front what it could not run, and `AGT-10` drops the sandbox); the tracker file the Manager claims
+a task in is dirtied after `RUN-3`'s list is taken (now stated there as the Manager's to commit);
+and commits carry no attribution, as `SEQ-8` says.

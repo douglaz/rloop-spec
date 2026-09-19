@@ -99,18 +99,24 @@ harness's enforcement, and rb-lite's no-shell-plus-diff-file is what it replaces
 **AGT-10** Reviewer `astra` MUST be:
 
 ```text
-codex exec -s read-only -m gpt-6-astra -c model_reasoning_effort=high <review prompt>
+codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6-astra -c model_reasoning_effort=high <review prompt>
 ```
 
 and Reviewer `sol` MUST be:
 
 ```text
-codex exec -s read-only -m gpt-5.6-sol -c model_reasoning_effort=xhigh <review prompt>
+codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-sol -c model_reasoning_effort=xhigh <review prompt>
 ```
 
 *`codex review --base` cannot take a prompt (codex 0.153.4 refuses the combination), and the
-Reviewer must read the brief; `exec` under the read-only sandbox lets it run git and the tests and
-write nothing. The `-c` value is passed without quotes: codex parses it as TOML and, failing that,
+Reviewer must read the brief. Until 2026-09-19 these ran under `-s read-only`; that sandbox cannot
+reach the nix daemon socket or create a temporary file outside the workspace (reproduced: `nix
+develop` fails with `cannot connect to socket … Operation not permitted`), so on a nix-based
+repository a codex Reviewer could inspect but never run a gate or the Conformance Suite, and its
+"verified" meant less than a claude Reviewer's (rloop-bash#1). The sandbox is now bypassed, as
+for the claude Reviewers; what keeps a codex Reviewer from writing is `PRM-4`'s instruction alone,
+since codex has no deny list, which is within `DIR-9`'s threat model. The `-c` value is passed
+without quotes: codex parses it as TOML and, failing that,
 takes the raw string, and `xhigh` was echoed back as `reasoning effort: xhigh` on 0.153.4.*
 
 **AGT-11** The Panel MUST be exactly the four Reviewers `AGT-7`, `AGT-8` and `AGT-10` name, with

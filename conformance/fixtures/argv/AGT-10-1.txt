@@ -1,7 +1,6 @@
 codex
 exec
--s
-read-only
+--dangerously-bypass-approvals-and-sandbox
 -m
 gpt-6-astra
 -c
