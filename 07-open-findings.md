@@ -48,3 +48,20 @@ requires a timestamp fine enough to tell two Runs of one Sequence apart; `AGT-16
 process group without a session. *The set had been validated against a stub that read the same
 split fixtures, which is why the defect survived: a check and its subject built from one
 misreading agree with each other.*
+
+## F6 — The first live check, `CNF-22` (closed 2026-09-19)
+
+Against `rloop-bash` at `e8b215d` (spec `7a463bb`), on the real CLIs `AGT-17` names, with
+`rloop-bash` as the target repository. **A lone Run** with an instruction (add a CI workflow):
+one Round, four Reviewers with no findings, `STATUS: done`, exit 0, one commit by the
+Implementer with no attribution (`b8fdf0b`), tree clean; the Manager rejected one Reviewer
+suggestion as outside the brief and, the repository having no tracker, reported in the Finished
+File a real defect it had noticed — an inherited `RLOOP_REVIEWER` leaking into Manager and
+Implementer spawns, which broke rloop-inside-rloop. **A two-Run Sequence** with that defect as
+the instruction: Run 1 fixed it in one Round (`a61e3f7`), ended `done`; Run 2 found it done and
+ended `idle`; the Sequence exited 0 and printed both Finished Files under `== run n ==`. Every
+prompt in `03` was read by a real model and did what it says. Two observations kept: the
+Manager assumed the Specification repository public, so the workflow it accepted cannot clone
+the submodule on a runner until that changes; and an interrupted pick (SIGINT during the live
+Manager's first call) exited 2 `interrupted` with nothing left in the tree, which `CNF-18` had
+only shown with fakes.
