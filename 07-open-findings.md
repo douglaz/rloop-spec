@@ -65,3 +65,21 @@ Manager assumed the Specification repository public, so the workflow it accepted
 the submodule on a runner until that changes; and an interrupted pick (SIGINT during the live
 Manager's first call) exited 2 `interrupted` with nothing left in the tree, which `CNF-18` had
 only shown with fakes.
+
+## F7 — `RUN-19` and `RUN-20` exercised live (closed 2026-09-19)
+
+Two scratch projects, each run through `nix run github:douglaz/rloop-bash` at `580b112`. **A
+contradictory specification** (`notes`: `NOTE-3` replaces the file with the new note, `NOTE-2`
+lists every note ever added, `NOTE-1` allows no other store): the Run ended `blocked` at the pick
+with nothing changed, the report naming the document, the commit, the three rules, both readings
+with their observable difference, a recommended rewrite of `NOTE-3`, and three smaller gaps to
+settle in the same edit. **An open implementation choice** (`tally`: `TAL-2` leaves storage to the
+implementation): the Manager left storage to the Implementer, because the brief did not need to
+settle it, and held a Consultation on the one choice the brief did need to settle — the collation
+behind `TAL-3`'s "sorted by name", which changes the output and the tests; fable and astra agreed
+on byte order, so no escalation, and the brief records the question, both answers and the choice.
+The same Run then showed the loop working under disagreement of a different kind: three of four
+Reviewers found a real defect in Round 1 (awk comparing numeric-looking names numerically, so
+`tally 01` deleted the `1` counter), the Manager reproduced it, rewrote the brief with the exact
+line and a reproduction, Round 2 fixed it, four Reviewers passed it, `done` after two Rounds, five
+suggestions rejected as outside the brief and listed in the report.
