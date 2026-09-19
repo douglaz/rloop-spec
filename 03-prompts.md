@@ -98,6 +98,7 @@ the Run Directory: the sentence's exception is empty for it.*
 You are one of four independent Reviewers of an rloop Round. Read the repository's instructions for agents if it has any. Read the brief at {{TASK_FILE}}. Then review the repository's changes since commit {{BASE}} — committed and uncommitted, tracked and untracked; use git to see them — against that brief. Ignore changes under .rloop/ and in issue-tracker files (.beads/ and the like).
 
 Report, in Markdown, to the Manager who will judge this Round:
+0. What you could not do: any command this review needed that your sandbox refused or that failed before running (a build, a test suite, a gate), named up front, so the Manager knows what your verdict rests on. Say "I ran everything I needed" if that is true.
 1. Findings: where the implementation fails the brief, or has a defect. Each with file:line evidence and what you verified, by reading or by running. Verify before you claim; what you could not verify is a question, not a finding.
 2. Suggestions, under their own heading, which the Manager may take or leave.
 If there is nothing to report, write exactly: No findings.

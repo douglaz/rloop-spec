@@ -22,7 +22,11 @@ the later Rounds' Reviewers.*
 **RUN-3** rloop MUST record, once before the pick, the paths `git status --porcelain` lists, as the
 **dirty-at-start list** (`PRM-2`'s `{{DIRTY_AT_START}}`). A lone Run MAY start on a dirty tree; a
 Run inside a Sequence MUST NOT (`SEQ-4`). *The list is how the Manager tells the caller's unrelated
-edits from the Implementer's work when it commits (`SEQ-8`).*
+edits from the Implementer's work when it commits (`SEQ-8`). A path the Run itself dirties after
+the list is taken — the tracker file the Manager claims the task in at the pick — is neither the
+caller's nor the Implementer's; it is the Manager's, and `SEQ-8` has the Manager commit it with
+the accepted work. A Sequence that finds it uncommitted at the next Run stops there (`SEQ-4`),
+which is the check working, not a defect.*
 
 **RUN-4** rloop MUST create the Run Directory (`DIR-1`–`DIR-3`) before the pick and MUST NOT
 create any other file outside it, save the `.rloop/.gitignore` `DIR-2` names.

@@ -103,6 +103,11 @@ For whoever runs an Implementation:
   commits sit behind a clean tree and the next invocation's base would take them in unreviewed
   (`ADR-0004`, `F3`). Read the Finished File: it says what is committed and what is in the tree.
   Reconcile before starting again.
+- **Detaching a long Run.** A Round takes 15–30 minutes, so launch rloop detached
+  (`setsid nohup … &`). Under `nix run` the PID the shell hands back is the wrapper's, which exits
+  once rloop starts; the Run's own PID is the suffix of its Run Directory name and the first
+  lines rloop prints on standard error. To keep the exit status of a detached Run, wrap it:
+  `sh -c 'nix run github:douglaz/rloop-bash …; echo $? > rloop.exit'`.
 - **The Run Directory** — `.rloop/runs/<timestamp>-<pid>/` by default — holds every brief, every
   Reviewer's feedback, every agent's output and the Manager's report. It is never deleted.
 
