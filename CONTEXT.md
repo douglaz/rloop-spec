@@ -43,6 +43,14 @@ The set of **Reviewers**, each a different model, run side by side in one **Roun
 One **Reviewer**'s findings for one **Round**, written for the **Manager**.
 _Avoid_: Review, findings file
 
+**Clarification**:
+A change to the repository's specifications or instructions that only their owner can make. A task that needs one ends its **Run** blocked; the **Manager** never chooses a reading.
+_Avoid_: Assumption, interpretation
+
+**Consultation**:
+The **Manager** putting an implementation decision the specifications leave open to two advisers, `fable` and `astra`, before settling it in the **Task File**. Not a **Panel**: the Manager runs it, rloop does not.
+_Avoid_: Design review, second opinion
+
 **Task File**:
 The **Manager**'s written brief for the current **Round**: what to implement, precise enough for an independent **Implementer** to build and independent reviewers to judge against. The Manager rewrites it to start another Round.
 _Avoid_: Spec, prompt, plan
@@ -95,6 +103,10 @@ _Avoid_: Baseline (that word is the **Task File** snapshot's), origin
 **Dev:** And the implementer ticked the checkboxes in the brief, so the reviewers reviewed against a changed brief.
 
 **Expert:** That is Interference, and the Checkpoint undid it before the Panel ran: the brief Round 2 ran against is `task-2.md`, and what the Implementer wrote over it is `rejected-2-task.md`. Nobody calls that tampering here; the threat model is a mistake, not an attack.
+
+**Dev:** The spec says "the file is written" but not whether it's overwritten or appended. Can't the Manager just pick one?
+
+**Expert:** No. Two readings, two behaviours: that is a Clarification, and the Run ends blocked with the passage and the recommendation in the report. Had the spec said nothing at all about it — a matter of how, not what — the Manager would hold a Consultation with fable and astra and record the choice in the brief.
 
 **Dev:** Then the Run ended with exit 3 — is that a failure?
 

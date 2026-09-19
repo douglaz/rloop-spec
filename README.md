@@ -88,6 +88,11 @@ For whoever runs an Implementation:
 - **A lone Run:** `rloop` picks the next task from the repository's tracker; `rloop "fix the
   flaky retry test"` steers the pick. Exit 0 is done, 1 is blocked, 3 is idle (nothing to pick),
   2 is a failure; the Finished File — the Manager's report — is on standard output.
+- **Blocked (exit 1) is a question for you.** The Manager blocks when the task turns on a point
+  the repository's specifications leave ambiguous — it never picks a reading — and the report
+  names the passage and recommends a clarification. Clarify the specification, then run again.
+  Implementation choices the specifications leave open it settles after consulting two advisers,
+  and the brief records the question and the answers.
 - **A Sequence:** check out the branch the work should land on, then `rloop --auto`. It runs
   until the Manager finds nothing left (exit 0), a task blocks (1), or something fails (2). The
   Manager commits each accepted task before the next starts; rloop never commits, branches or

@@ -153,6 +153,26 @@ continue. When **every** Reviewer of a Panel failed, rloop MUST exit 2 without c
 MUST resume that id (`AGT-3`, `AGT-4`). A judge call whose resume fails is a failed Manager call:
 exit 2.
 
+## Decisions the Manager may not make alone
+
+**RUN-19** A Run MUST end `blocked`, never `done`, when the task turns on a point the
+repository's specifications or instructions leave ambiguous or contradictory — two readings that
+lead to different behaviour — and the Manager MUST NOT choose a reading. The Finished File names
+the document and the passage, the readings, and the clarification the Manager recommends; the
+prompts (`PRM-1`, `PRM-2`) say so at the pick and at the judge. *A clarification is the
+specification owner's to make. A Manager that picks a reading buries a decision in a brief, and
+the next Run inherits it as fact; a blocked Run stops a Sequence (`SEQ-6`) exactly so that the
+human is asked first.*
+
+**RUN-20** An implementation decision the specifications leave to the implementer — a choice of
+how, not of what — that a brief must settle MUST NOT be made by the Manager alone: the prompts
+tell it to put the question and the options to two advisers, `fable` and `astra`, read-only, by
+running the two command lines `PRM-1` states, and to record the question, both answers and its
+choice in the Task File. A choice the brief does not need to settle is the Implementer's. *This
+is a Consultation, not a Panel: rloop does not run it, the Manager does, in its own session,
+which is why it costs the control flow nothing and why only a live Run can show it happens
+(`CNF-22`).*
+
 ## What a Run leaves
 
 **RUN-17** On every exit rloop MUST leave the Run Directory as it is: no cleanup, no deletion, on

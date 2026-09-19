@@ -138,8 +138,12 @@ whose fake leaves the tree dirty exits by its Finished File, with a warning on s
 **CNF-22** Once per Implementation release, by hand: a lone Run and a two-Run Sequence against
 the real CLIs at the versions `AGT-17` names, on a repository with a tracker, ending `done`, with
 the Manager's commits following the repository's conventions and carrying no attribution, and
-the flags in `02` accepted by both CLIs. The Run Directories and the commits are kept as the
-record. (`AGT-9`, `AGT-17`, `SEQ-8`, `SEQ-10`)
+the flags in `02` accepted by both CLIs; a Run on a task that turns on a deliberately ambiguous
+passage of the repository's specifications, ending `blocked` with the passage and a recommended
+clarification in the report; and a Run whose brief settles an open implementation choice, with
+the Consultation's question, both answers and the choice recorded in the brief. The Run
+Directories and the commits are kept as the record. (`AGT-9`, `AGT-17`, `SEQ-8`, `SEQ-10`,
+`RUN-19`, `RUN-20`)
 
 ## Not testable black-box
 
