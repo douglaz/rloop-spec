@@ -137,3 +137,22 @@ terminated Run. It would put rloop's words in the file `DIR-4` gives the Manager
 to `RUN-9`'s four and an exit to `RUN-10`'s table, and change the model and the suite with them;
 the reporter judged the sentence enough, and so does this. `RUN-17` already guarantees the
 evidence survives, which is what makes the reconstruction possible at all.
+
+## F11 — The codex Manager preset, live (closed 2026-09-20)
+
+`F9` added `--manager codex` and `rloop-bash` implemented it the same day, itself under rloop
+(`3809ed8`, suite 21/21). What the fakes could not show, a Run then did: with `--manager codex`
+the pick's standard output opened with
+`{"type":"thread.started","thread_id":"01a0bfb9-a63a-7a82-a47f-3ff75b43906d"}` and the `session`
+file held that id, so `AGT-3`'s `--json` contract and `RUN-16`'s rule hold against the real CLI;
+`codex exec resume` carried the conversation into the judge call; the Run ended `STATUS: done`
+with `gpt-6-astra` in the Manager's seat, having picked the task, written the brief, verified the
+build and both suite invocations itself, declined two Reviewer suggestions with reasons — one of
+them correctly, that prescribing this Implementation's exact diagnostic wording in the
+Specification would change a contract `RUN-10` leaves open — and closed its GitHub issue.
+
+Two observations kept rather than acted on. `claude-fable-5-1` was at 100% of its weekly limit
+throughout, so the `AGT-7` Reviewer slot died at its timeout on every Round of both Runs
+(`REVIEWER FAILED (exit 124)`, `RUN-15` working); that waste is rloop-spec#3. And the codex
+Reviewers report `PRM-4`'s item 0 only when something blocked them, so their bare `No findings.`
+does not say what it rests on; that is rloop-spec#4.
