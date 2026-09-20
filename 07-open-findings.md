@@ -156,3 +156,28 @@ throughout, so the `AGT-7` Reviewer slot died at its timeout on every Round of b
 (`REVIEWER FAILED (exit 124)`, `RUN-15` working); that waste is rloop-spec#3. And the codex
 Reviewers report `PRM-4`'s item 0 only when something blocked them, so their bare `No findings.`
 does not say what it rests on; that is rloop-spec#4.
+
+## F12 — The Consultation needs two models that answered (open 2026-09-20)
+
+rloop-spec#5: its second comment, "Settled, 2026-09-20 — the Consultation quorum", records the
+accepted design from a three-adviser consultation. An adviser that hangs or exhausts its quota
+has not disagreed, and sending the operator to clarify a specification diagnoses the wrong
+failure. Retrying that adviser each Round also spends the Manager's turn on a known non-answer.
+
+Amended `RUN-20`, which now owns the whole policy and is where it is read: what an answer is, how
+a model that did not answer is replaced and why it is not called again, the bounds, the
+single-vendor case and what a blocked report must say. Two of its rules are the ones this finding
+exists to explain. `The Manager MUST record every model called and what each did` is what makes
+selective disclosure visible — without it the quorum is satisfiable by re-rolling advisers until
+two agree. And the blocked report states two independent facts rather than choosing a cause,
+because an adviser that hangs has not disagreed and no one can say whether its answer would have
+settled the question. Amended `PRM-1` and `PRM-2` to carry the policy at pick and judge,
+regenerated their fixtures, and replaced the Consultation glossary entry with a citation to its
+owner. The adviser command lines are unchanged.
+
+**Still open:** under `--manager codex` the shell-tool bound is unverified. The codex Manager's
+hanging-adviser case remains open even with a per-call bound written into the prompts: a live
+`CNF-22` observation nobody has made. It must show the Manager bounding hanging calls, using
+counterparts without retrying a non-answering model in the Run, recording all calls and any
+single-vendor Consultation, and leaving time to write the file the outcome needs — naming the
+silent models and saying whether those that answered agreed. This amendment adds no duty to rloop.
