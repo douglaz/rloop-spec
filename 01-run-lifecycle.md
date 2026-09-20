@@ -153,9 +153,14 @@ continue. When **every** Reviewer of a Panel failed, rloop MUST exit 2 without c
 *One Reviewer down is a degraded Panel the Manager can weigh; four down is a broken environment.*
 `Rloop.panel_none_aborts` and `Rloop.panel_abort_off_judges` are the pair.
 
-**RUN-16** The pick MUST start the Manager's session under an id rloop chose, and every judge call
-MUST resume that id (`AGT-3`, `AGT-4`). A judge call whose resume fails is a failed Manager call:
-exit 2.
+**RUN-16** The Manager MUST be one session for the whole Run: the pick establishes it, every
+judge call resumes it (`AGT-3`, `AGT-4`), and rloop MUST write its id to the `session` file
+(`DIR-4`). Under `--manager claude` the id is one rloop chose before the pick. Under `--manager
+codex` it is the `thread_id` of the first `thread.started` event on the pick's standard output,
+which rloop reads for this and for nothing else (`DIR-4`). A pick that reports no id, and a judge
+call whose resume fails, are each a failed Manager call: exit 2. *Until 2026-09-20 this read "the
+pick MUST start the Manager's session under an id rloop chose", which only one of the two presets
+can do: `codex` has no flag that sets a session id and mints its own.*
 
 ## Decisions the Manager may not make alone
 

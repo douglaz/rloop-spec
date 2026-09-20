@@ -12,8 +12,9 @@ argument, and the Conformance Suite's fakes record what they received and compar
 rloop [OPTIONS] [INSTRUCTION]
 
   --auto                       run a Sequence (05-sequence.md) instead of one Run
+  --manager claude|codex       which Manager preset the pick and judges use   (default: claude)
   --implementer claude|codex   which Implementer preset a Round uses          (default: claude)
-  --manager-model MODEL        the Manager's model                             (default: claude-fable-5-1)
+  --manager-model MODEL        the Manager's model                       (default: the preset's, AGT-3)
   --base REF                   the ref Reviewers diff against                  (default: HEAD at start)
   --run-dir PATH               the Run Directory, which must not exist yet     (default: DIR-2)
   --max-rounds N               Rounds per Run                                  (default: 10)
@@ -30,10 +31,13 @@ rloop [OPTIONS] [INSTRUCTION]
 absent, the Manager picks on its own. Long options MAY also be given as `--flag=value`. There are
 no environment-variable equivalents and no configuration file.
 
-**AGT-2** An unknown option, a missing or non-numeric value, a number below 1 for `--max-rounds`
-or `--max-runs` or below 0 for a timeout, more than one `INSTRUCTION`, or a combination `SEQ-3`
-forbids MUST exit 2 with a message on standard error and nothing spawned. *A usage error found
-after the first agent call has already spent money.*
+**AGT-2** An unknown option, a missing or non-numeric value, a value outside the set a preset
+flag names — `--manager` and `--implementer` each take `claude` or `codex` and nothing else — a
+number below 1 for `--max-rounds` or `--max-runs` or below 0 for a timeout, more than one
+`INSTRUCTION`, or a combination `SEQ-3` forbids MUST exit 2 with a message on standard error and
+nothing spawned. *A usage error found after the first agent call has already spent money.*
+*The preset clause is stated here from 2026-09-20 with `--manager`; it was always true of
+`--implementer`, which named its two values in `AGT-1` and nowhere said what a third does.*
 
 ## The agent command lines
 
@@ -42,23 +46,52 @@ else is literal, including the order. A prompt is one argument, however many lin
 a `"double-quoted"` span is one argument however many spaces it holds — the quotes mark the
 argument's extent and are not part of it.
 
-**AGT-3** The pick MUST be:
+**AGT-3** The pick MUST be, with `--manager claude`:
 
 ```text
 claude -p <pick prompt> --session-id <session id> --model <manager model> --effort high --dangerously-skip-permissions
 ```
 
-where `<session id>` is a UUID rloop generated for this Run and also wrote to the Run Directory's
-`session` file (`DIR-4`), and `<manager model>` is `--manager-model`'s value.
+and with `--manager codex`:
 
-**AGT-4** The judge call MUST be:
+```text
+codex exec --json --dangerously-bypass-approvals-and-sandbox -m <manager model> -c model_reasoning_effort=high <pick prompt>
+```
+
+`<manager model>` is `--manager-model`'s value, which defaults to `claude-fable-5-1` under
+`--manager claude` and to `gpt-6-astra` under `--manager codex`. The two presets reach their
+`<session id>` differently and `RUN-16` owns that rule: under `claude` it is a UUID rloop
+generated for this Run before the call, under `codex` it is the id the call reports. Either way
+rloop writes it to the Run Directory's `session` file (`DIR-4`).
+
+*The codex Manager was added 2026-09-20, after the claude account behind `claude-fable-5-1` hit
+its quota mid-Run and a Manager-seat evaluation of `gpt-6-astra` on the `PRM-1` prompt picked a
+task off the frontier, claimed it, ran the repository's gates and blocked on a genuine
+specification ambiguity rather than choosing a reading (`F9`). Nothing ever required the Manager
+to be one vendor's CLI; `AGT-3` and `AGT-4` simply named one.*
+
+*Why `--json` on the pick and not elsewhere: codex has no flag that sets a session id, so the id
+can only be learnt from the call that mints it. `--json` makes the first line of standard output
+`{"type":"thread.started","thread_id":"<uuid>"}`, a structured contract rloop can read and the
+suite can fix; the human-readable banner carries the same id on standard error, but a banner is
+cosmetic and a specification that matched one would break on a cosmetic change. The cost is that
+`manager-pick.out` holds JSONL under this preset, with the Manager's own words inside the
+`agent_message` items. The judge call needs no id back, so it stays prose.*
+
+**AGT-4** The judge call MUST be, with `--manager claude`:
 
 ```text
 claude -p <judge prompt> --resume <session id> --model <manager model> --effort high --dangerously-skip-permissions
 ```
 
-with the pick's `<session id>`. *`--resume` is what makes the Manager one conversation: it judges
-Round 3 remembering why it wrote Round 2's brief.*
+and with `--manager codex`:
+
+```text
+codex exec resume --dangerously-bypass-approvals-and-sandbox -m <manager model> -c model_reasoning_effort=high <session id> <judge prompt>
+```
+
+with the pick's `<session id>` either way. *Resuming is what makes the Manager one conversation:
+it judges Round 3 remembering why it wrote Round 2's brief.*
 
 **AGT-5** The Implementer, with `--implementer claude`, MUST be:
 

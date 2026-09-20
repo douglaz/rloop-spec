@@ -23,7 +23,7 @@ verdict() { # verdict <CNF id> <ok|fail> <detail>
   if [ "$2" = ok ]; then pass=$((pass + 1)); printf '  PASS  %s  %s\n' "$1" "$3"
   else fail=$((fail + 1)); failed_items+=("$1"); printf '  FAIL  %s  %s\n' "$1" "$3"; fi
 }
-export -n RLOOP_FAKE_PICK RLOOP_FAKE_ROUNDS RLOOP_FAKE_INTERFERENCE RLOOP_FAKE_RUNS 2>/dev/null || true
+export -n RLOOP_FAKE_PICK RLOOP_FAKE_ROUNDS RLOOP_FAKE_INTERFERENCE RLOOP_FAKE_RUNS RLOOP_FAKE_THREAD_ID RLOOP_FAKE_NO_THREAD_ID 2>/dev/null || true
 
 # --- a fresh repository per run ----------------------------------------------------------------
 new_repo() { # new_repo -> prints path; a git repo with one commit
@@ -232,13 +232,13 @@ check_call() { # check_call <recorded glob> <argv fixture> <prompt fixture> <ses
   expected_argv "$2" "$(render "$3")" "$4" "$5" > "$work/expected.argv"
   argv_matches "$recf" "$work/expected.argv" || { ok=0; detail="$detail [$6: argv/prompt differ]"; }
 }
-check_call "$rec/*-manager-0.argv" "$fx/argv/AGT-3.txt" "$fx/prompts/PRM-1.txt" "$sid" claude-fable-5-1 pick
+check_call "$rec/*-manager-0.argv" "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid" claude-fable-5-1 pick
 check_call "$rec/*-implementer-1.argv" "$fx/argv/AGT-5.txt" "$fx/prompts/PRM-3.txt" "$sid" claude-fable-5-1 implementer
 check_call "$rec/*-reviewer-1-fable.argv" "$fx/argv/AGT-7.txt" "$fx/prompts/PRM-4.txt" "$sid" x fable
 check_call "$rec/*-reviewer-1-opus.argv" "$fx/argv/AGT-8.txt" "$fx/prompts/PRM-4.txt" "$sid" x opus
 check_call "$rec/*-reviewer-1-astra.argv" "$fx/argv/AGT-10-1.txt" "$fx/prompts/PRM-4.txt" "$sid" x astra
 check_call "$rec/*-reviewer-1-sol.argv" "$fx/argv/AGT-10-2.txt" "$fx/prompts/PRM-4.txt" "$sid" x sol
-check_call "$rec/*-manager-1.argv" "$fx/argv/AGT-4.txt" "$fx/prompts/PRM-2.txt" "$sid" claude-fable-5-1 judge
+check_call "$rec/*-manager-1.argv" "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid" claude-fable-5-1 judge
 argv_ok=$ok; argv_detail="$detail"
 # a second Run: clean tree, no instruction, codex implementer, another manager model
 repo="$(new_repo)"; rec="$work/rec-argv2"
@@ -252,10 +252,38 @@ $repo/run/feedback-1-opus.md
 $repo/run/feedback-1-astra.md
 $repo/run/feedback-1-sol.md"
 ok=1; detail=""
-check_call "$rec/*-manager-0.argv" "$fx/argv/AGT-3.txt" "$fx/prompts/PRM-1.txt" "$sid" claude-opus-5 "pick (clean, no instruction)"
+check_call "$rec/*-manager-0.argv" "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid" claude-opus-5 "pick (clean, no instruction)"
 check_call "$rec/*-implementer-1.argv" "$fx/argv/AGT-6.txt" "$fx/prompts/PRM-3.txt" "$sid" x "codex implementer"
-check_call "$rec/*-manager-1.argv" "$fx/argv/AGT-4.txt" "$fx/prompts/PRM-2.txt" "$sid" claude-opus-5 "judge (clean)"
-if [ "$argv_ok" = 1 ] && [ "$ok" = 1 ]; then verdict CNF-11 ok "every role's argv is its fixture with the placeholders filled"; verdict CNF-12 ok "every prompt is its fixture rendered"; else verdict CNF-11 fail "$argv_detail $detail"; verdict CNF-12 fail "see CNF-11"; fi
+check_call "$rec/*-manager-1.argv" "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid" claude-opus-5 "judge (clean)"
+argv2_ok=$ok; argv2_detail="$detail"
+# a third Run: the codex Manager preset, at its default model, resuming the id the pick reported
+repo="$(new_repo)"; rec="$work/rec-argv3"
+base_hash=$(cd "$repo" && git rev-parse HEAD)
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager codex)
+sid=$(cat "$repo/run/session" 2>/dev/null)
+P_TASK_FILE="$repo/run/task.md"; P_FINISHED_FILE="$repo/run/finished.md"; P_RUN_DIR="$repo/run"; P_BASE="$base_hash"
+P_IMPLEMENTER_LOG="$repo/run/implementer-1.out"
+P_FEEDBACK_FILES="$repo/run/feedback-1-fable.md
+$repo/run/feedback-1-opus.md
+$repo/run/feedback-1-astra.md
+$repo/run/feedback-1-sol.md"
+ok=1; detail=""
+check_call "$rec/*-manager-0.argv" "$fx/argv/AGT-3-2.txt" "$fx/prompts/PRM-1.txt" "$sid" gpt-6-astra "codex pick"
+check_call "$rec/*-manager-1.argv" "$fx/argv/AGT-4-2.txt" "$fx/prompts/PRM-2.txt" "$sid" gpt-6-astra "codex judge"
+if [ "$argv_ok" = 1 ] && [ "$argv2_ok" = 1 ] && [ "$ok" = 1 ]; then verdict CNF-11 ok "every role's argv is its fixture with the placeholders filled, under both Manager presets"; verdict CNF-12 ok "every prompt is its fixture rendered"; else verdict CNF-11 fail "$argv_detail $argv2_detail $detail"; verdict CNF-12 fail "see CNF-11"; fi
+
+# --- CNF-23: the codex Manager's session id ------------------------------------------------------------
+ok=1; detail=""
+[ "$sid" = "00000000-0000-4000-8000-00000000cafe" ] || { ok=0; detail="$detail [session '$sid' is not the reported thread_id]"; }
+tr '\0' '\n' < "$(ls $rec/*-manager-1.argv 2>/dev/null | head -1)" | grep -qx -- "$sid" || { ok=0; detail="$detail [the judge call does not carry the id]"; }
+printf '{"type":"thread.started","thread_id":"%s"}\nmanager output, round 0\n' "$sid" > "$work/expected-pick.out"
+cmp -s "$repo/run/manager-pick.out" "$work/expected-pick.out" || { ok=0; detail="$detail [manager-pick.out is not the pick's output entire]"; }
+repo="$(new_repo)"; rec="$work/rec-nothread"
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_NO_THREAD_ID=1 run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager codex)
+[ "$e" = 2 ] || { ok=0; detail="$detail [a pick reporting no id exited $e]"; }
+ls "$rec"/*-implementer-*.argv >/dev/null 2>&1 && { ok=0; detail="$detail [a Round ran after a pick reporting no id]"; }
+[ -d "$repo/run" ] || { ok=0; detail="$detail [the Run Directory was not kept]"; }
+if [ "$ok" = 1 ]; then verdict CNF-23 ok "the session file holds the reported thread_id, every judge call carries it, the pick's output is kept entire, and a pick reporting none exits 2"; else verdict CNF-23 fail "$detail"; fi
 
 # --- CNF-13: the base ---------------------------------------------------------------------------------
 repo="$(new_repo)"; rec="$work/rec-base"

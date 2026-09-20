@@ -94,3 +94,27 @@ repository's nix gates and only one of the two said so (`PRM-4` now has every Re
 front what it could not run, and `AGT-10` drops the sandbox); the tracker file the Manager claims
 a task in is dirtied after `RUN-3`'s list is taken (now stated there as the Manager's to commit);
 and commits carry no attribution, as `SEQ-8` says.
+
+## F9 — A second Manager preset, because one vendor's quota stops the loop (closed 2026-09-20)
+
+rloop-bash#3: the Round 2 judge call of a Run on `provisiond-spec` was killed at
+`--manager-timeout` having written nothing on either stream, the signature of the account behind
+`claude-fable-5-1` reaching its quota — the same call one Round earlier had answered in two
+minutes. A direct probe confirmed it: `claude-fable-5-1` hung and was killed, `claude-opus-5`
+answered at once. With the Manager pinned to one CLI by `AGT-3` and `AGT-4`, one vendor's quota
+stopped every Run, and `--manager-model` could only pick another model of the same vendor.
+
+`gpt-6-astra` was then evaluated in the Manager's seat by hand, on `PRM-1`'s prompt verbatim: it
+read the repository's conventions, picked the lowest ready task off the frontier as
+`docs/agents/issue-tracker.md` says, claimed it through the tracker, ran the repository's gates
+unpiped, and ended `blocked` on a genuine specification ambiguity with the passages, both
+readings and a recommended clarification — `RUN-19`'s rule, followed without rloop enforcing it.
+A second call resuming that session named the task it had claimed, so a codex Manager is one
+conversation as `RUN-16` requires.
+
+Landed as `--manager claude|codex`: `AGT-1`, `AGT-2`, `AGT-3` and `AGT-4` amended, `RUN-16`
+rewritten around an id rloop chose or the pick reported, `DIR-4`'s "entire and unparsed" narrowed
+to the bytes it was protecting, `CNF-5` and `CNF-11` extended and `CNF-23` added. What this does
+not do is let a Run outlive a quota it meets mid-Round: the Panel is still two claude Reviewers
+and two codex ones (`AGT-7`, `AGT-8`, `AGT-10`), and a dead one costs `--reviewer-timeout` a
+Round before `RUN-15` marks it failed and the Round goes on.
