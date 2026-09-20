@@ -92,10 +92,10 @@ For whoever runs an Implementation:
   the repository's specifications leave ambiguous — it never picks a reading — and the report
   names the passage and recommends a clarification. Clarify the specification, then run again.
   Implementation choices the specifications leave open it settles by consulting advisers: two
-  must answer, it calls another when one does not, it asks the rest when the two disagree, and it
-  blocks for you when they cannot settle it — or when fewer than two ever answered, which the
-  report says in those words. The brief records the question, every model called and what each
-  one did.
+  must answer, it calls another when one does not, and it asks the rest when the two disagree.
+  A choice they leave unsettled blocks for you, and the report says which it was — that the
+  advisers who answered could not agree, or that too few answered — and names the ones that went
+  quiet. The brief records the question, every model called and what each one did.
 - **A Sequence:** check out the branch the work should land on, then `rloop --auto`. It runs
   until the Manager finds nothing left (exit 0), a task blocks (1), or something fails (2). The
   Manager commits each accepted task before the next starts; rloop never commits, branches or

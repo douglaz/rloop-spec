@@ -168,9 +168,10 @@ Amended `RUN-20`: `A Consultation MUST have answers from two distinct models to 
 The amendment defines answers, counterpart substitution, exclusion after a non-answer, and
 bounds for calls and the whole Consultation. Its record rule — `The Manager MUST record every
 model called and what each did` — makes selective disclosure visible; its single-vendor rule
-says `Both the Task File and the Finished File MUST then say the Consultation was single-vendor`.
-The blocked diagnosis separates `the advisers could not agree` from `the advisers did not answer
-sufficiently to form a quorum`. Amended `PRM-1` and `PRM-2` to carry the policy at pick and judge,
+says `the record below MUST say the Consultation was single-vendor`. The blocked diagnosis is
+keyed on cause, not on how many answered: the report `MUST name the models that did not answer
+and say which of the two it was: that the advisers who answered could not agree, or that too few
+answered to settle the question`. Amended `PRM-1` and `PRM-2` to carry the policy at pick and judge,
 regenerated their fixtures, and replaced the Consultation glossary entry with a citation to its
 owner. The adviser command lines are unchanged.
 
@@ -179,4 +180,4 @@ hanging-adviser case remains open even with a per-call bound written into the pr
 `CNF-22` observation nobody has made. It must show the Manager bounding hanging calls, using
 counterparts without retrying a non-answering model in the Run, recording all calls and any
 single-vendor Consultation, and leaving time to write the Finished File with the right diagnosis
-when no quorum answers. This amendment adds no duty to rloop or case to the Conformance Suite.
+when too few answer. This amendment adds no duty to rloop.

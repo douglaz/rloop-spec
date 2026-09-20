@@ -145,8 +145,11 @@ the Manager's commits following the repository's conventions and carrying no att
 the flags in `02` accepted by both CLIs; a Run on a task that turns on a deliberately ambiguous
 passage of the repository's specifications, ending `blocked` with the passage and a recommended
 clarification in the report; and a Run whose brief settles an open implementation choice, with
-the Consultation's question, every model it called and what each one did, the two answers and
-the choice recorded in the brief. The Run
+the Consultation's question, every model it called and what each one did, the answers and the
+choice recorded in the brief. Under each `--manager` preset, a Consultation in which an adviser
+does not answer MUST also be observed: the counterpart called in its place, the model that did
+not answer never called again in that Run, and — where one can be induced — a Run ending
+`blocked` with the report naming the silent models and saying too few answered. The Run
 Directories and the commits are kept as the record. (`AGT-9`, `AGT-17`, `SEQ-8`, `SEQ-10`,
 `RUN-19`, `RUN-20`)
 

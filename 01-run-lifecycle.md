@@ -193,8 +193,8 @@ not by roster order. A model that did not answer MUST NOT be called again in the
 subsequent Consultations start with eligible counterparts. The Manager MUST continue with
 eligible models until it has two answers or none remain within the Consultation's budget. It
 SHOULD prefer one claude answer and one codex answer; when neither model of one vendor answers,
-two answers from the other vendor satisfy the quorum. Both the Task File and the Finished File
-MUST then say the Consultation was single-vendor.
+two answers from the other vendor are enough, and the record below MUST say the Consultation was
+single-vendor.
 
 The Manager MUST bound each adviser call through its shell tool and budget the whole
 Consultation to leave enough of its turn to write the Finished File. Before calling advisers,
@@ -204,12 +204,12 @@ so a reader can check the limits. A tool returning while an adviser still runs i
 completed call; the bound MUST cover the call through completion or termination.
 
 When two answering advisers agree the Manager chooses with them. When they disagree it puts
-the same question to the remaining eligible advisers, within those bounds. If the answers do
-not settle it, the Run MUST end `blocked`, with the question, every answer and the Manager's
-recommendation in the Finished File; the report MUST say the advisers could not agree. If
-fewer than two models answered, the Run MUST instead end `blocked` with the report saying the
-advisers did not answer sufficiently to form a quorum, distinct from disagreement. A non-answer
-does not reclassify the question or require a Clarification.
+the same question to the remaining eligible advisers, within those bounds. A choice the advisers
+leave unsettled MUST end the Run `blocked`, with the question, every answer and the Manager's
+recommendation in the Finished File. The report MUST name the models that did not answer and say
+which of the two it was: that the advisers who answered could not agree, or that too few answered
+to settle the question. Silence is neither agreement nor disagreement: a non-answer does not
+reclassify the question or require a Clarification.
 
 The Manager MUST record every model called and what each did — answered, did not answer (with
 the reason), or refused — alongside the question, the answers and its choice in the Task File,
