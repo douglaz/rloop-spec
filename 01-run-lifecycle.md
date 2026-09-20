@@ -197,9 +197,11 @@ two answers from the other vendor are enough, and the record below MUST say the 
 single-vendor.
 
 The Manager MUST bound each adviser call through its shell tool and budget the whole
-Consultation to leave enough of its turn to write the Finished File. Before calling advisers,
-it MUST choose the per-call maximum durations, total Consultation budget and time reserved for
-the Finished File; it MUST record those durations, the bounds used and each call's elapsed time
+Consultation to leave enough of its turn to write whichever file the outcome calls for — the
+Task File when the Consultation settles the choice, the Finished File when it blocks. Before
+calling advisers, it MUST choose the per-call maximum durations, the total Consultation budget
+and the time reserved for that file; it MUST record those durations, the bounds used and each
+call's elapsed time
 so a reader can check the limits. A tool returning while an adviser still runs is not a
 completed call; the bound MUST cover the call through completion or termination.
 
