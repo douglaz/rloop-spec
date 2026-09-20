@@ -156,3 +156,27 @@ throughout, so the `AGT-7` Reviewer slot died at its timeout on every Round of b
 (`REVIEWER FAILED (exit 124)`, `RUN-15` working); that waste is rloop-spec#3. And the codex
 Reviewers report `PRM-4`'s item 0 only when something blocked them, so their bare `No findings.`
 does not say what it rests on; that is rloop-spec#4.
+
+## F12 — The Consultation needs two models that answered (open 2026-09-20)
+
+rloop-spec#5: its second comment, “Settled, 2026-09-20 — the Consultation quorum”, records the
+accepted design from a three-adviser consultation. An adviser that hangs or exhausts its quota
+has not disagreed, and sending the operator to clarify a specification diagnoses the wrong
+failure. Retrying that adviser each Round also spends the Manager's turn on a known non-answer.
+
+Amended `RUN-20`: `A Consultation MUST have answers from two distinct models to settle a choice`.
+The amendment defines answers, counterpart substitution, exclusion after a non-answer, and
+bounds for calls and the whole Consultation. Its record rule — `The Manager MUST record every
+model called and what each did` — makes selective disclosure visible; its single-vendor rule
+says `Both the Task File and the Finished File MUST then say the Consultation was single-vendor`.
+The blocked diagnosis separates `the advisers could not agree` from `the advisers did not answer
+sufficiently to form a quorum`. Amended `PRM-1` and `PRM-2` to carry the policy at pick and judge,
+regenerated their fixtures, and replaced the Consultation glossary entry with a citation to its
+owner. The adviser command lines are unchanged.
+
+**Still open:** under `--manager codex` the shell-tool bound is unverified. The codex Manager's
+hanging-adviser case remains open even with a per-call bound written into the prompts: a live
+`CNF-22` observation nobody has made. It must show the Manager bounding hanging calls, using
+counterparts without retrying a non-answering model in the Run, recording all calls and any
+single-vendor Consultation, and leaving time to write the Finished File with the right diagnosis
+when no quorum answers. This amendment adds no duty to rloop or case to the Conformance Suite.

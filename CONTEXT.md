@@ -48,7 +48,7 @@ A change to the repository's specifications or instructions that only their owne
 _Avoid_: Assumption, interpretation
 
 **Consultation**:
-The **Manager** putting an implementation decision the specifications leave open to two advisers, `fable` and `astra`, before settling it in the **Task File**; to four (`opus` and `sol` joining) when the two disagree; and to the specification owner, as a **Clarification**, when the four do not settle it. Not a **Panel**: the Manager runs it, rloop does not.
+The **Manager** putting an implementation decision the specifications leave open to advisers before settling it in the **Task File**, and recording what each one said. Two must answer; who they are, and what happens when they do not, is `RUN-20`'s. Not a **Panel**: the Manager runs it, rloop does not.
 _Avoid_: Design review, second opinion
 
 **Task File**:

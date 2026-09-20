@@ -179,13 +179,46 @@ human is asked first.*
 how, not of what — that a brief must settle MUST NOT be made by the Manager alone: the prompts
 tell it to put the question and the options to two advisers, `fable` and `astra`, read-only, by
 running the two command lines `PRM-1` states, and to record the question, the answers and its
-choice in the Task File. When the two advisers disagree the Manager puts the same question to two
-more, `opus` and `sol`; when the four do not settle it, the question was not an implementation
-decision and the Run ends `blocked` as under `RUN-19`, the answers in the report. A choice the
-brief does not need to settle is the Implementer's. *This
-is a Consultation, not a Panel: rloop does not run it, the Manager does, in its own session,
-which is why it costs the control flow nothing and why only a live Run can show it happens
-(`CNF-22`).*
+choice in the Task File.
+
+A Consultation MUST have answers from two distinct models to settle a choice; one answer is
+not enough. An answer is a call that completes within its bound, exits zero and states a
+position on the question. A timeout, non-zero exit, empty output, output consisting only of an
+error, a refusal, or output taking no position is not an answer. Whether hedged prose states a
+position is the Manager's judgment.
+
+The adviser pairs are `fable` with `astra`, then `opus` with `sol`. The Manager MUST replace an
+adviser that did not answer by its counterpart in the other pair: `fable`↔`opus`, `astra`↔`sol`,
+not by roster order. A model that did not answer MUST NOT be called again in the same Run;
+subsequent Consultations start with eligible counterparts. The Manager MUST continue with
+eligible models until it has two answers or none remain within the Consultation's budget. It
+SHOULD prefer one claude answer and one codex answer; when neither model of one vendor answers,
+two answers from the other vendor satisfy the quorum. Both the Task File and the Finished File
+MUST then say the Consultation was single-vendor.
+
+The Manager MUST bound each adviser call through its shell tool and budget the whole
+Consultation to leave enough of its turn to write the Finished File. Before calling advisers,
+it MUST choose the per-call maximum durations, total Consultation budget and time reserved for
+the Finished File; it MUST record those durations, the bounds used and each call's elapsed time
+so a reader can check the limits. A tool returning while an adviser still runs is not a
+completed call; the bound MUST cover the call through completion or termination.
+
+When two answering advisers agree the Manager chooses with them. When they disagree it puts
+the same question to the remaining eligible advisers, within those bounds. If the answers do
+not settle it, the Run MUST end `blocked`, with the question, every answer and the Manager's
+recommendation in the Finished File; the report MUST say the advisers could not agree. If
+fewer than two models answered, the Run MUST instead end `blocked` with the report saying the
+advisers did not answer sufficiently to form a quorum, distinct from disagreement. A non-answer
+does not reclassify the question or require a Clarification.
+
+The Manager MUST record every model called and what each did — answered, did not answer (with
+the reason), or refused — alongside the question, the answers and its choice in the Task File,
+or in the Finished File when blocked before writing a brief. The bounds and timing record
+belongs with that account. A choice the brief does not need to settle is the Implementer's.
+
+*This is a Consultation, not a Panel: rloop does not run it, the Manager does, in its own
+session (`RUN-16`: `The Manager MUST be one session for the whole Run`), which is why it costs
+the control flow nothing and why only a live Run can show it happens (`CNF-22`).*
 
 ## What a Run leaves
 
