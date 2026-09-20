@@ -98,11 +98,22 @@ For whoever runs an Implementation:
   until the Manager finds nothing left (exit 0), a task blocks (1), or something fails (2). The
   Manager commits each accepted task before the next starts; rloop never commits, branches or
   pushes, and opening the pull request is yours.
-- **After a Run that ended blocked or capped:** the work is in the tree, uncommitted, on top of
+- **After a Run that ended blocked (exit 1):** the work is in the tree, uncommitted, on top of
   clean history — unless the Implementer committed during the Round, in which case unaccepted
   commits sit behind a clean tree and the next invocation's base would take them in unreviewed
   (`ADR-0004`, `F3`). Read the Finished File: it says what is committed and what is in the tree.
   Reconcile before starting again.
+- **After a Run that exited 2 there is no Finished File**, because the Manager never wrote one:
+  the round cap was reached, a Manager call failed or made no decision, no Reviewer of a Panel
+  survived, or rloop was interrupted. The evidence is the Run Directory, which is kept whatever
+  the exit (`RUN-17`): `task-<r>.md` is the brief each Round ran against, `feedback-<r>-*.md` is
+  what the Panel said about the last Round's work, and `implementer-<r>.out` ends with the
+  Implementer's own account, including anything it declared out of scope. Judge the uncommitted
+  work by that feedback and by the repository's own gates, then commit or discard it yourself.
+  Two things the Run will not have tidied: a task the Manager claimed in the tracker at the pick
+  is **still claimed**, and a follow-up it promised to file when closing the Run was never filed.
+  *An operator did exactly this reconstruction on 2026-09-19 (`F10`) and kept the work: all four
+  Reviewers had reported no findings and every gate passed.*
 - **A Run is long.** A Round takes 15–30 minutes and a Run may take an hour. Run rloop in the
   foreground, in a terminal or a tmux window, and read the exit status from the shell as with any
   command. A caller that cannot wait that long — an agent whose command tool has a timeout —

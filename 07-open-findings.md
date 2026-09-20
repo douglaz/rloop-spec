@@ -118,3 +118,22 @@ to the bytes it was protecting, `CNF-5` and `CNF-11` extended and `CNF-23` added
 not do is let a Run outlive a quota it meets mid-Round: the Panel is still two claude Reviewers
 and two codex ones (`AGT-7`, `AGT-8`, `AGT-10`), and a dead one costs `--reviewer-timeout` a
 Round before `RUN-15` marks it failed and the Round goes on.
+
+## F10 — What a Run that exits 2 leaves behind (closed 2026-09-20)
+
+rloop-bash#3. A Run on `provisiond-spec` completed two Rounds and then died: the Round 2 judge
+call was killed at `--manager-timeout` having written zero bytes on both streams — the signature
+of an account reaching its quota, not a defect, and killing the call is `AGT-14` working. What the
+operator was left with was the report's subject: five files of good work uncommitted, no Finished
+File because the judge never wrote one, the tracker row still claimed, and a follow-up the Manager
+had promised unfiled. The `README.md` bullet that should have helped covered "blocked or capped"
+together and said to read the Finished File — which a capped Run does not have, since the cap is an
+exit 2. It is now two bullets, and the exit-2 one names the Run Directory's files as the evidence
+and the two things the Run does not tidy.
+
+**Rejected, from the same report:** having rloop write a minimal `finished.md` of its own —
+`STATUS: failed` and the phase it died in — so that "read the Finished File" is true of every
+terminated Run. It would put rloop's words in the file `DIR-4` gives the Manager, add a fifth case
+to `RUN-9`'s four and an exit to `RUN-10`'s table, and change the model and the suite with them;
+the reporter judged the sentence enough, and so does this. `RUN-17` already guarantees the
+evidence survives, which is what makes the reconstruction possible at all.
