@@ -92,9 +92,8 @@ For whoever runs an Implementation:
   the repository's specifications leave ambiguous — it never picks a reading — and the report
   names the passage and recommends a clarification. Clarify the specification, then run again.
   Implementation choices the specifications leave open it settles by consulting advisers
-  (`RUN-20`), and a choice they leave unsettled blocks for you too: the report says whether the
-  advisers who answered could not agree or too few of them answered, and names the ones that
-  went quiet.
+  (`RUN-20`), and a choice they leave unsettled blocks for you too: the report names the models
+  that went quiet and says whether the ones that answered agreed.
 - **A Sequence:** check out the branch the work should land on, then `rloop --auto`. It runs
   until the Manager finds nothing left (exit 0), a task blocks (1), or something fails (2). The
   Manager commits each accepted task before the next starts; rloop never commits, branches or

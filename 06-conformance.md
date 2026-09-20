@@ -153,7 +153,8 @@ elapsed time in the record, the counterpart called in its place, and the second 
 starting from the eligible models rather than the one that did not answer. One observation MUST
 be of a Consultation in which neither model of one vendor answers, carrying the single-vendor
 marker in the brief or the Finished File; and one, where it can be induced, of a Run ending
-`blocked` with the report naming the silent models and saying too few answered. The Run
+`blocked` with the report naming the silent models and saying whether those that answered
+agreed. The Run
 Directories and the commits are kept as the record. (`AGT-9`, `AGT-17`, `SEQ-8`, `SEQ-10`,
 `RUN-19`, `RUN-20`)
 

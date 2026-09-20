@@ -166,11 +166,12 @@ failure. Retrying that adviser each Round also spends the Manager's turn on a kn
 
 Amended `RUN-20`, which now owns the whole policy and is where it is read: what an answer is, how
 a model that did not answer is replaced and why it is not called again, the bounds, the
-single-vendor case and the two blocked diagnoses. Two of its rules are the ones this finding
+single-vendor case and what a blocked report must say. Two of its rules are the ones this finding
 exists to explain. `The Manager MUST record every model called and what each did` is what makes
 selective disclosure visible — without it the quorum is satisfiable by re-rolling advisers until
-two agree. And the blocked diagnosis is keyed on cause rather than on how many answered, because
-an adviser that hangs has not disagreed. Amended `PRM-1` and `PRM-2` to carry the policy at pick and judge,
+two agree. And the blocked report states two independent facts rather than choosing a cause,
+because an adviser that hangs has not disagreed and no one can say whether its answer would have
+settled the question. Amended `PRM-1` and `PRM-2` to carry the policy at pick and judge,
 regenerated their fixtures, and replaced the Consultation glossary entry with a citation to its
 owner. The adviser command lines are unchanged.
 
@@ -178,5 +179,5 @@ owner. The adviser command lines are unchanged.
 hanging-adviser case remains open even with a per-call bound written into the prompts: a live
 `CNF-22` observation nobody has made. It must show the Manager bounding hanging calls, using
 counterparts without retrying a non-answering model in the Run, recording all calls and any
-single-vendor Consultation, and leaving time to write the Finished File with the right diagnosis
-when too few answer. This amendment adds no duty to rloop.
+single-vendor Consultation, and leaving time to write the file the outcome needs — naming the
+silent models and saying whether those that answered agreed. This amendment adds no duty to rloop.

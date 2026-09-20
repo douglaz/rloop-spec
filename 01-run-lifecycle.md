@@ -209,8 +209,7 @@ When two answering advisers agree the Manager chooses with them. When they disag
 the same question to the remaining eligible advisers, within those bounds. A choice the advisers
 leave unsettled MUST end the Run `blocked`, with the question, every answer and the Manager's
 recommendation in the Finished File. The report MUST name the models that did not answer and say
-which of the two it was: that the advisers who answered could not agree, or that too few answered
-to settle the question. Silence is neither agreement nor disagreement: a non-answer does not
+whether those that did answer agreed. Silence is neither agreement nor disagreement: a non-answer does not
 reclassify the question or require a Clarification.
 
 The Manager MUST record every model called and what each did — answered, did not answer (with
