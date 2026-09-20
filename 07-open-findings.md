@@ -164,14 +164,13 @@ accepted design from a three-adviser consultation. An adviser that hangs or exha
 has not disagreed, and sending the operator to clarify a specification diagnoses the wrong
 failure. Retrying that adviser each Round also spends the Manager's turn on a known non-answer.
 
-Amended `RUN-20`: `A Consultation MUST have answers from two distinct models to settle a choice`.
-The amendment defines answers, counterpart substitution, exclusion after a non-answer, and
-bounds for calls and the whole Consultation. Its record rule — `The Manager MUST record every
-model called and what each did` — makes selective disclosure visible; its single-vendor rule
-says `the record below MUST say the Consultation was single-vendor`. The blocked diagnosis is
-keyed on cause, not on how many answered: the report `MUST name the models that did not answer
-and say which of the two it was: that the advisers who answered could not agree, or that too few
-answered to settle the question`. Amended `PRM-1` and `PRM-2` to carry the policy at pick and judge,
+Amended `RUN-20`, which now owns the whole policy and is where it is read: what an answer is, how
+a model that did not answer is replaced and why it is not called again, the bounds, the
+single-vendor case and the two blocked diagnoses. Two of its rules are the ones this finding
+exists to explain. `The Manager MUST record every model called and what each did` is what makes
+selective disclosure visible — without it the quorum is satisfiable by re-rolling advisers until
+two agree. And the blocked diagnosis is keyed on cause rather than on how many answered, because
+an adviser that hangs has not disagreed. Amended `PRM-1` and `PRM-2` to carry the policy at pick and judge,
 regenerated their fixtures, and replaced the Consultation glossary entry with a citation to its
 owner. The adviser command lines are unchanged.
 
