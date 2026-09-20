@@ -15,6 +15,8 @@
 #   RLOOP_FAKE_GRANDCHILD    1 = spawn a background sleeper and record its pid
 #   RLOOP_FAKE_DIRTY_AT_DONE 1 = the Manager leaves an untracked file in the tree when it writes done
 #   RLOOP_FAKE_COMMIT        1 = the Implementer commits a file during its call
+#   RLOOP_FAKE_THREAD_ID     the thread_id a codex Manager pick reports (default: …cafe)
+#   RLOOP_FAKE_NO_THREAD_ID  1 = a codex Manager pick reports no thread.started event
 #   RLOOP_FAKE_RECORD        directory the fake records into (required)
 set -u
 
@@ -88,6 +90,12 @@ status=0
 case "$role" in
   manager)
     if [ "$round" = 0 ]; then
+      # Standing in for a codex Manager, the pick reports its session id as the first line of
+      # standard output, which is where RUN-16 tells rloop to read it (AGT-3's second list).
+      if [ "$(basename "$0")" = codex ] && [ "${RLOOP_FAKE_NO_THREAD_ID:-0}" != 1 ]; then
+        printf '{"type":"thread.started","thread_id":"%s"}\n' \
+          "${RLOOP_FAKE_THREAD_ID:-00000000-0000-4000-8000-00000000cafe}"
+      fi
       case "$pick" in
         fail) status=1 ;;
         ok:task) printf 'brief 1 (run %s)\n' "$run" > "$run_dir/task.md" ;;

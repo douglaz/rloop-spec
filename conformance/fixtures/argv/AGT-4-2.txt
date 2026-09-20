@@ -1,0 +1,10 @@
+codex
+exec
+resume
+--dangerously-bypass-approvals-and-sandbox
+-m
+<manager model>
+-c
+model_reasoning_effort=high
+<session id>
+<judge prompt>

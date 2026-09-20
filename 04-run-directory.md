@@ -41,9 +41,13 @@ others:
 | `rejected-<r>-task.md`, `rejected-<r>-finished.md` | rloop | the Checkpoint (`DIR-6`) |
 | `session` | rloop | the pick: the Manager's session id, one line |
 
-Every agent's standard output goes to its file entire and unparsed; rloop MUST NOT interleave its
-own text into any of them. *The Implementer's `.out` is what the Manager reads about a failed
-Implementer (`RUN-14`), and `feedback-*.md` is what it reads about the Panel.*
+Every agent's standard output goes to its file entire and unmodified; rloop MUST NOT interleave
+its own text into any of them. rloop reads one of them, and changes no byte of it: under
+`--manager codex` the pick's standard output carries the Manager's session id, which `RUN-16`
+tells rloop to take from there. *The Implementer's `.out` is what the Manager reads about a failed
+Implementer (`RUN-14`), and `feedback-*.md` is what it reads about the Panel.* *This sentence read
+"entire and unparsed" until 2026-09-20; the word banned a reading that `RUN-16` now requires,
+where what the rule protects is the file's bytes.*
 
 **DIR-5** After the pick and after every judge call whose verdict is *next Round*, rloop MUST copy
 `task.md` to `task-<r>.md` where `r` is the Round about to run. `task-<r>.md` is the **snapshot**:

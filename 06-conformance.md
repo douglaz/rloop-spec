@@ -42,8 +42,9 @@ is a green check that asserts nothing.* (`RUN-11`)
 
 **CNF-5** Each of these invocations exits 2, spawns nothing, and writes to standard error: an
 unknown option; `--max-rounds 0`; `--max-rounds x`; `--reviewer-timeout -1`; two `INSTRUCTION`
-arguments; `--auto --base HEAD`; `--auto --run-dir d`. `--version` and `--help` exit 0 and spawn
-nothing. (`AGT-1`, `AGT-2`, `SEQ-3`)
+arguments; `--auto --base HEAD`; `--auto --run-dir d`; `--manager gpt-6-astra`, a value outside
+the preset's set and the mistake a caller makes who means `--manager codex --manager-model
+gpt-6-astra`. `--version` and `--help` exit 0 and spawn nothing. (`AGT-1`, `AGT-2`, `SEQ-3`)
 
 **CNF-6** Outside a git working tree the executable exits 2 and spawns nothing. (`RUN-1`)
 
@@ -68,8 +69,10 @@ toplevel, and standard input at end of file on first read. (`AGT-12`, `AGT-13`)
 
 **CNF-11** For each role the recorded argument list equals the fixture in
 `conformance/fixtures/argv/` with the placeholders filled in: the pick's `<session id>` is the
-`session` file's content and every judge call's `--resume` value equals it; `<manager model>` is
-`--manager-model`'s value, or `claude-fable-5-1` by default; `--implementer codex` produces
+`session` file's content and every judge call carries that same id; `<manager model>` is
+`--manager-model`'s value, or the preset's default; `--manager codex` produces `AGT-3`'s and
+`AGT-4`'s second lists and the default produces their first;
+`--implementer codex` produces
 `AGT-6`'s list and the default `AGT-5`'s; the four Reviewers' lists are `AGT-7`, `AGT-8` and
 `AGT-10`'s, one each, with their `RLOOP_REVIEWER` names. (`AGT-3`, `AGT-4`, `AGT-5`, `AGT-6`,
 `AGT-7`, `AGT-8`, `AGT-10`, `AGT-11`, `RUN-16`, `OVR-2`)
@@ -144,6 +147,12 @@ clarification in the report; and a Run whose brief settles an open implementatio
 the Consultation's question, both answers and the choice recorded in the brief. The Run
 Directories and the commits are kept as the record. (`AGT-9`, `AGT-17`, `SEQ-8`, `SEQ-10`,
 `RUN-19`, `RUN-20`)
+
+**CNF-23** With `--manager codex` the `session` file holds the `thread_id` of the
+`thread.started` event the fake wrote as the pick's first line of standard output, every judge
+call is given that same id, and `manager-pick.out` still holds that output byte for byte. A pick
+that exits 0 having written no `thread.started` event exits 2 with no Round run and the Run
+Directory kept. (`RUN-16`, `AGT-3`, `AGT-4`, `DIR-4`)
 
 ## Not testable black-box
 

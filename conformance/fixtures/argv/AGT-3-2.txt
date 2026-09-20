@@ -1,0 +1,9 @@
+codex
+exec
+--json
+--dangerously-bypass-approvals-and-sandbox
+-m
+<manager model>
+-c
+model_reasoning_effort=high
+<pick prompt>
