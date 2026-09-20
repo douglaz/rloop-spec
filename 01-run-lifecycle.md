@@ -212,8 +212,9 @@ to settle the question. Silence is neither agreement nor disagreement: a non-ans
 reclassify the question or require a Clarification.
 
 The Manager MUST record every model called and what each did — answered, did not answer (with
-the reason), or refused — alongside the question, the answers and its choice in the Task File,
-or in the Finished File when blocked before writing a brief. The bounds and timing record
+the reason), or refused — alongside the question and the answers: in the Task File with the
+choice it settled, or in the Finished File with its recommendation when the Consultation blocked
+before a brief was written. The bounds and timing record
 belongs with that account. A choice the brief does not need to settle is the Implementer's.
 
 *This is a Consultation, not a Panel: rloop does not run it, the Manager does, in its own
