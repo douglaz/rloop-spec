@@ -106,7 +106,7 @@ _Avoid_: Baseline (that word is the **Task File** snapshot's), origin
 
 **Dev:** The spec says "the file is written" but not whether it's overwritten or appended. Can't the Manager just pick one?
 
-**Expert:** No. Two readings, two behaviours: that is a Clarification, and the Run ends blocked with the passage and the recommendation in the report. Had the spec said nothing at all about it — a matter of how, not what — the Manager would hold a Consultation with fable and astra and record the choice in the brief.
+**Expert:** No. Two readings, two behaviours: that is a Clarification, and the Run ends blocked with the passage and the recommendation in the report. Had the spec said nothing at all about it — a matter of how, not what — the Manager would hold a Consultation with two advisers and record the choice in the brief.
 
 **Dev:** Then the Run ended with exit 3 — is that a failure?
 
