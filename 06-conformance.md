@@ -58,8 +58,9 @@ nothing after a Run whose fakes changed no tracked file. (`DIR-2`, `RUN-4`)
 
 **CNF-9** After a two-Round Run the Run Directory holds exactly the names `DIR-4` lists for two
 Rounds and nothing else; each agent's `.out` and `.err` hold that fake's standard output and
-standard error entire; `session` holds the UUID the pick was started under; and the directory is
-intact after a Run that ended 2. (`DIR-4`, `RUN-17`)
+standard error entire; `session` holds the Manager's session id as a UUID, whichever preset
+established it (`RUN-16`); and the directory is intact after a Run that ended 2. (`DIR-4`,
+`RUN-17`)
 
 ## What agents receive
 
@@ -148,11 +149,13 @@ the Consultation's question, both answers and the choice recorded in the brief. 
 Directories and the commits are kept as the record. (`AGT-9`, `AGT-17`, `SEQ-8`, `SEQ-10`,
 `RUN-19`, `RUN-20`)
 
-**CNF-23** With `--manager codex` the `session` file holds the `thread_id` of the
-`thread.started` event the fake wrote as the pick's first line of standard output, every judge
-call is given that same id, and `manager-pick.out` still holds that output byte for byte. A pick
-that exits 0 having written no `thread.started` event exits 2 with no Round run and the Run
-Directory kept. (`RUN-16`, `AGT-3`, `AGT-4`, `DIR-4`)
+**CNF-23** With `--manager codex` a Run that judges `done` ends 0 with that Finished File, the
+`session` file holds the `thread_id` of the `thread.started` event the fake wrote as the pick's
+first line of standard output, every judge call is given that same id, and `manager-pick.out`
+still holds that output byte for byte. A pick that exits 0 having written no `thread.started`
+event exits 2 with no Round run and the Run Directory kept. *The ordinary Run is asserted here and
+not left to `CNF-11`, which reads the argument lists and would stay green over a preset that
+spawns every call correctly and then exits 2.* (`RUN-16`, `AGT-3`, `AGT-4`, `DIR-4`)
 
 ## Not testable black-box
 
