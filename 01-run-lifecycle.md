@@ -139,7 +139,9 @@ Run that burns every Round without it.
 Round `N`, a verdict of *next Round* becomes exit 2. `Rloop.implementers_le_maxRounds` proves the
 bound for every Behaviour; `Rloop.cap_off_overruns` shows the second Implementer that runs without
 it. On exit 2 for the cap rloop SHOULD print the Manager's session id to standard error, so that a
-human can `claude --resume` it and ask why.
+human can resume that session with the preset that started it — `AGT-4`'s two command lines are
+the shapes — and ask why. *This said `claude --resume` until 2026-09-20, which cannot resume a
+session `--manager codex` minted.*
 
 **RUN-14** An Implementer call that exits non-zero or times out MUST NOT end the Run by itself:
 the Round MUST continue to the Panel and the judge, whose prompt names the Implementer's log

@@ -108,7 +108,7 @@ fi
 
 # --- CNF-5: usage errors -----------------------------------------------------------------------------
 repo="$(new_repo)"; ok=1; detail=""
-for args in "--bogus" "--max-rounds 0" "--max-rounds x" "--reviewer-timeout -1" "a b" "--auto --base HEAD" "--auto --run-dir $repo/d"; do
+for args in "--bogus" "--max-rounds 0" "--max-rounds x" "--reviewer-timeout -1" "a b" "--auto --base HEAD" "--auto --run-dir $repo/d" "--manager gpt-6-astra"; do
   rec="$work/rec-usage"; rm -rf "$rec"
   # shellcheck disable=SC2086
   e=$(run_rloop "$repo" "$rec" $args)
@@ -260,6 +260,7 @@ argv2_ok=$ok; argv2_detail="$detail"
 repo="$(new_repo)"; rec="$work/rec-argv3"
 base_hash=$(cd "$repo" && git rev-parse HEAD)
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager codex)
+e_codex=$e; repo_codex="$repo"
 sid=$(cat "$repo/run/session" 2>/dev/null)
 P_TASK_FILE="$repo/run/task.md"; P_FINISHED_FILE="$repo/run/finished.md"; P_RUN_DIR="$repo/run"; P_BASE="$base_hash"
 P_IMPLEMENTER_LOG="$repo/run/implementer-1.out"
@@ -274,16 +275,18 @@ if [ "$argv_ok" = 1 ] && [ "$argv2_ok" = 1 ] && [ "$ok" = 1 ]; then verdict CNF-
 
 # --- CNF-23: the codex Manager's session id ------------------------------------------------------------
 ok=1; detail=""
+[ "$e_codex" = 0 ] || { ok=0; detail="$detail [the codex Manager Run exited $e_codex, not 0]"; }
+grep -q '^STATUS: done' "$repo_codex/run/finished.md" 2>/dev/null || { ok=0; detail="$detail [the codex Manager Run left no done Finished File]"; }
 [ "$sid" = "00000000-0000-4000-8000-00000000cafe" ] || { ok=0; detail="$detail [session '$sid' is not the reported thread_id]"; }
 tr '\0' '\n' < "$(ls $rec/*-manager-1.argv 2>/dev/null | head -1)" | grep -qx -- "$sid" || { ok=0; detail="$detail [the judge call does not carry the id]"; }
 printf '{"type":"thread.started","thread_id":"%s"}\nmanager output, round 0\n' "$sid" > "$work/expected-pick.out"
-cmp -s "$repo/run/manager-pick.out" "$work/expected-pick.out" || { ok=0; detail="$detail [manager-pick.out is not the pick's output entire]"; }
+cmp -s "$repo_codex/run/manager-pick.out" "$work/expected-pick.out" || { ok=0; detail="$detail [manager-pick.out is not the pick's output entire]"; }
 repo="$(new_repo)"; rec="$work/rec-nothread"
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_NO_THREAD_ID=1 run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager codex)
 [ "$e" = 2 ] || { ok=0; detail="$detail [a pick reporting no id exited $e]"; }
 ls "$rec"/*-implementer-*.argv >/dev/null 2>&1 && { ok=0; detail="$detail [a Round ran after a pick reporting no id]"; }
 [ -d "$repo/run" ] || { ok=0; detail="$detail [the Run Directory was not kept]"; }
-if [ "$ok" = 1 ]; then verdict CNF-23 ok "the session file holds the reported thread_id, every judge call carries it, the pick's output is kept entire, and a pick reporting none exits 2"; else verdict CNF-23 fail "$detail"; fi
+if [ "$ok" = 1 ]; then verdict CNF-23 ok "a codex Manager Run ends 0 done; the session file holds the reported thread_id, every judge call carries it, the pick's output is kept entire, and a pick reporting none exits 2"; else verdict CNF-23 fail "$detail"; fi
 
 # --- CNF-13: the base ---------------------------------------------------------------------------------
 repo="$(new_repo)"; rec="$work/rec-base"
