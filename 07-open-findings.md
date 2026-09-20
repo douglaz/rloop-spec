@@ -159,7 +159,7 @@ does not say what it rests on; that is rloop-spec#4.
 
 ## F12 — The Consultation needs two models that answered (open 2026-09-20)
 
-rloop-spec#5: its second comment, “Settled, 2026-09-20 — the Consultation quorum”, records the
+rloop-spec#5: its second comment, "Settled, 2026-09-20 — the Consultation quorum", records the
 accepted design from a three-adviser consultation. An adviser that hangs or exhausts its quota
 has not disagreed, and sending the operator to clarify a specification diagnoses the wrong
 failure. Retrying that adviser each Round also spends the Manager's turn on a known non-answer.
