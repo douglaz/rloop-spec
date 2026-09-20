@@ -146,9 +146,13 @@ the flags in `02` accepted by both CLIs; a Run on a task that turns on a deliber
 passage of the repository's specifications, ending `blocked` with the passage and a recommended
 clarification in the report; and a Run whose brief settles an open implementation choice, with
 the Consultation's question, every model it called and what each one did, the answers and the
-choice recorded in the brief. Under each `--manager` preset, a Consultation in which an adviser
-does not answer MUST also be observed: the counterpart called in its place, the model that did
-not answer never called again in that Run, and — where one can be induced — a Run ending
+choice recorded in the brief. Under each `--manager` preset, a Run holding **two** Consultations
+MUST also be observed, the first of them meeting an adviser that **hangs** rather than one that
+fails fast: the call bounded and terminated, the chosen durations, the bounds and each call's
+elapsed time in the record, the counterpart called in its place, and the second Consultation
+starting from the eligible models rather than the one that did not answer. One observation MUST
+be of a Consultation in which neither model of one vendor answers, carrying the single-vendor
+marker in the brief or the Finished File; and one, where it can be induced, of a Run ending
 `blocked` with the report naming the silent models and saying too few answered. The Run
 Directories and the commits are kept as the record. (`AGT-9`, `AGT-17`, `SEQ-8`, `SEQ-10`,
 `RUN-19`, `RUN-20`)
