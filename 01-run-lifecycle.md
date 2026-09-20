@@ -177,9 +177,8 @@ human is asked first.*
 
 **RUN-20** An implementation decision the specifications leave to the implementer — a choice of
 how, not of what — that a brief must settle MUST NOT be made by the Manager alone: the prompts
-tell it to put the question and the options to two advisers, `fable` and `astra`, read-only, by
-running the two command lines `PRM-1` states, and to record the question, the answers and its
-choice in the Task File.
+tell it to put the question and the options to two advisers, read-only, by running the command
+lines `PRM-1` states. Which two, and what the Manager records, this requirement settles below.
 
 A Consultation MUST have answers from two distinct models to settle a choice; one answer is
 not enough. An answer is a call that completes within its bound, exits zero and states a
