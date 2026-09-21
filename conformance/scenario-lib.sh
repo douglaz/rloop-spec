@@ -25,18 +25,21 @@ run_rloop() {
 # A start or end records membership; without a successful end, that Reviewer failed.
 # No expected roster is used to fill omissions.
 observed_trace() { # observed_trace <record dir>
-  local rec="$1" out=() line role round reviewer outcome pr=-1
-  local -A outcomes=()
+  local rec="$1" out=() line role round reviewer outcome pr=-1 i idx
+  # Two parallel indexed arrays rather than one associative array: `CNF-1` promises the suite
+  # needs only `bash`, and macOS still ships 3.2, which has no `declare -A`. A Panel is four
+  # entries, so the linear lookup costs nothing.
+  local rvs=() outs=()
   [ -f "$rec/trace" ] || { echo ""; return; }
   flush_panel() {
     if [ "$pr" != -1 ]; then
       local cls membership outcome oks=0 fails=0
-      for outcome in "${outcomes[@]}"; do
+      for outcome in ${outs[@]+"${outs[@]}"}; do
         if [ "$outcome" = ok ]; then oks=$((oks + 1)); else fails=$((fails + 1)); fi
       done
       if [ "$fails" = 0 ]; then cls=all; elif [ "$oks" = 0 ]; then cls=none; else cls=some; fi
-      membership=$(printf '%s\n' "${!outcomes[@]}" | LC_ALL=C sort | paste -sd+)
-      out+=("panel$pr:$cls:$membership"); pr=-1; outcomes=()
+      membership=$(printf '%s\n' ${rvs[@]+"${rvs[@]}"} | LC_ALL=C sort | paste -sd+)
+      out+=("panel$pr:$cls:$membership"); pr=-1; rvs=(); outs=()
     fi
   }
   # Keep non-Panel completions and both Reviewer starts and ends, ordered by timestamp.
@@ -49,8 +52,15 @@ observed_trace() { # observed_trace <record dir>
       implementer) flush_panel; out+=("impl$round:$outcome") ;;
       reviewer) if [ "$pr" != "$round" ]; then flush_panel; pr="$round"; fi
                 reviewer="${line#*:*:}"; reviewer="${reviewer%%:*}"
-                if [[ "$line" = *:end:* ]]; then outcomes[$reviewer]="$outcome"
-                else outcomes[$reviewer]="${outcomes[$reviewer]:-fail}"; fi ;;
+                idx=-1; i=0
+                while [ "$i" -lt "${#rvs[@]}" ]; do
+                  if [ "${rvs[$i]}" = "$reviewer" ]; then idx=$i; break; fi
+                  i=$((i + 1))
+                done
+                if [ "$idx" = -1 ]; then
+                  rvs+=("$reviewer"); outs+=(fail); idx=$(( ${#rvs[@]} - 1 ))
+                fi
+                if [[ "$line" = *:end:* ]]; then outs[$idx]="$outcome"; fi ;;
     esac
   done < <(awk -F: '{ for (i = 1; i <= NF; i++) if ($i == "end" || ($1 == "reviewer" && $i == "start")) { print $(i+1) "\t" $0; break } }' "$rec/trace" | sort -n)
   flush_panel

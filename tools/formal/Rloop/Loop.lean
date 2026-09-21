@@ -45,9 +45,10 @@ inductive Panel | all | some | none
 inductive Reviewer | astra | fable | opus | sol
   deriving DecidableEq, Repr
 
-/-- The complete Panel: the four Reviewers `AGT-11` fixes, in the alphabetical order this
-model's trace encoding uses, which `conformance/scenario-lib.sh` reproduces with `LC_ALL=C sort`.
-`AGT-11` fixes the membership; the order is the encoding's own and is owned here. -/
+/-- The complete Panel. `AGT-11`: `The Panel MUST be exactly the four Reviewers AGT-7, AGT-8 and
+AGT-10 name, with the Feedback File names DIR-4 gives them.` The alphabetical order used here is
+not that requirement's — it is this model's trace encoding, which `conformance/scenario-lib.sh`
+reproduces with `LC_ALL=C sort`. -/
 def Reviewer.all : List Reviewer := [.astra, .fable, .opus, .sol]
 
 /-- What a non-Manager may have done to the Manager's files (`ADR-0003`). -/
