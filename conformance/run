@@ -410,8 +410,8 @@ want=$'fable:unavailable\nopus:unknown\nastra:unknown\nsol:unknown'
 got=$(cat "$repo/run/probe-1.md" 2>/dev/null || echo "<missing>")
 [ "$got" = "$want" ] || { ok=0; detail="$detail [fable row: probe-1.md is '$got']"; }
 # The verdict alone is not enough: an Implementation could write it and then abort, or act on it
-# early and drop the Reviewer. Nothing acts on the verdict yet (RUN-21), so the Run must finish
-# and the Panel must be whole.
+# early. RUN-15 removes exactly the Reviewer read `unavailable` and no other, so the Run must
+# finish and every other Reviewer must have been called.
 # RUN-15: the Reviewer read `unavailable` is the one that must NOT be called, and every other
 # must be. Asserting all four here would contradict CNF-27 and no Implementation could pass both.
 check_run_whole() { # check_run_whole <label> <the unavailable reviewer>

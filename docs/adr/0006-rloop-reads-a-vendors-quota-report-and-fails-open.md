@@ -46,10 +46,9 @@ and the two signatures are not confusable.
 - **`OVR-1` is narrowed**, for the second time in two days and by the same reasoning as `F9`: the
   sentence was banning a reading it was never written to ban. It protects rloop from acting on an
   agent's judgment; a quota report is not one.
-- **The verdict is recorded and nothing acts on it yet.** `RUN-21` writes `probe-<r>.md` and stops
-  there. That is what makes this shippable on its own and falsifiable on its own — `CNF-24`,
-  `CNF-25` and `CNF-26` read the record, not the Panel. What a Panel does with an `unavailable`
-  Reviewer is `RUN-15`'s, and is the next ticket.
+- **The verdict is a record first.** `RUN-21` writes `probe-<r>.md` and says nothing about the
+  Panel, which is what made this shippable and falsifiable on its own: `CNF-24`, `CNF-25` and
+  `CNF-26` read the record, not the Panel. `RUN-15` is what acts on it, and landed next.
 - **The Specification now leads `rloop-bash`.** `CNF-9`, `CNF-24`, `CNF-25` and `CNF-26` are red
   against it until it implements the probe. That is `ADR-0001`'s designed path — an amended
   requirement, a pin bump, a code change there — not a regression here.
