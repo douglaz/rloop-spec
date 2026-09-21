@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Reproduce Panel membership checks with only the Conformance Suite's dependencies:
-#   bash conformance/test-panel-trace /home/master/p/rloop-bash/result/bin/rloop
+#   conformance/test-panel-trace ../rloop-bash/result/bin/rloop
 # The argument must be the rloop-bash script with its two literal Reviewer loops. Mutants are
 # made only in scratch space; neither the executable nor its checkout is modified. The normal
 # Conformance Suite remains implementation-independent. No expected scenario is edited here.
