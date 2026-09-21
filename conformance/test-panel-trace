@@ -1,0 +1,154 @@
+#!/usr/bin/env bash
+# Reproduce Panel membership checks with only the Conformance Suite's dependencies:
+#   bash conformance/test-panel-trace /home/master/p/rloop-bash/result/bin/rloop
+# The argument must be the rloop-bash script with its two literal Reviewer loops. Mutants are
+# made only in scratch space; neither the executable nor its checkout is modified. The normal
+# Conformance Suite remains implementation-independent. No expected scenario is edited here.
+set -u
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+original="${1:?usage: conformance/test-panel-trace <rloop-bash executable>}"
+original="$(cd "$(dirname "$original")" && pwd)/$(basename "$original")"
+work="$(mktemp -d "${TMPDIR:-/tmp}/rloop-panel-trace.XXXXXX")"
+trap 'rm -rf "$work"' EXIT
+source "$here/scenario-lib.sh"
+die() { echo "FAIL: $*" >&2; exit 1; }
+assert_equal() { [ "$1" = "$2" ] || die "$3: expected '$2', got '$1'"; }
+fakes="$work/fakes"; mkdir -p "$fakes"
+cp "$here/fakes/agent" "$fakes/claude" && cp "$here/fakes/agent" "$fakes/codex" || exit 1
+chmod +x "$fakes/claude" "$fakes/codex"
+
+# Exercise completion order deterministically using the fake agents' record format. Both
+# permutations have the same identity-specific outcomes; failures still count as members.
+rec="$work/order"; mkdir -p "$rec"
+members=astra+fable+opus+sol
+for cls in all some none; do
+  for order in 'fable opus astra sol' 'sol astra opus fable'; do
+    printf 'manager:0:end:1:ok:task\nimplementer:1:end:2:ok\n' > "$rec/trace"
+    timestamp=3
+    for reviewer in $order; do
+      outcome=fail
+      if [ "$cls" = all ] || { [ "$cls" = some ] && [ "$reviewer" = fable ]; }; then outcome=ok; fi
+      printf 'reviewer:1:%s:start:2\nreviewer:1:%s:end:%s:%s\n' \
+        "$reviewer" "$reviewer" "$timestamp" "$outcome" >> "$rec/trace"
+      timestamp=$((timestamp + 1))
+    done
+    expected="pick,impl1:ok,panel1:$cls:$members"
+    if [ "$cls" != none ]; then
+      echo 'manager:1:end:7:done' >> "$rec/trace"
+      expected+=,judge1
+    fi
+    assert_equal "$(observed_trace "$rec")" "$expected" "$cls in order $order"
+  done
+  echo "PASS: $cls membership in both completion orders"
+done
+
+# Equal counts with different identities must differ, and neither membership nor outcomes
+# may leak across Round or non-Panel boundaries.
+cat > "$rec/trace" <<'TRACE'
+manager:0:end:1:ok:task
+implementer:1:end:2:fail
+reviewer:1:sol:end:3:fail
+reviewer:1:astra:end:4:ok
+manager:1:end:5:rewrite
+implementer:2:end:6:ok
+reviewer:2:opus:end:7:fail
+reviewer:2:fable:end:8:fail
+TRACE
+assert_equal "$(observed_trace "$rec")" \
+  'pick,impl1:fail,panel1:some:astra+sol,judge1,impl2:ok,panel2:none:fable+opus' \
+  'independent Round membership and outcomes'
+# Even adjacent Panels must flush on a changed Round, without borrowing a Manager boundary.
+sed '/manager:1:/d; /implementer:2:/d' "$rec/trace" > "$rec/adjacent"
+mv "$rec/adjacent" "$rec/trace"
+assert_equal "$(observed_trace "$rec")" \
+  'pick,impl1:fail,panel1:some:astra+sol,panel2:none:fable+opus' 'adjacent Round boundary'
+echo 'PASS: identities, Round boundaries and non-Panel order'
+
+# Starts without ends represent Reviewers that ran but did not complete. A successful
+# completion replaces its start's failed outcome rather than counting as a second member.
+cat > "$rec/trace" <<'TRACE'
+manager:0:end:1:ok:task
+implementer:1:end:2:ok
+reviewer:1:sol:start:3
+reviewer:1:opus:start:4
+reviewer:1:fable:start:5
+reviewer:1:astra:start:6
+reviewer:1:astra:end:7:ok
+reviewer:1:fable:end:8:ok
+reviewer:1:opus:end:9:ok
+manager:1:end:10:rewrite
+TRACE
+assert_equal "$(observed_trace "$rec")" \
+  "pick,impl1:ok,panel1:some:$members,judge1" 'mixed success and timeout'
+# The same identity succeeds next Round, while the other Reviewers have no evidence of
+# running. Neither the previous timeout nor the previous membership may carry forward.
+cat >> "$rec/trace" <<'TRACE'
+implementer:2:end:11:ok
+reviewer:2:sol:start:12
+reviewer:2:sol:end:13:ok
+manager:2:end:14:done
+TRACE
+assert_equal "$(observed_trace "$rec")" \
+  "pick,impl1:ok,panel1:some:$members,judge1,impl2:ok,panel2:all:sol,judge2" \
+  'timeout outcomes and membership stay within their Round'
+echo 'PASS: mixed success/timeout and subsequent Round isolation'
+
+# Exercise real fake-agent timeouts outside the generated scenario alphabet. All Reviewers
+# write starts before sleeping; timeout terminates them without normal end records.
+exe="$original"
+repo="$(new_repo)"; rec="$work/timeouts"
+got_exit=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS='impl=ok;panel=all;judge=done' \
+  RLOOP_FAKE_SLEEP_REVIEWER=30 run_rloop "$repo" "$rec" \
+  --run-dir "$repo/run" --reviewer-timeout 1 --kill-after 1)
+assert_equal "$got_exit" 2 'all-timeout exit'
+assert_equal "$(grep -c '^reviewer:1:.*:start:' "$rec/trace")" 4 'all-timeout starts'
+assert_equal "$(grep -c '^reviewer:1:.*:end:' "$rec/trace")" 0 'all-timeout ends'
+assert_equal "$(observed_trace "$rec")" "pick,impl1:ok,panel1:none:$members" \
+  'actual fake-agent timeouts retain complete membership without a judge'
+echo "PASS: actual fake-agent timeouts, exit $got_exit, trace $(observed_trace "$rec")"
+rm -rf "$repo" "$rec"
+
+# Select existing generated scenarios, leaving every field (including expectations) intact.
+select_scenario() {
+  awk -F '\t' -v rounds="$1" 'NR==1 || ($4==rounds && $5=="-" && !found++)' \
+    "$here/scenarios.tsv" > "$work/one.tsv"
+  assert_equal "$(wc -l < "$work/one.tsv" | tr -d ' ')" 2 'one selected scenario'
+  IFS=$'\t' read -r id cap pick rounds interference exp_exit exp_trace < <(tail -1 "$work/one.tsv")
+}
+positive() {
+  exe="$original"
+  result=$(run_scenarios "$work/one.tsv" 2> "$work/diagnostic")
+  cat "$work/diagnostic"
+  assert_equal "$result" '0 1' "$id complete Panel verdict"
+  echo "PASS: $id complete Panel, exit $exp_exit, expected = observed: $exp_trace"
+}
+for cls in all some none; do
+  judge=done; [ "$cls" = none ] && judge=rewrite
+  select_scenario "impl=ok;panel=$cls;judge=$judge"
+  positive
+done
+
+# Skip sol in both the spawn loop and the wait loop so the remaining Reviewers and Manager
+# still finish normally. The failing verdict must have the correct exit and differ ONLY in
+# that Round's observed membership. This calls precisely run's scenario-comparison path.
+assert_equal "$(grep -c '^  for rv in fable opus astra sol; do$' "$original")" 2 \
+  'rloop-bash mutation sites'
+for skipped_round in 1 2; do
+  sed "/^  for rv in fable opus astra sol; do$/a\\
+    if [ \"\$r\" = $skipped_round ] \&\& [ \"\$rv\" = sol ]; then continue; fi" \
+    "$original" > "$work/omit-sol"
+  chmod +x "$work/omit-sol"
+  rounds='impl=ok;panel=all;judge=done'
+  [ "$skipped_round" = 2 ] && rounds="impl=ok;panel=all;judge=rewrite|$rounds"
+  select_scenario "$rounds"
+  positive
+  exe="$work/omit-sol"
+  result=$(run_scenarios "$work/one.tsv" 2> "$work/diagnostic")
+  cat "$work/diagnostic"
+  assert_equal "$result" '1 1' "$id omitted-Reviewer verdict"
+  observed=${exp_trace/"panel$skipped_round:all:$members"/"panel$skipped_round:all:astra+fable+opus"}
+  assert_equal "$(cat "$work/diagnostic")" \
+    "        $id: expected exit $exp_exit trace $exp_trace; got exit $exp_exit trace $observed" \
+    "$id isolated membership mismatch"
+  echo "PASS: $id negative control rejected (1 of 1 scenarios differ); skipped sol in Round $skipped_round"
+done

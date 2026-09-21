@@ -25,72 +25,9 @@ verdict() { # verdict <CNF id> <ok|fail> <detail>
 }
 export -n RLOOP_FAKE_PICK RLOOP_FAKE_ROUNDS RLOOP_FAKE_INTERFERENCE RLOOP_FAKE_RUNS RLOOP_FAKE_THREAD_ID RLOOP_FAKE_NO_THREAD_ID 2>/dev/null || true
 
-# --- a fresh repository per run ----------------------------------------------------------------
-new_repo() { # new_repo -> prints path; a git repo with one commit
-  local r; r="$(mktemp -d "$work/repo.XXXXXX")"
-  ( cd "$r" && git init -q -b master && echo hello > README && git add README \
-    && git -c user.email=s@s -c user.name=suite commit -q -m init ) || return 1
-  echo "$r"
-}
-
-# run_rloop <repo> <record dir> [rloop args...] ; environment for the fakes comes from the caller
-run_rloop() {
-  local repo="$1" rec="$2"; shift 2
-  mkdir -p "$rec"
-  ( cd "$repo" && PATH="$fakes:$PATH" RLOOP_FAKE_RECORD="$rec" "$exe" "$@" </dev/null \
-      >"$rec/stdout" 2>"$rec/stderr" )
-  echo $? > "$rec/exit"
-  cat "$rec/exit"
-}
-
-# observed trace from the fakes' records: pick, impl<r>:<ok|fail>, panel<r>:<class>, judge<r>
-observed_trace() { # observed_trace <record dir>
-  local rec="$1" out=() line role round outcome pr=-1 oks=0 fails=0
-  [ -f "$rec/trace" ] || { echo ""; return; }
-  flush_panel() {
-    if [ "$pr" != -1 ]; then
-      local cls
-      if [ "$fails" = 0 ]; then cls=all; elif [ "$oks" = 0 ]; then cls=none; else cls=some; fi
-      out+=("panel$pr:$cls"); pr=-1; oks=0; fails=0
-    fi
-  }
-  # end lines only, ordered by their timestamp (the field after `end`); Reviewer order within a
-  # Panel is not fixed, and the Panel is reduced to its class anyway.
-  while IFS= read -r line; do
-    line="${line#*	}"
-    role="${line%%:*}"; round="$(echo "$line" | cut -d: -f2)"; outcome="${line##*:}"
-    case "$role" in
-      manager) flush_panel; if [ "$round" = 0 ]; then out+=("pick"); else out+=("judge$round"); fi ;;
-      implementer) flush_panel; out+=("impl$round:$outcome") ;;
-      reviewer) if [ "$pr" != "$round" ]; then flush_panel; pr="$round"; fi
-                if [ "$outcome" = ok ]; then oks=$((oks + 1)); else fails=$((fails + 1)); fi ;;
-    esac
-  done < <(grep ':end:' "$rec/trace" | awk -F: '{ for (i = 1; i <= NF; i++) if ($i == "end") { print $(i+1) "\t" $0; break } }' | sort -n)
-  flush_panel
-  local IFS=,; echo "${out[*]}"
-}
-
+source "$here/scenario-lib.sh"
 spawn_count() { ls "$1"/*.argv 2>/dev/null | wc -l | tr -d ' '; }
-
-# --- CNF-3: the scenarios ---------------------------------------------------------------------------
 scenarios_file="$spec/conformance/scenarios.tsv"
-run_scenarios() { # run_scenarios <scenarios file> -> prints "<failures> <total>"
-  local file="$1" total=0 bad=0 id max pick rounds interf exp_exit exp_trace repo rec got_exit got_trace
-  while IFS=$'\t' read -r id max pick rounds interf exp_exit exp_trace; do
-    [ "$id" = id ] && continue
-    total=$((total + 1))
-    repo="$(new_repo)"; rec="$work/rec-$id"
-    got_exit=$(RLOOP_FAKE_PICK="$pick" RLOOP_FAKE_ROUNDS="${rounds/#-/}" RLOOP_FAKE_INTERFERENCE="$interf" \
-      run_rloop "$repo" "$rec" --run-dir "$repo/run" --max-rounds "$max")
-    got_trace="$(observed_trace "$rec")"
-    if [ "$got_exit" != "$exp_exit" ] || [ "$got_trace" != "$exp_trace" ]; then
-      bad=$((bad + 1))
-      [ "$bad" -le 5 ] && printf '        %s: expected exit %s trace %s; got exit %s trace %s\n' "$id" "$exp_exit" "$exp_trace" "$got_exit" "$got_trace" >&2
-    fi
-    rm -rf "$repo" "$rec"
-  done < "$file"
-  echo "$bad $total"
-}
 
 echo "rloop conformance suite against $exe"
 echo

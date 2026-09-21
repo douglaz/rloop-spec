@@ -41,6 +41,13 @@ structure ManagerResult where
 inductive Panel | all | some | none
   deriving DecidableEq, Repr
 
+/-- Reviewer identities (`AGT-11`). -/
+inductive Reviewer | astra | fable | opus | sol
+  deriving DecidableEq, Repr
+
+/-- The complete Panel, in canonical name order (`AGT-11`). -/
+def Reviewer.all : List Reviewer := [.astra, .fable, .opus, .sol]
+
 /-- What a non-Manager may have done to the Manager's files (`ADR-0003`). -/
 inductive Interference
   | none
@@ -93,11 +100,12 @@ def decide (g : Guards) (phase : Phase) (prev current : Option Nat) (round maxRo
         else .next
 
 /-- One agent process rloop started, in the order it started them. A `panel` entry is the whole
-Panel: its Reviewers run at once and the Conformance Suite compares them as a set (`ADR-0002`). -/
+Panel: its membership is independent of its outcome class. Its Reviewers run at once and the
+Conformance Suite compares them as a set (`ADR-0002`). -/
 inductive Spawn
   | pick
   | implementer (round : Nat) (ok : Bool)
-  | panel (round : Nat) (p : Panel)
+  | panel (round : Nat) (p : Panel) (members : List Reviewer)
   | judge (round : Nat)
   deriving DecidableEq, Repr
 
@@ -145,7 +153,7 @@ def rounds (g : Guards) (b : Behaviour) (maxRounds : Nat) :
     let ok := b.implementer round
     let d := applyInterference g d (b.interference round .afterImplementer)
     let p := b.panel round
-    let trace := .panel round p :: .implementer round ok :: trace
+    let trace := .panel round p Reviewer.all :: .implementer round ok :: trace
     if g.panelAbort && p == .none then (.e2, trace.reverse)
     else
       let d := applyInterference g d (b.interference round .afterPanel)

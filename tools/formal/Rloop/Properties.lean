@@ -47,8 +47,8 @@ theorem implementers_pick : implementers [.pick] = 0 := rfl
 theorem implementers_one_implementer (k : Nat) (ok : Bool) :
     implementers [.implementer k ok] = 1 := rfl
 
-theorem implementers_cons_panel (k : Nat) (p : Panel) (t : List Spawn) :
-    implementers (.panel k p :: t) = implementers t := by
+theorem implementers_cons_panel (k : Nat) (p : Panel) (members : List Reviewer) (t : List Spawn) :
+    implementers (.panel k p members :: t) = implementers t := by
   simp [implementers, List.filter, Spawn.isImplementer]
 
 theorem implementers_cons_implementer (k : Nat) (ok : Bool) (t : List Spawn) :
@@ -92,7 +92,7 @@ theorem rounds_implementers_le (g : Guards) (hg : g.cap = true) (b : Behaviour) 
           (afterManager (applyInterference g (applyInterference g d
             (b.interference round .afterImplementer)) (b.interference round .afterPanel))
             (b.judge round))
-          (.judge round :: .panel round (b.panel round) ::
+          (.judge round :: .panel round (b.panel round) Reviewer.all ::
             .implementer round (b.implementer round) :: tr) hle
         simp only [implementers_cons_judge, implementers_cons_panel,
           implementers_cons_implementer] at this
@@ -173,7 +173,7 @@ def orphaned : Behaviour :=
 
 @[req "RUN-15"]
 theorem panel_none_aborts :
-    run Guards.all orphaned 3 = (.e2, [.pick, .implementer 1 true, .panel 1 .none]) := by decide
+    run Guards.all orphaned 3 = (.e2, [.pick, .implementer 1 true, .panel 1 .none Reviewer.all]) := by decide
 
 /-- With the abort off, the judge is called over a Panel that produced nothing. -/
 @[req "RUN-15"]
@@ -189,7 +189,7 @@ def silent : Behaviour :=
 
 @[req "RUN-12"]
 theorem no_decision_ends :
-    run Guards.all silent 5 = (.e2, [.pick, .implementer 1 true, .panel 1 .all, .judge 1]) := by
+    run Guards.all silent 5 = (.e2, [.pick, .implementer 1 true, .panel 1 .all Reviewer.all, .judge 1]) := by
   decide
 
 /-- With the comparison off, the same Manager burns every Round on the same brief. -/
@@ -208,8 +208,8 @@ def doneAndRewrite : Behaviour :=
 @[req "RUN-11"]
 theorem finished_beats_rewrite :
     run Guards.all doneAndRewrite 5 =
-      (.e0, [.pick, .implementer 1 true, .panel 1 .all, .judge 1,
-             .implementer 2 true, .panel 2 .all, .judge 2]) := by decide
+      (.e0, [.pick, .implementer 1 true, .panel 1 .all Reviewer.all, .judge 1,
+             .implementer 2 true, .panel 2 .all Reviewer.all, .judge 2]) := by decide
 
 /-- A Manager that writes `done` but exits non-zero: the tool failed, the file is not believed. -/
 def doneButFailed : Behaviour :=
@@ -326,7 +326,7 @@ def ticked : Behaviour :=
 /-- With the Checkpoint on, the untouched brief plus a silent Manager is "no decision". -/
 @[req "DIR-7"]
 theorem ticked_is_no_decision :
-    run Guards.all ticked 5 = (.e2, [.pick, .implementer 1 true, .panel 1 .all, .judge 1]) := by
+    run Guards.all ticked 5 = (.e2, [.pick, .implementer 1 true, .panel 1 .all Reviewer.all, .judge 1]) := by
   decide
 
 /-- With it off, the Implementer's edit reads as a Manager rewrite and a second Round runs. -/

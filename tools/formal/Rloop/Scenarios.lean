@@ -18,7 +18,8 @@ The line format, tab-separated:
 `impl=<ok|fail>;panel=<all|some|none>;judge=<rewrite|same|done|blocked|idle|other|fail>` per
 Round joined by `|` (`-` when no Round runs); `interference` is `-` or
 `<round>:<afterImplementer|afterPanel>:<editTask|writeFinished|both>`; `trace` is the spawns
-joined by `,`: `pick`, `impl<r>:<ok|fail>`, `panel<r>:<all|some|none>`, `judge<r>`. -/
+joined by `,`: `pick`, `impl<r>:<ok|fail>`, `panel<r>:<all|some|none>:<members>`, `judge<r>`.
+`members` joins Reviewer names with `+` in canonical name order, including failed Reviewers. -/
 
 namespace Rloop.Scenarios
 
@@ -68,10 +69,17 @@ def behaviour (pick : String × (Nat → ManagerResult)) (rounds : List RoundCho
       | some (r, q, i) => if r == k && q == p then i else .none
       | none => .none }
 
+def Reviewer.name : Reviewer → String
+  | .astra => "astra" | .fable => "fable" | .opus => "opus" | .sol => "sol"
+
+/-- Encode membership as a set, regardless of list order or repetition. -/
+def membershipName (members : List Reviewer) : String :=
+  String.intercalate "+" ((Reviewer.all.filter members.contains).map Reviewer.name)
+
 def Spawn.name : Spawn → String
   | .pick => "pick"
   | .implementer r ok => s!"impl{r}:{if ok then "ok" else "fail"}"
-  | .panel r p => s!"panel{r}:{panelName p}"
+  | .panel r p members => s!"panel{r}:{panelName p}:{membershipName members}"
   | .judge r => s!"judge{r}"
 
 structure Scenario where
