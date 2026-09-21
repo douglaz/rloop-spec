@@ -12,8 +12,9 @@
 #                            each Run's Rounds are then RLOOP_FAKE_ROUNDS
 #   RLOOP_FAKE_SLEEP_<ROLE>  seconds to sleep before acting (ROLE = MANAGER|IMPLEMENTER|REVIEWER|PROBE)
 #   RLOOP_FAKE_PROBE         what the availability probe writes (default: clear):
-#                            clear = the aggregate line only, no family named; fable / opus =
-#                            that family at 100;
+#                            clear = aggregate at 67, no family named; aggregate = aggregate at
+#                            100, no family named; fable / opus = that family at 100;
+#                            both = Fable and Opus each at 100, on separate lines;
 #                            under = 99; garbage = no usage line; silent = nothing;
 #                            fail = the fable line but exit 3; loose = the words mid-line
 #   RLOOP_FAKE_IGNORE_TERM   1 = trap and ignore SIGTERM
@@ -151,6 +152,8 @@ case "$role" in
     # shape this Round's probe writes, so the suite can drive every fail-open path.
     case "${RLOOP_FAKE_PROBE:-clear}" in
       clear)   printf 'Current week (all models): 67%% used · resets Sep 24, 3pm (UTC)\n' ;;
+      aggregate) printf 'Current week (all models): 100%% used\n' ;;
+      both)    printf 'Current week (%s): 100%% used\n' Fable Opus ;;
       fable|opus)
                printf 'Current week (all models): 67%% used · resets Sep 24, 3pm (UTC)\n'
                printf 'Current week (%s): 100%% used · resets Sep 24, 3pm (UTC)\n' \

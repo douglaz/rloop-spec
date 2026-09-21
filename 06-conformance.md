@@ -182,7 +182,8 @@ tell a working table from a rule that hardcodes `fable`.* (`RUN-21`, `DIR-4`)
 
 **CNF-26** Every Reviewer reads `unknown`, and the Panel still runs in full, when the probe writes
 nothing; when it writes output carrying no `Current week` line; when it reports a family at
-`99% used`; when it reports a family at `100% used` but **exits non-zero**; when those words appear
+`99% used`; when it reports only `Current week (all models): 100% used`; when it reports a family
+at `100% used` but **exits non-zero**; when those words appear
 somewhere other than the start of a line; and when it does not finish within its bound, however
 complete the output it would have written. In each case the
 Run reaches its judge and ends exactly as the same Run does with a probe reporting nothing
@@ -194,7 +195,16 @@ green check over a rule nobody tested.* (`RUN-21`)
 `fable` Reviewer at all — no argument list is recorded for it — while `opus`, `astra` and `sol` all
 run; `feedback-<r>-fable.md` holds exactly `REVIEWER NOT RUN (unavailable)`, carries no
 `REVIEWER FAILED`, and `reviewer-<r>-fable.err` is empty; and the Round reaches its judge and the
-Run ends 0. `CNF-15` owns the other literal. *An Implementation that reused one literal for both would pass
+Run ends 0. With both `Current week (Fable): 100% used` and `Current week (Opus): 100% used` on
+separate lines, `probe-1.md` records `fable:unavailable`, `opus:unavailable`, `astra:unknown` and
+`sol:unknown`, in that order. Neither `fable` nor `opus` is called; `astra` and `sol` both run.
+Each omitted Reviewer's Feedback File contains exactly the not-run line above, with its terminating
+newline and no extra content, and its `.err` file exists and is empty. In both cases the judge
+is called with every Panel Feedback File path, including those of the omitted Reviewers; with
+the called Reviewers succeeding and the judge scripted to finish done, the Run produces its
+Finished File and exits 0. With `fable` omitted and every called Reviewer failing, the Run
+instead exits 2, calls no judge and produces no Finished File.
+`CNF-15` owns the other literal. *An Implementation that reused one literal for both would pass
 every other item, and the Manager reads the two as different things (`PRM-2`).* (`RUN-7`, `RUN-8`, `RUN-15`,
 `RUN-21`, `PRM-2`, `DIR-4`)
 
