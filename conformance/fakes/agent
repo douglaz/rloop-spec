@@ -10,7 +10,12 @@
 #   RLOOP_FAKE_INTERFERENCE  - | <round>:<afterImplementer|afterPanel>:<editTask|writeFinished|both>
 #   RLOOP_FAKE_RUNS          for a Sequence: pick outcomes per Run, comma-separated (done,done,idle);
 #                            each Run's Rounds are then RLOOP_FAKE_ROUNDS
-#   RLOOP_FAKE_SLEEP_<ROLE>  seconds to sleep before acting (ROLE = MANAGER|IMPLEMENTER|REVIEWER)
+#   RLOOP_FAKE_SLEEP_<ROLE>  seconds to sleep before acting (ROLE = MANAGER|IMPLEMENTER|REVIEWER|PROBE)
+#   RLOOP_FAKE_PROBE         what the availability probe writes (default: clear):
+#                            clear = the aggregate line only, no family named; fable / opus =
+#                            that family at 100;
+#                            under = 99; garbage = no usage line; silent = nothing;
+#                            fail = the fable line but exit 3; loose = the words mid-line
 #   RLOOP_FAKE_IGNORE_TERM   1 = trap and ignore SIGTERM
 #   RLOOP_FAKE_GRANDCHILD    1 = spawn a background sleeper and record its pid
 #   RLOOP_FAKE_DIRTY_AT_DONE 1 = the Manager leaves an untracked file in the tree when it writes done
@@ -83,7 +88,9 @@ interfere() { # interfere <point>
   esac
 }
 
-echo "$role:$round${reviewer:+:$reviewer}:start:$(now)" >> "$rec/trace"
+# The availability probe is not an agent (AGT-18): it takes no part in the spawn trace CNF-3
+# compares, so it writes neither a start nor an end line.
+[ "$role" = probe ] || echo "$role:$round${reviewer:+:$reviewer}:start:$(now)" >> "$rec/trace"
 [ "$sleep_for" != 0 ] && sleep "$sleep_for"
 
 status=0
@@ -139,9 +146,29 @@ case "$role" in
     if [ "$o" = ok ]; then echo "No findings."; else echo "partial feedback"; status=7; fi
     outcome="$o"
     ;;
+  probe)
+    # RUN-21 reads one shape and calls everything else unknown; RLOOP_FAKE_PROBE picks which
+    # shape this Round's probe writes, so the suite can drive every fail-open path.
+    case "${RLOOP_FAKE_PROBE:-clear}" in
+      clear)   printf 'Current week (all models): 67%% used · resets Sep 24, 3pm (UTC)\n' ;;
+      fable|opus)
+               printf 'Current week (all models): 67%% used · resets Sep 24, 3pm (UTC)\n'
+               printf 'Current week (%s): 100%% used · resets Sep 24, 3pm (UTC)\n' \
+                 "$([ "${RLOOP_FAKE_PROBE}" = fable ] && echo Fable || echo Opus)" ;;
+      under)   printf 'Current week (Fable): 99%% used · resets Sep 24, 3pm (UTC)\n' ;;
+      garbage) printf 'this is not a usage report\n' ;;
+      silent)  : ;;
+      # RUN-21 needs a zero exit AND the line; `fail` prints the line and exits non-zero so the
+      # conjunction is tested, not just one half of it.
+      fail)    printf 'Current week (Fable): 100%% used · resets Sep 24, 3pm (UTC)\n'; status=3 ;;
+      # The same words, not at the start of a line: RUN-21 anchors, so this must stay unknown.
+      loose)   printf 'I checked and Current week (Fable): 100%% used right now.\n' ;;
+    esac
+    outcome=ok
+    ;;
   *)
     echo "fake agent: no RLOOP_ROLE" >&2; status=99; outcome=unknown ;;
 esac
 echo "fake stderr from $tag" >&2
-echo "$role:$round${reviewer:+:$reviewer}:end:$(now):$outcome" >> "$rec/trace"
+[ "$role" = probe ] || echo "$role:$round${reviewer:+:$reviewer}:end:$(now):$outcome" >> "$rec/trace"
 exit "$status"

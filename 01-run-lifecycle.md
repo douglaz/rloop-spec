@@ -48,11 +48,12 @@ finds is `RUN-11`.
 1. one Implementer call (`AGT-5` or `AGT-6`, `PRM-3`), started fresh — no session is carried from
    any earlier Round or earlier Run;
 2. the Checkpoint (`DIR-6`);
-3. the Panel: all four Reviewer calls (`AGT-7`–`AGT-10`, `PRM-4`), started concurrently and all
+3. the availability probe (`RUN-21`, `AGT-18`), waited for before the Panel starts;
+4. the Panel: all four Reviewer calls (`AGT-7`–`AGT-10`, `PRM-4`), started concurrently and all
    waited for;
-4. the Checkpoint again;
-5. one Manager call — the **judge** — resuming the pick's session (`AGT-4`, `PRM-2`);
-6. the decision (`RUN-11`).
+5. the Checkpoint again;
+6. one Manager call — the **judge** — resuming the pick's session (`AGT-4`, `PRM-2`);
+7. the decision (`RUN-11`).
 
 *Fresh Implementers are the design: a brief that only makes sense with the previous Round's
 conversation is a bad brief, and `PRM-2` tells the Manager so.*
@@ -60,6 +61,43 @@ conversation is a bad brief, and `PRM-2` tells the Manager so.*
 **RUN-8** The Panel's Reviewers MUST be spawned so that none waits for another to finish, and rloop
 MUST wait for every one of them before the Checkpoint that follows. Each Reviewer's standard output
 is its Feedback File (`DIR-4`).
+
+**RUN-21** Immediately before each Round's Panel, rloop MUST run the availability probe
+(`AGT-18`) once, bounded by `--probe-timeout` (`AGT-1`), and MUST record for every Reviewer of the Panel exactly
+one verdict — `unavailable` or `unknown` — in `probe-<r>.md` (`DIR-4`), one `<reviewer>:<verdict>`
+line per Reviewer in the order `fable`, `opus`, `astra`, `sol`.
+
+A Reviewer is **`unavailable`** only when the probe exited zero within its bound and some line of
+its standard output **begins** with `Current week (<family>): 100% used` — anchored at the start
+of the line, with whatever follows ignored — where `<family>` is the Reviewer's model's family by
+this table and nothing else:
+
+| model | family |
+|---|---|
+| `claude-fable-5-1` | `Fable` |
+| `claude-opus-5` | `Opus` |
+
+Every other case is **`unknown`**: the probe exited non-zero, hit its bound, wrote nothing, wrote
+output with no such line, named a percentage below 100, or the Reviewer's model is not in that
+table — which is every codex Reviewer, since that vendor publishes no quota at all. An absent
+family line is `unknown`, never `unavailable`: the probe lists only families it has something to
+report.
+
+The match is anchored because the probe's output is a model's turn, not a machine format: an
+unanchored search would let a refusal or an explanation that merely repeats those words remove a
+Reviewer, and that is the one direction fail-open does not protect. The aggregate
+`Current week (all models)` line is deliberately **not** read: no family is named in it, nobody
+has observed what the probe prints when a whole account is exhausted, and a rule written against
+an unobserved format is a guess. That case therefore reads `unknown` and saves nothing, which is
+the honest outcome until someone sees it.
+
+*Fail open is the whole design. A verdict is evidence about one moment, the format belongs to a
+vendor and will drift, and a wrong `unavailable` silently shrinks the Panel — so only a positive,
+unambiguous reading counts, and everything else means "spawn it". This is also what keeps a typo
+loud: a misspelled model name fails fast and non-zero, while an exhausted one hangs and writes
+nothing, and the two are not confusable.* **No requirement yet acts on the verdict.** It is
+recorded and nothing more; what a Panel does with an `unavailable` Reviewer is `RUN-15`'s, and is
+not yet written.
 
 ## What the Manager leaves behind
 

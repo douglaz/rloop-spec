@@ -166,6 +166,30 @@ event exits 2 with no Round run and the Run Directory kept. *The ordinary Run is
 not left to `CNF-11`, which reads the argument lists and would stay green over a preset that
 spawns every call correctly and then exits 2.* (`RUN-16`, `AGT-3`, `AGT-4`, `DIR-4`)
 
+**CNF-24** Every Round runs the probe exactly once, after that Round's Implementer and before any
+of its Reviewers starts, keeps `probe-<r>.out` byte for byte as the probe wrote it, and leaves a
+`probe-<r>.err`. A Run of two Rounds leaves `probe-1.*` and `probe-2.*` and no
+`probe-0.*`: the pick has no Panel. Its recorded argument list equals
+`conformance/fixtures/argv/AGT-18.txt`. (`RUN-7`, `RUN-21`, `AGT-18`, `AGT-13`, `DIR-4`, `OVR-2`)
+
+**CNF-25** `probe-<r>.md` names every Reviewer of the Panel exactly once, in the order `fable`,
+`opus`, `astra`, `sol`, each with `unavailable` or `unknown` and nothing else. With the probe
+scripted to report `Current week (Fable): 100% used`, `fable` reads `unavailable` and the other
+three read `unknown` — `opus` because no line names its family, `astra` and `sol` because no
+model of theirs is in `RUN-21`'s table. With `Current week (Opus): 100% used` instead, the
+verdicts swap: `opus` alone reads `unavailable`. *Both rows are asserted because one row cannot
+tell a working table from a rule that hardcodes `fable`.* (`RUN-21`, `DIR-4`)
+
+**CNF-26** Every Reviewer reads `unknown`, and the Panel still runs in full, when the probe writes
+nothing; when it writes output carrying no `Current week` line; when it reports a family at
+`99% used`; when it reports a family at `100% used` but **exits non-zero**; when those words appear
+somewhere other than the start of a line; and when it does not finish within its bound, however
+complete the output it would have written. In each case the
+Run reaches its judge and ends exactly as the same Run does with a probe reporting nothing
+exhausted. *These are the fail-open paths, and they are the reason `RUN-21` reads one shape and
+calls everything else `unknown`. An item that only ever saw a well-formed probe would be a
+green check over a rule nobody tested.* (`RUN-21`)
+
 ## Not testable black-box
 
 These requirements have no item because no black-box observation decides them; each says why.

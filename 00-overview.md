@@ -38,14 +38,19 @@ is written beside the requirement it produced:
 
 ## Design goals
 
-**OVR-1** rloop MUST act only on what the Manager wrote: the **Task File** and the **Finished File**
-(`01-run-lifecycle.md`). It MUST NOT parse a Reviewer's output, an Implementer's output, or any
-part of the Finished File beyond its first line.
+**OVR-1** rloop MUST act only on what the Manager wrote — the **Task File** and the **Finished
+File** (`01-run-lifecycle.md`) — and on the availability probe's output, which is no agent's work
+and which `RUN-21` alone says how to read. It MUST NOT parse a Reviewer's output, an
+Implementer's output, or any part of the Finished File beyond its first line. *This rule read
+"act only on what the Manager wrote" until 2026-09-21. A quota report is not a judgment an agent
+made, and reading one lets rloop stop paying a Reviewer's timeout for a model that cannot answer;
+`F9` narrowed `DIR-4` the same way, and for the same reason — the sentence was banning a reading
+it was never written to ban.*
 
-**OVR-2** Everything model-facing — every prompt and every agent command line — is stated in this
-Specification verbatim (`02-agents.md`, `03-prompts.md`), and an Implementation MUST reproduce it
-byte for byte. `ADR-0001` explains why the Specification nevertheless hands an Implementation no
-file to read.
+**OVR-2** Everything model-facing — every prompt, every agent command line, and the availability
+probe's (`AGT-18`) — is stated in this Specification verbatim (`02-agents.md`, `03-prompts.md`),
+and an Implementation MUST reproduce it byte for byte. `ADR-0001` explains why the
+Specification nevertheless hands an Implementation no file to read.
 
 **OVR-3** rloop MUST NOT run any git command that changes history or the working tree: no commit,
 no checkout, no stash, no reset, no clean, no branch. It reads git — `rev-parse`, `status` — and

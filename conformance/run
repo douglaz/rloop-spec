@@ -91,7 +91,7 @@ else verdict CNF-8 fail "exit $e, run dir '$rd', gitignore '$(cat "$repo/.rloop/
 # --- CNF-9: the layout --------------------------------------------------------------------------------
 repo="$(new_repo)"; rec="$work/rec-layout"
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run")
-expected_names="feedback-1-astra.md feedback-1-fable.md feedback-1-opus.md feedback-1-sol.md feedback-2-astra.md feedback-2-fable.md feedback-2-opus.md feedback-2-sol.md finished.md implementer-1.err implementer-1.out implementer-2.err implementer-2.out manager-judge-1.err manager-judge-1.out manager-judge-2.err manager-judge-2.out manager-pick.err manager-pick.out reviewer-1-astra.err reviewer-1-fable.err reviewer-1-opus.err reviewer-1-sol.err reviewer-2-astra.err reviewer-2-fable.err reviewer-2-opus.err reviewer-2-sol.err session task-1.md task-2.md task.md"
+expected_names="feedback-1-astra.md feedback-1-fable.md feedback-1-opus.md feedback-1-sol.md feedback-2-astra.md feedback-2-fable.md feedback-2-opus.md feedback-2-sol.md finished.md implementer-1.err implementer-1.out implementer-2.err implementer-2.out manager-judge-1.err manager-judge-1.out manager-judge-2.err manager-judge-2.out manager-pick.err manager-pick.out probe-1.err probe-1.md probe-1.out probe-2.err probe-2.md probe-2.out reviewer-1-astra.err reviewer-1-fable.err reviewer-1-opus.err reviewer-1-sol.err reviewer-2-astra.err reviewer-2-fable.err reviewer-2-opus.err reviewer-2-sol.err session task-1.md task-2.md task.md"
 got_names=$(ls "$repo/run" | sort | tr '\n' ' ' | sed 's/ $//')
 ok=1; detail=""
 [ "$e" = 0 ] || { ok=0; detail="exit $e"; }
@@ -363,6 +363,93 @@ repo="$(new_repo)"; rec="$work/rec-clean2"
 e=$(RLOOP_FAKE_PICK=ok:done RLOOP_FAKE_DIRTY_AT_DONE=1 run_rloop "$repo" "$rec" --run-dir "$repo/run")
 [ "$e" = 0 ] && [ -s "$rec/stderr" ] || { ok=0; detail="$detail [lone dirty done: exit $e]"; }
 if [ "$ok" = 1 ]; then verdict CNF-21 ok "a dirty tree stops a Sequence before the next pick; a lone Run only warns"; else verdict CNF-21 fail "$detail"; fi
+
+# --- CNF-24: the probe runs once a Round, between the Implementer and the Panel -----------------------
+ok=1; detail=""
+repo="$(new_repo)"; rec="$work/rec-probe"
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run")
+[ "$e" = 0 ] || { ok=0; detail="$detail [exit $e]"; }
+# The probe is trace-invisible by design (AGT-18), so order is read from the record's NNN- prefix.
+# Prints -1 when nothing matched; every caller must reject that explicitly, because -1 satisfies
+# `-1 -lt <anything>` and a missing spawn would otherwise pass an ordering test.
+seq_of() { local f; f=$(ls "$rec"/*-"$1".argv 2>/dev/null | head -1); if [ -z "$f" ]; then echo -1; return; fi; f=$(basename "$f"); echo "${f%%-*}"; }
+present() { [ "$2" != -1 ] || { ok=0; detail="$detail [$1 never spawned]"; return 1; }; }
+for r in 1 2; do
+  n=$(ls "$rec"/*-probe-"$r".argv 2>/dev/null | wc -l)
+  [ "$n" = 1 ] || { ok=0; detail="$detail [round $r: $n probe calls]"; continue; }
+  p=$(seq_of "probe-$r"); i=$(seq_of "implementer-$r")
+  present "round $r implementer" "$i" && present "round $r probe" "$p" &&
+    { [ "$i" -lt "$p" ] || { ok=0; detail="$detail [round $r: probe not after the Implementer]"; }; }
+  for rv in fable opus astra sol; do
+    v=$(seq_of "reviewer-$r-$rv")
+    present "round $r $rv" "$v" &&
+      { [ "$p" -lt "$v" ] || { ok=0; detail="$detail [round $r: probe not before $rv]"; }; }
+  done
+  # AGT-13, which CNF-24 cites: the probe's environment, working directory and closed stdin.
+  ef=$(ls "$rec"/*-probe-"$r".env 2>/dev/null | head -1)
+  if [ -z "$ef" ]; then ok=0; detail="$detail [round $r: no probe env recorded]"; else
+    grep -qx "ROLE=probe" "$ef"   || { ok=0; detail="$detail [round $r: probe ROLE]"; }
+    grep -qx "ROUND=$r" "$ef"     || { ok=0; detail="$detail [round $r: probe ROUND]"; }
+    grep -qx "STDIN=eof" "$ef"    || { ok=0; detail="$detail [round $r: probe stdin not closed]"; }
+    grep -qx "CWD=$(cd "$repo" && pwd -P)" "$ef" || { ok=0; detail="$detail [round $r: probe cwd]"; }
+  fi
+  # byte for byte, not merely present: the fake's `clear` shape writes exactly this line
+  [ -f "$repo/run/probe-$r.err" ] || { ok=0; detail="$detail [round $r: probe-$r.err missing]"; }
+  printf 'Current week (all models): 67%% used · resets Sep 24, 3pm (UTC)\n' | cmp -s - "$repo/run/probe-$r.out" \
+    || { ok=0; detail="$detail [round $r: probe-$r.out is not the probe's bytes]"; }
+done
+ls "$rec"/*-probe-0.argv >/dev/null 2>&1 && { ok=0; detail="$detail [the pick ran a probe]"; }
+tr '\0' '\n' < "$(ls "$rec"/*-probe-1.argv | head -1)" | cmp -s - "$here/fixtures/argv/AGT-18.txt" || { ok=0; detail="$detail [probe argv is not AGT-18's fixture]"; }
+if [ "$ok" = 1 ]; then verdict CNF-24 ok "one probe a Round, after the Implementer and before every Reviewer, argv as AGT-18"; else verdict CNF-24 fail "$detail"; fi
+
+# --- CNF-25: the recorded verdicts --------------------------------------------------------------------
+ok=1; detail=""
+repo="$(new_repo)"; rec="$work/rec-probe-verdict"
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=fable RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run")
+want=$'fable:unavailable\nopus:unknown\nastra:unknown\nsol:unknown'
+got=$(cat "$repo/run/probe-1.md" 2>/dev/null || echo "<missing>")
+[ "$got" = "$want" ] || { ok=0; detail="$detail [fable row: probe-1.md is '$got']"; }
+# The verdict alone is not enough: an Implementation could write it and then abort, or act on it
+# early and drop the Reviewer. Nothing acts on the verdict yet (RUN-21), so the Run must finish
+# and the Panel must be whole.
+check_run_whole() { # check_run_whole <label>
+  [ "$e" = 0 ] || { ok=0; detail="$detail [$1: exit $e]"; }
+  [ -f "$repo/run/finished.md" ] || { ok=0; detail="$detail [$1: no Finished File]"; }
+  for rv in fable opus astra sol; do
+    ls "$rec"/*-reviewer-1-"$rv".argv >/dev/null 2>&1 || { ok=0; detail="$detail [$1: $rv not spawned]"; }
+  done
+}
+check_run_whole "fable row"
+# The other row of the table, so a rule that hardcodes `fable` cannot pass.
+repo="$(new_repo)"; rec="$work/rec-probe-verdict-opus"
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=opus RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run")
+want=$'fable:unknown\nopus:unavailable\nastra:unknown\nsol:unknown'
+got=$(cat "$repo/run/probe-1.md" 2>/dev/null || echo "<missing>")
+[ "$got" = "$want" ] || { ok=0; detail="$detail [opus row: probe-1.md is '$got']"; }
+check_run_whole "opus row"
+if [ "$ok" = 1 ]; then verdict CNF-25 ok "either family at 100% reads unavailable, alone; every other Reviewer reads unknown"; else verdict CNF-25 fail "$detail"; fi
+
+# --- CNF-26: fail open ---------------------------------------------------------------------------------
+ok=1; detail=""
+all_unknown=$'fable:unknown\nopus:unknown\nastra:unknown\nsol:unknown'
+for shape in clear fail silent garbage under loose slow; do
+  repo="$(new_repo)"; rec="$work/rec-probe-$shape"
+  # `slow` is the bound being hit: the probe sleeps past a --probe-timeout of one second. It is
+  # scripted to report fable at 100% precisely so the row can fail — an Implementation that
+  # ignores the bound lets that output through and reads `fable:unavailable`, while one that
+  # honours it kills the probe before it prints and reads `unknown`. Scripting `clear` here would
+  # give the same verdict either way and test nothing.
+  written="$shape"; sleep_probe=0; bound=()
+  if [ "$shape" = slow ]; then written=fable; sleep_probe=3; bound=(--probe-timeout 1); fi
+  e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE="$written" RLOOP_FAKE_SLEEP_PROBE="$sleep_probe" RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" ${bound[@]+"${bound[@]}"})
+  [ "$e" = 0 ] || { ok=0; detail="$detail [$shape: exit $e]"; }
+  got=$(cat "$repo/run/probe-1.md" 2>/dev/null || echo "<missing>")
+  [ "$got" = "$all_unknown" ] || { ok=0; detail="$detail [$shape: probe-1.md is '$got']"; }
+  for rv in fable opus astra sol; do
+    ls "$rec"/*-reviewer-1-"$rv".argv >/dev/null 2>&1 || { ok=0; detail="$detail [$shape: $rv not spawned]"; }
+  done
+done
+if [ "$ok" = 1 ]; then verdict CNF-26 ok "a failed, silent, unparseable, under-100% or timed-out probe leaves every Reviewer unknown and the Panel whole"; else verdict CNF-26 fail "$detail"; fi
 
 verdict CNF-22 ok "(live; by hand once per release — see 06-conformance.md)"
 

@@ -38,13 +38,17 @@ others:
 | `implementer-<r>.out`, `implementer-<r>.err` | rloop, from the Implementer's stdout and stderr | Round `r` |
 | `feedback-<r>-<reviewer>.md` | rloop, from the Reviewer's stdout | Round `r`, one per Reviewer (`fable`, `opus`, `astra`, `sol`) |
 | `reviewer-<r>-<reviewer>.err` | rloop, from the Reviewer's stderr | Round `r` |
+| `probe-<r>.out`, `probe-<r>.err` | rloop, from the availability probe's stdout and stderr | Round `r`, before the Panel (`RUN-21`) |
+| `probe-<r>.md` | rloop | Round `r`: one `<reviewer>:<verdict>` line per Reviewer (`RUN-21`) |
 | `rejected-<r>-task.md`, `rejected-<r>-finished.md` | rloop | the Checkpoint (`DIR-6`) |
 | `session` | rloop | the pick: the Manager's session id, one line |
 
-Every agent's standard output goes to its file entire and unmodified; rloop MUST NOT interleave
-its own text into any of them. rloop reads one of them, and changes no byte of it: under
-`--manager codex` the pick's standard output carries the Manager's session id, which `RUN-16`
-tells rloop to take from there. *The Implementer's `.out` is what the Manager reads about a failed
+Every agent's standard output, and the probe's, goes to its file entire and unmodified; rloop
+MUST NOT interleave its own text into any of them. rloop reads some of them and changes no byte of
+any: under `--manager codex` the pick's standard output carries the Manager's session id, which
+`RUN-16` tells rloop to take from there, and the probe's standard output carries the lines `RUN-21`
+reads. `probe-<r>.md` is rloop's own writing, not an agent's, and is the only file here that is.
+*The Implementer's `.out` is what the Manager reads about a failed
 Implementer (`RUN-14`), and `feedback-*.md` is what it reads about the Panel.* *This sentence read
 "entire and unparsed" until 2026-09-20; the word banned a reading that `RUN-16` now requires,
 where what the rule protects is the file's bytes.*

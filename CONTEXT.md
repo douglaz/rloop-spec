@@ -51,6 +51,10 @@ _Avoid_: Assumption, interpretation
 The **Manager** putting an implementation decision the specifications leave open to advisers before settling it in the **Task File**, and recording what each one said. How many must answer, who they are, and what happens when they do not, is `RUN-20`'s. Not a **Panel**: the Manager runs it, rloop does not.
 _Avoid_: Design review, second opinion
 
+**Probe**:
+The one call rloop makes before a **Round**'s **Panel** to find out which **Reviewers**' models can answer at all. Not an agent: it gets no prompt, writes no **Feedback File**, and judges nothing. What it is, when it runs and how its output is read are `AGT-18`'s and `RUN-21`'s.
+_Avoid_: Health check, ping, usage check, preflight
+
 **Task File**:
 The **Manager**'s written brief for the current **Round**: what to implement, precise enough for an independent **Implementer** to build and independent reviewers to judge against. The Manager rewrites it to start another Round.
 _Avoid_: Spec, prompt, plan
