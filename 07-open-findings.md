@@ -210,3 +210,34 @@ Closing it is `rl-availability-scenario-axis-rnp`, which adds availability to `S
 alphabet and is blocked on the recording change landing first. Until then the citation in `RUN-15`
 is narrower than the rule above it, and this is where that is written down rather than left for a
 reader to notice.
+
+## F14 — The probe, live (closed 2026-09-21)
+
+The first Run with `RUN-21` implemented, against the real CLIs, on this repository, while
+`claude-fable-5-1` was genuinely at 100% of its weekly limit. rloop-bash `616bf4e`, spec
+`9c28a85`, `--manager codex --implementer codex` and **no** `--reviewer-timeout` cap.
+
+The probe answered in **three seconds** and `probe-1.md` read `fable:unavailable`, `opus:unknown`,
+`astra:unknown`, `sol:unknown`. One real `/usage` exercised four clauses of `RUN-21` at once,
+which no scripted shape does: the anchored match fired on `Current week (Fable): 100% used`; the
+aggregate line was present at 69% and correctly not read; **no Opus line existed at all**, so
+absence read `unknown` as the rule says; and both codex Reviewers read `unknown` for want of a
+family. `probe-1.err` was empty.
+
+`RUN-15` then held: three Reviewer processes were spawned, not four — one `claude` at
+`--model claude-opus-5 --effort xhigh` and two `codex` — `feedback-1-fable.md` was byte-identical
+to `REVIEWER NOT RUN (unavailable)`, and `reviewer-1-fable.err` was zero bytes.
+
+**What it cost, and what it saved.** The Panel finished in 6m45s, bounded by a live Reviewer. On
+the default `--reviewer-timeout` the dead `AGT-7` seat would have held that Panel open for thirty
+minutes, every Round, since a Panel cannot finish before its slowest seat and a seat that will
+never answer always runs to its cap. Three seconds replaced it. This is what rloop-spec#3 was
+filed for and it is now measured rather than argued.
+
+**What it did not fix.** `astra` and `sol` each wrote a bare thirteen-byte `No findings.` — the
+`PRM-4` shortcut of rloop-spec#4, now observed in four codex reports across two Runs without
+exception. The Panel was therefore one substantive reviewer, `opus`, exactly as it was before the
+probe existed. A silent seat is worse than a dead one: a dead seat is visibly absent in
+`RUN-15`'s accounting, while thirteen bytes read as a review that found nothing. Fixing the seat
+that hangs did not fix the Panel.
+
