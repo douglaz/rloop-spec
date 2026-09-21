@@ -13,12 +13,27 @@ on a seed repository, passing meaning the suite is green and one real Run comple
 run of the gate recorded. Deferred by the owner as an interesting idea for later; the shape
 sketched here is the one to start from. Until it exists, `CNF-22` is the only live check.
 
-## F2 — Citation and obligation gates (deferred 2026-09-18)
+## F2 — Citation and obligation gates (citations accepted 2026-09-21; obligations still deferred)
 
 provisiond-spec's `check_citations.py` (a quoted phrase attributed to a requirement whose body
 does not contain it) and `check_obligations.py` (a duty assigned to another requirement's
 subject) caught drift in a set of 700 requirements over months. This set has about eighty.
 They are added the first time this set is found to have drifted in either way.
+
+**The trigger fired.** One pull request produced eight findings of a rule living in more than one
+place. Accepted: `check_citations.py`, ported, together with a restatement check in
+`tools/check_ids.py`, which already parses every definition and every citation — a line that cites
+another requirement while stating a rule of its own must carry the owner's words verbatim, and
+`check_citations.py` is what then proves the quote is the owner's. Eight lines in the set are
+flagged today. `check_obligations.py` stays deferred: of the eight, the one obligation finding was
+a paraphrase, not a duty assigned to another requirement's subject, and no instance of the shape
+that gate catches has appeared.
+
+Two of the four shapes recorded against this needed no gate at all. The copy in an Implementation's
+`README.md` was deleted for a pointer, and the Specification's own operator section now cites its
+owners (`ADR-0005`). `CONTEXT.md`'s example dialogue now uses no value this Specification owns —
+no identifier, no filename, no exit status — which every other example dialogue surveyed already
+did without a rule to make it.
 
 ## F3 — Unaccepted commits behind a clean tree (open, stated)
 

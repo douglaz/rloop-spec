@@ -87,17 +87,18 @@ For whoever runs an Implementation:
 
 - **A lone Run:** `rloop` picks the next task from the repository's tracker; `rloop "fix the
   flaky retry test"` steers the pick. Exit 0 is done, 1 is blocked, 3 is idle (nothing to pick),
-  2 is a failure; the Finished File — the Manager's report — is on standard output.
+  2 is a failure (`RUN-10`); the Finished File — the Manager's report — is on standard output.
 - **Blocked (exit 1) is a question for you.** The Manager blocks when the task turns on a point
   the repository's specifications leave ambiguous — it never picks a reading — and the report
-  names the passage and recommends a clarification. Clarify the specification, then run again.
+  names the passage and recommends a clarification (`RUN-19`). Clarify the specification, then
+  run again.
   Implementation choices the specifications leave open it settles by consulting advisers
   (`RUN-20`), and a choice they leave unsettled blocks for you too: the report names the models
   that went quiet and says whether the ones that answered agreed.
 - **A Sequence:** check out the branch the work should land on, then `rloop --auto`. It runs
-  until the Manager finds nothing left (exit 0), a task blocks (1), or something fails (2). The
-  Manager commits each accepted task before the next starts; rloop never commits, branches or
-  pushes, and opening the pull request is yours.
+  until the Manager finds nothing left (exit 0), a task blocks (1), or something fails (2)
+  (`SEQ-6`). The Manager commits each accepted task before the next starts; rloop never commits,
+  branches or pushes, and opening the pull request is yours.
 - **After a Run that ended blocked (exit 1):** the work is in the tree, uncommitted, on top of
   clean history — unless the Implementer committed during the Round, in which case unaccepted
   commits sit behind a clean tree and the next invocation's base would take them in unreviewed

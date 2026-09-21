@@ -102,12 +102,12 @@ _Avoid_: Baseline (that word is the **Task File** snapshot's), origin
 
 **Dev:** And the implementer ticked the checkboxes in the brief, so the reviewers reviewed against a changed brief.
 
-**Expert:** That is Interference, and the Checkpoint undid it before the Panel ran: the brief Round 2 ran against is `task-2.md`, and what the Implementer wrote over it is `rejected-2-task.md`. Nobody calls that tampering here; the threat model is a mistake, not an attack.
+**Expert:** That is Interference, and the Checkpoint undid it before the Panel ran: the Panel judged the brief as the Manager wrote it, and what the Implementer wrote over it was set aside rather than discarded. Nobody calls that tampering here; the threat model is a mistake, not an attack.
 
 **Dev:** The spec says "the file is written" but not whether it's overwritten or appended. Can't the Manager just pick one?
 
-**Expert:** No. Two readings, two behaviours: that is a Clarification, and the Run ends blocked with the passage and the recommendation in the report. Had the spec said nothing at all about it — a matter of how, not what — the Manager would hold a Consultation with two advisers and record the choice in the brief.
+**Expert:** No. Two readings, two behaviours: that is a Clarification, and the Run ends blocked with the passage and the recommendation in the report. Had the spec said nothing at all about it — a matter of how, not what — the Manager would hold a Consultation before settling it in the brief.
 
-**Dev:** Then the Run ended with exit 3 — is that a failure?
+**Dev:** Then the Manager found nothing to pick — is that a failure?
 
-**Expert:** Idle. The Manager found nothing to pick and changed nothing. A Sequence treats it as "drained", exit 0; a lone Run reports it as 3 so a caller's loop can stop.
+**Expert:** Idle, which is distinct from done: it changed nothing, and only a Run that has not reached its first Round can end that way. A Sequence treats it as drained and ends successfully; a lone Run reports it distinctly, so a caller's loop can stop.
