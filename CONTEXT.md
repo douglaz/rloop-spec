@@ -37,10 +37,10 @@ A disposable agent that judges the repository's changes against the **Task File*
 _Avoid_: Critic, checker
 
 **Panel**:
-The set of **Reviewers**, each a different model, run side by side in one **Round**.
+The **Reviewers** `AGT-11` designates for one **Round**, each a different model, run side by side. A Reviewer stays one whether or not it was called.
 
 **Feedback File**:
-One **Reviewer**'s findings for one **Round**, written for the **Manager**.
+One **Reviewer**'s findings for one **Round**, written for the **Manager**. A **Reviewer** that failed leaves what it wrote with rloop's note after it; one that was never called leaves rloop's note alone (`RUN-15`).
 _Avoid_: Review, findings file
 
 **Clarification**:

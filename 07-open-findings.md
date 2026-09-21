@@ -196,3 +196,17 @@ hanging-adviser case remains open even with a per-call bound written into the pr
 counterparts without retrying a non-answering model in the Run, recording all calls and any
 single-vendor Consultation, and leaving time to write the file the outcome needs — naming the
 silent models and saying whether those that answered agreed. This amendment adds no duty to rloop.
+
+## F13 — The model cannot yet express a partial Panel (open 2026-09-21)
+
+`RUN-15` now has three arms — a Reviewer that failed, one that was never called, and the
+zero-survivor abort that counts both — but `Rloop.panel_none_aborts` and
+`Rloop.panel_abort_off_judges`, which `RUN-15` cites as its pair, model only `panel := .none`
+(`Properties.lean`). The model has no input for availability, so `Loop.lean`'s single construction
+site still passes `Reviewer.all` and no enumerated scenario omits a Reviewer. The behaviour is
+therefore specified and covered by `CNF-27`, and proved for the failure arm only.
+
+Closing it is `rl-availability-scenario-axis-rnp`, which adds availability to `Scenarios.lean`'s
+alphabet and is blocked on the recording change landing first. Until then the citation in `RUN-15`
+is narrower than the rule above it, and this is where that is written down rather than left for a
+reader to notice.

@@ -49,8 +49,9 @@ finds is `RUN-11`.
    any earlier Round or earlier Run;
 2. the Checkpoint (`DIR-6`);
 3. the availability probe (`RUN-21`, `AGT-18`), waited for before the Panel starts;
-4. the Panel: all four Reviewer calls (`AGT-7`–`AGT-10`, `PRM-4`), started concurrently and all
-   waited for;
+4. the Panel: a call for every Reviewer `RUN-21` did not record `unavailable` (`AGT-7`–`AGT-10`,
+   `PRM-4`), started concurrently and all waited for, and a Feedback File written in place for
+   each one that was (`RUN-15`);
 5. the Checkpoint again;
 6. one Manager call — the **judge** — resuming the pick's session (`AGT-4`, `PRM-2`);
 7. the decision (`RUN-11`).
@@ -58,9 +59,9 @@ finds is `RUN-11`.
 *Fresh Implementers are the design: a brief that only makes sense with the previous Round's
 conversation is a bad brief, and `PRM-2` tells the Manager so.*
 
-**RUN-8** The Panel's Reviewers MUST be spawned so that none waits for another to finish, and rloop
-MUST wait for every one of them before the Checkpoint that follows. Each Reviewer's standard output
-is its Feedback File (`DIR-4`).
+**RUN-8** The Panel's Reviewers that are called MUST be spawned so that none waits for another to
+finish, and rloop MUST wait for every one of them before the Checkpoint that follows. Each called
+Reviewer's standard output is its Feedback File (`DIR-4`).
 
 **RUN-21** Immediately before each Round's Panel, rloop MUST run the availability probe
 (`AGT-18`) once, bounded by `--probe-timeout` (`AGT-1`), and MUST record for every Reviewer of the Panel exactly
@@ -95,9 +96,8 @@ the honest outcome until someone sees it.
 vendor and will drift, and a wrong `unavailable` silently shrinks the Panel — so only a positive,
 unambiguous reading counts, and everything else means "spawn it". This is also what keeps a typo
 loud: a misspelled model name fails fast and non-zero, while an exhausted one hangs and writes
-nothing, and the two are not confusable.* **No requirement yet acts on the verdict.** It is
-recorded and nothing more; what a Panel does with an `unavailable` Reviewer is `RUN-15`'s, and is
-not yet written.
+nothing, and the two are not confusable.* What a Panel does with an `unavailable` Reviewer is
+`RUN-15`'s.
 
 ## What the Manager leaves behind
 
@@ -189,8 +189,18 @@ outcome changes neither the exit code nor the number of Implementers run.
 
 **RUN-15** A Reviewer call that exits non-zero or times out MUST leave its Feedback File holding
 the line `REVIEWER FAILED (exit <status>)` — appended to whatever it wrote — and the Round MUST
-continue. When **every** Reviewer of a Panel failed, rloop MUST exit 2 without calling the judge.
-*One Reviewer down is a degraded Panel the Manager can weigh; four down is a broken environment.*
+continue.
+
+A Reviewer that `RUN-21` recorded `unavailable` MUST NOT be called at all. It stays a Reviewer of
+the Panel, and rloop MUST write its Feedback File in its place holding exactly
+`REVIEWER NOT RUN (unavailable)` and nothing else. *A call that never happened has no exit status,
+so `REVIEWER FAILED (exit <status>)` cannot describe it, and `PRM-2` gives the Manager that line's
+meaning as `a Reviewer that crashed or timed out`. Two different things the Manager weighs
+differently need two different lines.*
+
+Both count as down. When **every** Reviewer of a Panel is down — failed, or not run — rloop MUST
+exit 2 without calling the judge. *One Reviewer down is a degraded Panel the Manager can weigh;
+four down is a broken environment.*
 `Rloop.panel_none_aborts` and `Rloop.panel_abort_off_judges` are the pair.
 
 **RUN-16** The Manager MUST be one session for the whole Run: the pick establishes it, every

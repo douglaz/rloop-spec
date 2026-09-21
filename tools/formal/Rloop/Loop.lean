@@ -103,8 +103,10 @@ def decide (g : Guards) (phase : Phase) (prev current : Option Nat) (round maxRo
         else .next
 
 /-- One agent process rloop started, in the order it started them. A `panel` entry is the whole
-Panel: its membership is independent of its outcome class. Its Reviewers run at once and the
-Conformance Suite compares them as a set (`ADR-0002`). -/
+Panel: its membership is independent of its outcome class. The Reviewers it names run at once and
+the Conformance Suite compares them as a set (`ADR-0002`). The model has no availability input, so
+every Panel it builds names all four; a Reviewer `RUN-21` reads as unavailable is never called and
+is therefore not in the Panel a real Run spawns, which this cannot yet express (`F13`). -/
 inductive Spawn
   | pick
   | implementer (round : Nat) (ok : Bool)

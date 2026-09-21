@@ -412,21 +412,27 @@ got=$(cat "$repo/run/probe-1.md" 2>/dev/null || echo "<missing>")
 # The verdict alone is not enough: an Implementation could write it and then abort, or act on it
 # early and drop the Reviewer. Nothing acts on the verdict yet (RUN-21), so the Run must finish
 # and the Panel must be whole.
-check_run_whole() { # check_run_whole <label>
+# RUN-15: the Reviewer read `unavailable` is the one that must NOT be called, and every other
+# must be. Asserting all four here would contradict CNF-27 and no Implementation could pass both.
+check_run_whole() { # check_run_whole <label> <the unavailable reviewer>
   [ "$e" = 0 ] || { ok=0; detail="$detail [$1: exit $e]"; }
   [ -f "$repo/run/finished.md" ] || { ok=0; detail="$detail [$1: no Finished File]"; }
   for rv in fable opus astra sol; do
-    ls "$rec"/*-reviewer-1-"$rv".argv >/dev/null 2>&1 || { ok=0; detail="$detail [$1: $rv not spawned]"; }
+    if [ "$rv" = "$2" ]; then
+      ls "$rec"/*-reviewer-1-"$rv".argv >/dev/null 2>&1 && { ok=0; detail="$detail [$1: $rv called though unavailable]"; }
+    else
+      ls "$rec"/*-reviewer-1-"$rv".argv >/dev/null 2>&1 || { ok=0; detail="$detail [$1: $rv not spawned]"; }
+    fi
   done
 }
-check_run_whole "fable row"
+check_run_whole "fable row" fable
 # The other row of the table, so a rule that hardcodes `fable` cannot pass.
 repo="$(new_repo)"; rec="$work/rec-probe-verdict-opus"
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=opus RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run")
 want=$'fable:unknown\nopus:unavailable\nastra:unknown\nsol:unknown'
 got=$(cat "$repo/run/probe-1.md" 2>/dev/null || echo "<missing>")
 [ "$got" = "$want" ] || { ok=0; detail="$detail [opus row: probe-1.md is '$got']"; }
-check_run_whole "opus row"
+check_run_whole "opus row" opus
 if [ "$ok" = 1 ]; then verdict CNF-25 ok "either family at 100% reads unavailable, alone; every other Reviewer reads unknown"; else verdict CNF-25 fail "$detail"; fi
 
 # --- CNF-26: fail open ---------------------------------------------------------------------------------
@@ -450,6 +456,38 @@ for shape in clear fail silent garbage under loose slow; do
   done
 done
 if [ "$ok" = 1 ]; then verdict CNF-26 ok "a failed, silent, unparseable, under-100% or timed-out probe leaves every Reviewer unknown and the Panel whole"; else verdict CNF-26 fail "$detail"; fi
+
+# --- CNF-27: an unavailable Reviewer is recorded in place, never called -------------------------------
+ok=1; detail=""
+repo="$(new_repo)"; rec="$work/rec-omitted"
+# panel=all, not some: the fake's `some` makes fable the only success, and fable is precisely the
+# Reviewer that is not called here -- every called one would fail and RUN-15 would abort the Run.
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=fable RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run")
+[ "$e" = 0 ] || { ok=0; detail="$detail [exit $e]"; }
+[ -f "$repo/run/finished.md" ] || { ok=0; detail="$detail [no Finished File]"; }
+ls "$rec"/*-reviewer-1-fable.argv >/dev/null 2>&1 && { ok=0; detail="$detail [fable was called]"; }
+for rv in opus astra sol; do
+  ls "$rec"/*-reviewer-1-"$rv".argv >/dev/null 2>&1 || { ok=0; detail="$detail [$rv not called]"; }
+done
+# Byte comparison, not $(cat): command substitution strips trailing newlines, so "and nothing
+# else" would tolerate trailing blank lines.
+printf 'REVIEWER NOT RUN (unavailable)\n' | cmp -s - "$repo/run/feedback-1-fable.md" \
+  || { ok=0; detail="$detail [fable feedback is not exactly the not-run line]"; }
+[ -f "$repo/run/reviewer-1-fable.err" ] && [ ! -s "$repo/run/reviewer-1-fable.err" ] \
+  || { ok=0; detail="$detail [fable .err missing or not empty]"; }
+# The uncalled Reviewer stays a Reviewer of the Panel (RUN-15), so its Feedback File must still
+# reach the judge in PRM-6's {{FEEDBACK_FILES}} -- dropping it would shrink the Panel after all.
+jf=$(ls "$rec"/*-manager-1.argv 2>/dev/null | head -1)
+[ -n "$jf" ] && tr '\0' '\n' < "$jf" | grep -q "feedback-1-fable.md" \
+  || { ok=0; detail="$detail [judge was not given fable's Feedback File]"; }
+# Mixed down states: one Reviewer never called and the other three failing is still "every
+# Reviewer of a Panel is down", so RUN-15 aborts. Nothing else exercises the two kinds together.
+repo="$(new_repo)"; rec="$work/rec-omitted-abort"
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=fable RLOOP_FAKE_ROUNDS="impl=ok;panel=none;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run")
+[ "$e" = 2 ] || { ok=0; detail="$detail [one unavailable plus three failed: exit $e, want 2]"; }
+ls "$rec"/*-manager-1.argv >/dev/null 2>&1 && { ok=0; detail="$detail [judge ran with no survivor]"; }
+[ -f "$repo/run/finished.md" ] && { ok=0; detail="$detail [Finished File written with no survivor]"; }
+if [ "$ok" = 1 ]; then verdict CNF-27 ok "an unavailable Reviewer is not called, is recorded in place, reads differently from a failed one, and counts toward the abort"; else verdict CNF-27 fail "$detail"; fi
 
 verdict CNF-22 ok "(live; by hand once per release — see 06-conformance.md)"
 

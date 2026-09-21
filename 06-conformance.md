@@ -190,6 +190,14 @@ exhausted. *These are the fail-open paths, and they are the reason `RUN-21` read
 calls everything else `unknown`. An item that only ever saw a well-formed probe would be a
 green check over a rule nobody tested.* (`RUN-21`)
 
+**CNF-27** With the probe scripted to report `Current week (Fable): 100% used`, the Round runs no
+`fable` Reviewer at all — no argument list is recorded for it — while `opus`, `astra` and `sol` all
+run; `feedback-<r>-fable.md` holds exactly `REVIEWER NOT RUN (unavailable)`, carries no
+`REVIEWER FAILED`, and `reviewer-<r>-fable.err` is empty; and the Round reaches its judge and the
+Run ends 0. `CNF-15` owns the other literal. *An Implementation that reused one literal for both would pass
+every other item, and the Manager reads the two as different things (`PRM-2`).* (`RUN-7`, `RUN-8`, `RUN-15`,
+`RUN-21`, `PRM-2`, `DIR-4`)
+
 ## Not testable black-box
 
 These requirements have no item because no black-box observation decides them; each says why.
