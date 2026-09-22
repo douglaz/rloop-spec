@@ -130,9 +130,25 @@ INTRO = re.compile(r"(?:'s|’s)?\s+(?:own\s+)?(?:" + SPEECH + r")\b"
                    r"|(?:'s|’s)\s+(?:own\s+)?(?:" + NOUN + r")\s+that\b"
                    r"|\s+gives\b[^.;]{0,100}?\bmeaning as\b")
 
+# F2 / ADR-0007: no additional introducing phrases have been accepted.
+INTRODUCING_PHRASES = ()
+EXPLICIT_PREFIX = re.compile(r"\s*(?::|(?:'s|’s))")
+PARENTHETICAL = re.compile(r"\s*\(([^()]*)\)")
+
+
+def parenthetical_owners(content):
+    """Retain broad recognition; only an ID/separator prefix blocks (F2)."""
+    ownership = re.split(r";\s*but\s+see\b", content, maxsplit=1)[0]
+    claims = list(CITE_RE.finditer(ownership))
+    if not claims or ownership[:claims[0].start()].strip():
+        return [], "ADVISORY"
+    separators = CITE_RE.sub("", ownership)
+    tier = "BLOCKING" if re.fullmatch(r"[\s,;/&]*", separators) else "ADVISORY"
+    return [c[1] for c in claims], tier
+
 
 def attributions(unit):
-    """Yield (owner, quotation) for explicit shapes and normative backtick spans.
+    """Yield (owner, quotation, tier) without dropping inferred relationships.
 
     Explicit shapes: ID: quote, ID says quote, ID's quote, quote (ID).
     Direct speech can cross ordinary prose, asides and input IDs, but stops at
@@ -142,6 +158,10 @@ def attributions(unit):
     begins an explanatory cross-reference; only preceding IDs claim ownership.
     Otherwise a normative backtick quote binds to the nearest citation in the
     association unit. Every such quote takes the same route in both gates.
+    Colon/possessive and recognized introducers block only with whitespace-only
+    quote attachment; ID/separator parenthetical prefixes also block.
+    Intervening prose, continued quotes and the nearest-citation fallback are
+    advisory; tiers belong to relationships.
     """
     text = unit.text
     cites = list(CITE_RE.finditer(text))
@@ -156,31 +176,80 @@ def attributions(unit):
         before = [c for c in cites if c.end() <= q.start]
         # An explicit speaker must not be replaced by a later pointer. Keep
         # parenthetical claims too; both relationships must verify if present.
-        direct = [c for c, m in intros if m.end() <= q.start and
+        direct = [(c, "BLOCKING" if not text[m.end():q.start].strip() else "ADVISORY")
+                  for c, m in intros if m.end() <= q.start and
                   re.fullmatch(r'[^.!?;`"“”]*', CITE_RE.sub("", text[m.end():q.start]))]
         if before and re.fullmatch(r"\s*(?::|(?:'s|’s))\s*", text[before[-1].end():q.start]):
-            direct.append(before[-1])
+            direct.append((before[-1], "BLOCKING"))
         owner = None
+        tier = "ADVISORY"
         if direct:
-            owner = max(direct, key=lambda c: c.start())[1]
+            speaker, tier = max(direct, key=lambda pair: pair[0].start())
+            owner = speaker[1]
         elif previous and re.fullmatch(r"\s*(?:,\s*)?(?:and|or|also)?\s*",
                                       text[previous[1].end:q.start]):
             owner = previous[0]
         parenthetical = []
-        attached = re.match(r"\s*\(([^()]*)\)", text[q.end:]) if phrase or owner else None
+        parenthetical_tier = "ADVISORY"
+        attached = PARENTHETICAL.match(text, q.end) if phrase or owner else None
         if attached:
             # Keep the claimed owners before the explicit explanatory suffix;
             # its references do not claim to contain the quotation's words.
-            ownership = re.split(r";\s*but\s+see\b", attached[1], maxsplit=1)[0]
-            claims = list(CITE_RE.finditer(ownership))
-            if claims and not ownership[:claims[0].start()].strip():
-                parenthetical = [c[1] for c in claims]
+            parenthetical, parenthetical_tier = parenthetical_owners(attached[1])
         if not owner:
             if parenthetical:
                 owner = parenthetical[0]
+                tier = parenthetical_tier
             elif RFC.search(q.text) and text[q.start] == "`" and cites:
                 owner = min(cites, key=lambda c: min(abs(c.end() - q.start),
                                                     abs(c.start() - q.end)))[1]
-        for claimed in dict.fromkeys(([owner] if owner else []) + parenthetical):
-            yield claimed, q
+        relationships = dict.fromkeys(parenthetical, parenthetical_tier)
+        if owner and (owner not in relationships or tier == "BLOCKING"):
+            relationships[owner] = tier
+        for claimed, severity in relationships.items():
+            yield claimed, q, severity
         previous = (owner, q) if owner else None
+
+
+def restatement_tier(unit, keyword, attributed):
+    """Classify this uncovered modal, never borrow a different quote's tier.
+
+    Unquoted colon/possessive clauses and attached ownership prefixes are
+    explicit. Paragraph-wide association alone remains advisory. Quotations
+    and sentence punctuation bound the unquoted clause used for this test.
+    """
+    text = unit.text
+    quotes = [q for q in quotations(text)
+              if not CITE_RE.fullmatch(text[q.start:q.end]) and
+              re.search(r"\w", re.sub(r"\bNOT\b", "", RFC.sub("", norm(q.text))))]
+    for q in quotes:
+        if q.start <= keyword.start() < q.end:
+            return ("BLOCKING" if any(a.start == q.start and tier == "BLOCKING"
+                                       for _, a, tier in attributed) else "ADVISORY")
+    start, end = 0, len(text)
+    masked = list(text)
+    # Punctuation inside quotes/parentheses must not split the outer clause.
+    # Keep whitespace: PARENTHETICAL consumes the gap after outer punctuation,
+    # and SENTENCE needs that gap for its lookahead. Masking preserves offsets.
+    for span in quotes + [Span(m.start(), m.end(), m[0])
+                          for m in PARENTHETICAL.finditer(text)]:
+        masked[span.start:span.end] = re.sub(r"\S", "x", text[span.start:span.end])
+    for boundary in SENTENCE.finditer("".join(masked)):
+        if boundary.end() <= keyword.start():
+            start = boundary.end()
+        elif boundary.start() > keyword.start():
+            end = boundary.start()
+            break
+    for q in quotes:
+        if q.end <= keyword.start():
+            start = max(start, q.end)
+        elif q.start > keyword.start():
+            end = min(end, q.start)
+    if any(EXPLICIT_PREFIX.match(text, c.end())
+           for c in CITE_RE.finditer(text, start, keyword.start())):
+        return "BLOCKING"
+    for attached in PARENTHETICAL.finditer(text, keyword.end(), end):
+        owners, tier = parenthetical_owners(attached[1])
+        if owners and tier == "BLOCKING":
+            return tier
+    return "ADVISORY"

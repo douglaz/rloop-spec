@@ -31,7 +31,15 @@ corpus is clean partly because it was edited to be clean, which is selection bia
 So the gates get two tiers. A finite, unambiguous attribution grammar **fails the build**: forms
 where the claim is explicit in the syntax rather than inferred — an identifier and a colon, a
 possessive, a quotation immediately after its introducer, a parenthetical whose **ownership
-prefix** is identifiers and separators, and a short enumerated set of introducing phrases. The
+prefix** is identifiers and separators, and a short enumerated set of introducing phrases.
+
+**Every introducer form binds only an adjacent quotation** — whitespace alone between the
+introducer and the quote. That applies to the colon and the possessive exactly as it does to the
+third form; there is no reading under which colon or possessive syntax carries an ownership claim
+across intervening prose. Otherwise `` `SEQ-4`'s claim that nothing is said about `one session`
+is wrong. `` would fail the build, and that sentence **denies** the attribution — the undecidable
+case this decision exists to keep out of the blocking tier. A claim whose scope must be carried
+across arbitrary text is inferred, not explicit, whatever punctuation introduced it. The
 ownership prefix is the content before the explanatory marker `F2` already recognises, or the
 whole content when there is none — so `` (`RUN-16`, `SEQ-4`) `` and
 `` (`SEQ-4`; but see `RUN-16` …) `` both block on their leading claim, and the words after the

@@ -10,7 +10,8 @@
 Identifiers are append-only (README.md, *Requirement conventions*). A withdrawn id may be absent
 from the documents only if the README's "Withdrawn identifiers" table lists it.
 
-Exit 0 = clean, 1 = failures.
+Restatements use F2's blocking/advisory boundary (ADR-0007); identifier
+integrity failures always block. Exit 0 = no blocking findings, 1 = failures.
 """
 
 import glob
@@ -59,7 +60,7 @@ def reviewed_homes():
 
 
 def restatements(docs, reqs):
-    from spec_text import RFC, attributions, clauses, containing, norm, prose, units
+    from spec_text import RFC, attributions, clauses, containing, norm, prose, restatement_tier, units
 
     failures = []
     homes = reviewed_homes()
@@ -76,15 +77,22 @@ def restatements(docs, reqs):
             # A modal alone (including MUST NOT) does not quote a rule. Any
             # phrase with content beyond its modal can take the quotation route;
             # the citation gate verifies the actual words against their owner.
-            quoted = [q for _, q in attributions(unit)
+            attributed = list(attributions(unit))
+            quoted = [q for _, q, _ in attributed
                       if unit.text[q.start] == "`" and
                       re.search(r"\w", re.sub(r"\bNOT\b", "", RFC.sub("", norm(q.text))))]
             defining = [c for c in clauses(unit.text) if clause_key(home, c.text) in homes]
             uncovered = [k for k in keywords
                          if not any(q.start <= k.start() < q.end for q in quoted + defining)]
-            if uncovered:
-                failures.append((document, unit.start + uncovered[0].start(),
-                                 sorted({c[1] for c in cites}), norm(unit.text)))
+            # Keep each tier visible in a mixed paragraph. A different explicit
+            # quotation cannot turn an inferred restatement into a blocker.
+            reported = set()
+            for keyword in uncovered:
+                tier = restatement_tier(unit, keyword, attributed)
+                if tier not in reported:
+                    failures.append((document, unit.start + keyword.start(),
+                                     sorted({c[1] for c in cites}), norm(unit.text), tier))
+                    reported.add(tier)
     return failures
 
 
@@ -148,15 +156,16 @@ def main():
     from spec_text import line_at, load
     docs, reqs = load(ROOT)
     repeated = restatements(docs, reqs)
-    for document, position, owners, clause in repeated:
-        print(f"RESTATEMENT: {document}:{line_at(docs[document], position)} "
+    for document, position, owners, clause, tier in repeated:
+        column = position - docs[document].rfind("\n", 0, position)
+        print(f"{tier} RESTATEMENT: {document}:{line_at(docs[document], position)}:{column} "
               f"cites {', '.join(owners)} outside its owning definition:")
         print(f"  {clause}")
-        print("  Use a pointer or a backtick quotation of the cited owner's words;")
-        print("  for a defining clause, review ownership and record its exact clause in restatement-homes.json.")
+        print("  Review ownership; F2 describes quotation coverage and reviewed defining clauses.")
     if not repeated:
         print("RESTATEMENTS: none")
-    return 1 if (dupes or dangling or gaps or outliers or bad_adrs or repeated) else 0
+    blocking = any(tier == "BLOCKING" for *_, tier in repeated)
+    return 1 if (dupes or dangling or gaps or outliers or bad_adrs or blocking) else 0
 
 
 if __name__ == "__main__":

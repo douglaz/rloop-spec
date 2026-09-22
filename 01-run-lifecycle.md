@@ -208,8 +208,8 @@ judge call resumes it (`AGT-3`, `AGT-4`), and rloop MUST write its id to the `se
 (`DIR-4`). Under `--manager claude` the id is one rloop chose before the pick. Under `--manager
 codex` it is the `thread_id` of the first `thread.started` event on the pick's standard output,
 which rloop reads for this and for nothing else (`DIR-4`). A pick that reports no id, and a judge
-call whose resume fails, are each a failed Manager call: exit 2. *Until 2026-09-20 this required the
-pick to start the Manager's session under an id rloop chose, which only one of the two presets
+call whose resume fails, are each a failed Manager call: exit 2. *Until 2026-09-20 this read "the
+pick MUST start the Manager's session under an id rloop chose", which only one of the two presets
 can do: `codex` has no flag that sets a session id and mints its own.*
 
 ## Decisions the Manager may not make alone

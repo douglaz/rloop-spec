@@ -23,7 +23,7 @@ jobs:
       - name: Run all gates
         run: nix develop --command bash tools/check-all.sh
 
-      - name: Prove restatement and citation checks compose
+      - name: Prove blocking and advisory citation tiers compose through all gates
         run: nix develop --command python3 tools/test_citation_gates.py
 
       - name: Prove the identifier gate can fail

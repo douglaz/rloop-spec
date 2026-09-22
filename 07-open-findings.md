@@ -23,14 +23,14 @@ for the Sequence check while retaining its own lone Run permission and dirty-at-
 Amended `OVR-4` into a pointer to `AGT-15`, removing its duplicate process-lifetime prohibition
 and the corresponding home exemption; its identifier and conformance coverage remain.
 Amended `RUN-18` to point to `OVR-3` for git mutations while retaining its own rule about the
-Implementer's commit choice. Wider association exposed that duplicate and the obsolete modal in
-`RUN-16`'s historical note; the latter is now reported as historical prose in the same place.
-The direct-speech scan also read `ADR-0006`'s relative-clause probe reference as a speaker
-claim about the report format. That reference is now an unambiguous pointer to `AGT-18`;
-`RUN-21` remains the report format's owner. No defining-clause exemption was added.
+Implementer's commit choice. Amended F2 to deliver the blocking/advisory boundary decided in
+[ADR-0007](docs/adr/0007-a-gate-that-cannot-decide-warns-rather-than-blocks.md).
+Restored `ADR-0006`'s original probe reference and `RUN-16`'s historical quotation, which the
+scanner work had reworded. They now report advisory findings without exemptions; the duplicate
+normative rules remain removed.
 
-A line citing another requirement and carrying an uppercase RFC-2119 keyword either defines
-its own rule or carries the cited owner's words in backticks. Exact normative phrases have no
+A line citing another requirement and carrying an uppercase RFC-2119 keyword is a restatement
+candidate unless it defines its own rule or carries the cited owner's words in backticks. Exact normative phrases have no
 minimum word count; backticking only a modal (including its negation) does not quote the rule.
 Both gates retain associations across sentences, semicolons and wrapped lines within a
 paragraph. Blank lines, list items (`-`, `*`, `+` and numbered items), table rows, headings and
@@ -44,27 +44,58 @@ review; a new definition line is not automatically exempt. Fingerprints cover in
 not entire association units, so an adjacent new rule still needs review. The digest ignores
 whitespace and Markdown emphasis, not changed words. Self-citations remain at their own home.
 
+Both checks report each finding as `BLOCKING` or `ADVISORY`. Blocking findings fail the
+individual check and the aggregate gate, even alongside advisories. Advisories remain visible
+and do not change the exit status. Identifier integrity failures still block.
+
+For quoted attributions, the blocking forms are:
+
+- An identifier followed by a colon and then the quotation, separated only by whitespace.
+- A bare possessive followed by the quotation, separated only by whitespace, including straight
+  and curly apostrophes.
+- A quotation immediately after its recognized introducer, separated only by whitespace.
+- An attached parenthetical whose ownership prefix consists of identifiers and separators
+  (whitespace, commas, semicolons, slashes or ampersands). The prefix is the content before
+  the literal lowercase `; but see`, with flexible whitespace, or the whole content when the
+  marker is absent. Every owner in that prefix is checked; identifiers after the marker
+  claim nothing. Thus a correct owner cannot rescue an incorrect owner in the same list.
+
+The enumerated introducing-phrase list is empty. Recognizing a speech introducer does not
+make unrestricted prose after it blocking. The recognized introducers are `says`, `states`,
+`reads` and their past tenses, possessive `(own) rule/claim/wording/statement/sentence/words/text
+that`, and `gives … meaning as`. Every introducer form requires whitespace-only attachment to
+its quotation. Inferred speech through ordinary prose, comma- or dash-delimited asides or input
+identifiers is advisory. Speech association stops at sentence punctuation
+(`.`, `!`, `?`, `;`) or another quote; the latest introducer supplies the speaker.
+Continued quotations joined by a comma, whitespace, `and`, `or` or `also` inherit the owner,
+not its tier: they are advisory unless they have their own blocking form.
+
+An attached non-nested parenthetical beginning with an identifier still claims owners before
+the explanatory marker when the prefix contains prose; those inferred claims are advisory.
+Parenthetical recognition does not collect citations beyond the closing parenthesis. A later
+parenthetical cannot replace a speech attribution: each relationship is checked with its own
+tier. A correct advisory attribution cannot hide an incorrect explicit owner, and a separate
+blocking relationship cannot promote an inferred one.
+
+The nearest-citation fallback also remains advisory: a normative backtick quote without a
+recognized speaker or parenthetical owner binds to the nearest citation in its paragraph,
+even when explicit recognition declines the form. Restatement association across intervening
+prose or sentence punctuation is advisory too. For an uncovered modal, the explicit colon,
+possessive or attached ownership prefix must belong to its own clause; a separate quotation's
+syntax cannot make it blocking. Sentence boundaries beside parentheticals still end that clause;
+punctuation inside quotations or parentheticals does not split the outer clause. A quotation
+with no recognized owner does not cover a modal for the restatement check, so a declined
+attribution can still report an advisory restatement.
+
 The citation check compares a contiguous phrase against that owner's body only, ending at the
 next definition or section heading. It preserves case, punctuation and words while normalizing
-wrapping and Markdown emphasis. Supported attributions are identifier-colon-quote, direct speech
-(`says`, `states`, `reads` and their past tenses), possessive wording, a quote immediately followed
-by parenthetical identifiers, and a normative backtick quote with a citation in the same unit.
-For the last shape the nearest citation is the owner; use the explicit colon shape when that
-would be ambiguous. Direct speech reaches the next quote through ordinary prose, comma- or
-dash-delimited asides and input identifiers, stopping at sentence punctuation (`.`, `!`, `?`,
-`;`) or another quote. The latest explicit introducer supplies the speaker. This lexical scan
-does not parse relative clauses; use a pointer for a reference that could look like direct speech.
-A later parenthetical pointer cannot replace an explicit speaker: identifiers in immediately
-attached, non-nested parentheses beginning with a cited identifier are checked too, including on
-short explicit quotations. Within those parentheses, the literal lowercase `; but see` (allowing
-whitespace variation) begins an explanatory cross-reference: only identifiers before that marker
-claim ownership. Plain multiple-owner lists still check every owner; citations beyond the closing
-parenthesis are not collected. A parenthetical attribution without an RFC-2119 keyword or an
+wrapping and Markdown emphasis. A parenthetical attribution without an RFC-2119 keyword or an
 explicit introducer retains the source's four-word prose heuristic, so short code labels citing
 their definitions are not mistaken for prose quotations. Normative phrases and explicit
-introducers have no such minimum. No other document, historical word, teaching marker or baseline
-excuses a false current attribution. Historical discussion can describe removed wording without
-presenting it as a quotation of a current identifier.
+introducers have no such minimum. Both tiers use the same phrase eligibility and verification;
+no other document, historical word, teaching marker or baseline supplies missing words.
+The lexical scan does not parse relative clauses or distinguish a speech claim from its denial;
+these inferred findings remain for a reader to judge.
 
 The source's unquoted-attribution ratchet, baseline, Lean-name machinery and historical self-test
 were not ported. Unquoted summaries, implicit attribution across independent blocks, fenced

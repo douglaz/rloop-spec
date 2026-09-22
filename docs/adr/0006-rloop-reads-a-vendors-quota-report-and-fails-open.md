@@ -8,7 +8,7 @@ that was never going to answer, and rloop learns this by spending the timeout an
 the next Round. Measured on the Run that produced `9bd4166`: `fable` was killed at exit 124 in both
 Rounds, roughly thirty of the Run's forty-six minutes.
 
-So rloop runs the probe from `AGT-18` before each Panel and reads the `Current week (<family>):
+So rloop runs the probe `AGT-18` states before each Panel and reads the `Current week (<family>):
 <n>% used` line out of it (`RUN-21`). That is a vendor's human-facing report, with no contract
 behind it, parsed by a Specification that is otherwise language-neutral. All three advisers
 consulted on rloop-spec#3 objected to exactly that, in some form of "this encodes vendor billing

@@ -16,11 +16,11 @@ executable, and run `spec/conformance/run ./result/bin/rloop`.
 `nix develop --command bash tools/check-all.sh` runs every gate below, and CI runs the same script
 on every push:
 
-| Gate | What it refuses |
+| Gate | Blocking failures and advisory reports |
 |---|---|
 | `tools/check_formal.sh` | A formalized clause whose proof does not hold. `tools/formal/` carries the decision after every Manager call, the Round, the Sequence, and the properties `01` and `05` state, as Lean definitions tagged `@[req]` with the identifier each formalizes; every guard has a witness theorem for its absence (`ADR-0002`). `lake build` refuses a theorem that no longer proves; `lake exe gate` refuses a proof resting on any axiom beyond `propext`, `Classical.choice` and `Quot.sound` — a `sorry`, a project `axiom` and `native_decide` are each red — and an empty index; `lake exe render` writes the marked regions; `lake exe scenarios` writes the suite's replay file and, with `--controls`, refuses a guard that no scenario would miss |
-| `tools/check_ids.py` | A duplicate identifier, a citation to an id nothing defines, a gap in a namespace's sequence, an id far above its neighbours, a reference to an ADR that does not exist, or a cited normative clause outside its reviewed home without a backtick quotation; association survives sentence punctuation and wrapping within a paragraph (`F2`) |
-| `tools/check_citations.py` | A quotation attributed to a requirement whose own body does not contain those words; this verifies short normative and explicit quotations, preserves explicit speakers through intervening prose, and checks attached parenthetical owners before an explanatory `; but see` reference (`F2`) |
+| `tools/check_ids.py` | Blocks duplicate or dangling identifiers, sequence gaps, outliers and missing ADRs. Restatements outside reviewed homes block only in F2’s explicit forms; inferred associations report advisory findings |
+| `tools/check_citations.py` | Verifies quotations against the cited owner’s body. False attributions in F2’s explicit forms block; inferred attributions, including intervening prose, continued quotations and nearest-citation fallback, report advisory findings |
 | `tools/check_coverage.py` | A requirement that no `CNF` item cites and that `06-conformance.md` does not excuse with a reason |
 | `tools/check_regions.py` | A marked region — the decision table in `01-run-lifecycle.md` — that is not what its Lean declaration emits |
 | `tools/check_fixtures.py` | A prompt or command-line fixture in `conformance/fixtures/` that differs from its block in `02-agents.md` or `03-prompts.md`; the Markdown is the home (`ADR-0001`) |
@@ -30,7 +30,9 @@ The workflow also breaks a document deliberately on every run and asserts each g
 negative control rejects it, so that green is evidence.
 The restatement/citation controls also run locally with
 `nix develop --command python3 tools/test_citation_gates.py`; each mutation uses a disposable
-copy and asserts the gate's exit status and diagnostic.
+copy and asserts the gates' exit statuses, diagnostics and tiers. Aggregate controls prove that
+advisories remain visible with exit zero, while explicit false attributions and unrelated
+identifier failures still fail the build alongside advisories.
 
 ## How to read this
 
