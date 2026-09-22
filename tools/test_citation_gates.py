@@ -123,6 +123,43 @@ class CitationControls(unittest.TestCase):
         self.ids()
         self.citations(1, "CITATION:", "SEQ-5 (05-sequence.md)", "MUST exit 7")
 
+    def test_short_explicit_quote_checks_attached_owners(self):
+        path = self.root / "control.md"
+        for intro in (" says", ":", "'s"):
+            for owners in ("`SEQ-4`", "`RUN-16`, `SEQ-4`"):
+                with self.subTest(intro=intro, owners=owners):
+                    path.write_text(f"`RUN-16`{intro} `one session` ({owners}).")
+                    self.ids()
+                    self.citations(1, "CITATION: control.md:1",
+                                   "SEQ-4 (05-sequence.md)", "one session",
+                                   "FAIL: 1 unverifiable quoted attribution(s).")
+            with self.subTest(intro=intro, owners="valid only"):
+                path.write_text(f"`RUN-16`{intro} `one session` (`RUN-16`).")
+                self.ids()
+                self.citations()
+
+    def test_parenthetical_explanatory_reference_is_not_an_owner(self):
+        path = self.root / "control.md"
+        path.write_text(f"`{QUOTE}` (`RUN-16`; but see `SEQ-4` for the Sequence rule).")
+        self.ids()
+        self.citations()
+        path.write_text(f"`{QUOTE}` (`SEQ-4`; but see `RUN-16` for the session rule).")
+        self.ids()
+        self.citations(1, "CITATION: control.md:1", "SEQ-4 (05-sequence.md)", QUOTE,
+                       "FAIL: 1 unverifiable quoted attribution(s).")
+
+    def test_explanatory_reference_preserves_preceding_owner_list(self):
+        path = self.root / "control.md"
+        for suffix in ("", "; but see `RUN-16` for the session rule"):
+            with self.subTest(suffix=suffix):
+                path.write_text(f"`{QUOTE}` (`RUN-16`, `SEQ-4`{suffix}).")
+                self.ids()
+                self.citations(1, "CITATION: control.md:1", "SEQ-4 (05-sequence.md)",
+                               QUOTE, "FAIL: 1 unverifiable quoted attribution(s).")
+        path.write_text("`MUST exit 2` (`SEQ-5`, `RUN-1`; but see `RUN-16` for sessions).")
+        self.ids()
+        self.citations()
+
     def test_speaker_survives_intervening_prose_and_later_pointer(self):
         for gap in (" the rule is ", ", in short, "):
             with self.subTest(gap=gap):

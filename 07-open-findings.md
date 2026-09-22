@@ -54,11 +54,14 @@ would be ambiguous. Direct speech reaches the next quote through ordinary prose,
 dash-delimited asides and input identifiers, stopping at sentence punctuation (`.`, `!`, `?`,
 `;`) or another quote. The latest explicit introducer supplies the speaker. This lexical scan
 does not parse relative clauses; use a pointer for a reference that could look like direct speech.
-A later parenthetical pointer cannot replace an explicit speaker: every identifier in immediately
-attached, non-nested parentheses beginning with a cited identifier is checked too, without collecting
-citations beyond the closing parenthesis. A parenthetical attribution without an RFC-2119 keyword
-retains the source's four-word prose heuristic, so short code labels
-citing their definitions are not mistaken for prose quotations. Normative phrases and explicit
+A later parenthetical pointer cannot replace an explicit speaker: identifiers in immediately
+attached, non-nested parentheses beginning with a cited identifier are checked too, including on
+short explicit quotations. Within those parentheses, the literal lowercase `; but see` (allowing
+whitespace variation) begins an explanatory cross-reference: only identifiers before that marker
+claim ownership. Plain multiple-owner lists still check every owner; citations beyond the closing
+parenthesis are not collected. A parenthetical attribution without an RFC-2119 keyword or an
+explicit introducer retains the source's four-word prose heuristic, so short code labels citing
+their definitions are not mistaken for prose quotations. Normative phrases and explicit
 introducers have no such minimum. No other document, historical word, teaching marker or baseline
 excuses a false current attribution. Historical discussion can describe removed wording without
 presenting it as a quotation of a current identifier.

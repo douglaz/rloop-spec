@@ -137,7 +137,9 @@ def attributions(unit):
     Explicit shapes: ID: quote, ID says quote, ID's quote, quote (ID).
     Direct speech can cross ordinary prose, asides and input IDs, but stops at
     sentence punctuation or another quote. The latest explicit introducer wins.
-    Every owner in an attached parenthetical is checked as well.
+    Every owner in an attached parenthetical is checked as well, including for
+    short explicit quotes. A literal '; but see' (with flexible whitespace)
+    begins an explanatory cross-reference; only preceding IDs claim ownership.
     Otherwise a normative backtick quote binds to the nearest citation in the
     association unit. Every such quote takes the same route in both gates.
     """
@@ -165,10 +167,13 @@ def attributions(unit):
                                       text[previous[1].end:q.start]):
             owner = previous[0]
         parenthetical = []
-        attached = re.match(r"\s*\(([^()]*)\)", text[q.end:]) if phrase else None
+        attached = re.match(r"\s*\(([^()]*)\)", text[q.end:]) if phrase or owner else None
         if attached:
-            claims = list(CITE_RE.finditer(attached[1]))
-            if claims and not attached[1][:claims[0].start()].strip():
+            # Keep the claimed owners before the explicit explanatory suffix;
+            # its references do not claim to contain the quotation's words.
+            ownership = re.split(r";\s*but\s+see\b", attached[1], maxsplit=1)[0]
+            claims = list(CITE_RE.finditer(ownership))
+            if claims and not ownership[:claims[0].start()].strip():
                 parenthetical = [c[1] for c in claims]
         if not owner:
             if parenthetical:
