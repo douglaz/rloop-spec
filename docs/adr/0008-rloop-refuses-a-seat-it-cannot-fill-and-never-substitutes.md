@@ -1,6 +1,6 @@
 # rloop refuses a seat it cannot fill and never substitutes
 
-**Status:** accepted (2026-09-22)
+**Status:** accepted (2026-09-22; the all-Reviewers arm dropped the same day, below)
 
 `ADR-0006` decided that rloop reads a vendor's quota report and fails open. That decision was taken
 for the Panel, where a Reviewer that cannot answer is recorded in place and the Round carries on
@@ -16,9 +16,9 @@ judges every Round, and `SEQ-8` is what holds it to leaving the tree clean.
 ## The decision
 
 The Probe runs before the pick as well as before each Round's Panel, and records a verdict for
-every Seat. rloop refuses to start — exit 2, no agent spawned — when the Manager's Seat, the
-Implementer's Seat, or every Reviewer's Seat is recorded `unavailable`, naming the Seat, the model
-and the reset time the report gave. It never substitutes another model.
+every Seat. rloop refuses to start — exit 2, no agent spawned — when the Manager's Seat or the
+Implementer's Seat is recorded `unavailable`, naming the Seat, the model and the reset time the
+report gave. It never substitutes another model.
 
 Substitution was the obvious alternative, and rloop-spec#3 states the reason it was rejected:
 `Removal is honest; substitution needs to be asked for.` A Sequence that quietly moved from one
@@ -40,19 +40,28 @@ The waste it avoids is the largest in the tool. `--implementer-timeout` defaults
 and `--max-rounds` to 10, so an Implementer Seat that cannot answer is worth up to forty hours of
 empty Rounds, each one followed by a Panel reviewing a Round in which nothing happened.
 
-## The Reviewers are judged on a stale reading, deliberately
+## The Reviewers are left to RUN-15
 
-Every other guard here reads a Probe next to the calls it guards: the one before the pick guards
-the Manager, called seconds later, and the Implementer, called minutes later; a Round's guards the
-Panel and the judge that follow it. The Reviewers are the exception. An Implementer may run for
-hours between the pick and the Panel, and a weekly limit resets at a fixed time, so a Reviewer
-recorded unavailable at the pick may be able to answer by the time the Panel starts.
-
-Refusing anyway is accepted because it changes no verdict. `RUN-15` already requires that
+This decision was first taken with a third arm: refuse at the pick when every Reviewer's Seat is
+recorded `unavailable`, on the grounds that `RUN-15` requires that
 `When **every** Reviewer of a Panel is down — failed, or not run — rloop MUST exit 2 without
-calling the judge`, and a Reviewer recorded unavailable is not run, so the same exit is reached
-either way. The only difference is whether an Implementer Round was paid to reach it. Being wrong
-costs a Run the operator restarts; being right saves hours.
+calling the judge` and the pick reaches that same exit hours earlier. The arm was dropped the same
+day, before anything was built, because it cannot fire.
+
+`RUN-21` holds a family table of two models, both claude, and says of everything else that
+`the Reviewer's model is not in that table — which is every codex Reviewer, since that vendor
+publishes no quota at all`. Two of the four Reviewers are codex, so four `unavailable` verdicts are
+unreachable by construction. The reachable way to empty a Panel mixes unavailable with failed, and
+a failure is not knowable before anything has run.
+
+The Run that added availability to the enumeration established this independently and executably:
+its fake reports the codex models at 100% precisely so that they stay spawned, and the all-down
+state is reached in the formal model as a theorem rather than as a scenario line.
+
+So the pick guards the two Seats adjacent to it — the Manager, called seconds later, and the
+Implementer, called minutes later — and the Panel stays with `RUN-15`, where the reading is fresh
+and a failure is visible. Should the family table ever cover a codex model, this is the arm to
+reconsider first.
 
 ## Consequences
 
