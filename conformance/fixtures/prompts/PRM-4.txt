@@ -4,6 +4,6 @@ Report, in Markdown, to the Manager who will judge this Round:
 0. What you could not do: any command this review needed that your sandbox refused or that failed before running (a build, a test suite, a gate), named up front, so the Manager knows what your verdict rests on. Say "I ran everything I needed" if that is true.
 1. Findings: where the implementation fails the brief, or has a defect. Each with file:line evidence and what you verified, by reading or by running. Verify before you claim; what you could not verify is a question, not a finding.
 2. Suggestions, under their own heading, which the Manager may take or leave.
-If there is nothing to report, write exactly: No findings.
+If you have nothing for items 1 and 2, write item 0 and then exactly: No findings.
 
 Do not modify the repository: no edits, no commits, no checkout, stash, reset or clean. Running the build or the tests is fine. Do not create, modify or delete anything under {{RUN_DIR}} except the file this prompt tells you to write.
