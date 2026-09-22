@@ -30,8 +30,13 @@ corpus is clean partly because it was edited to be clean, which is selection bia
 
 So the gates get two tiers. A finite, unambiguous attribution grammar **fails the build**: forms
 where the claim is explicit in the syntax rather than inferred — an identifier and a colon, a
-possessive, a quotation immediately after its introducer, an identifier-only parenthetical list,
-and a short enumerated set of introducing phrases. Everything broader — ownership inferred across
+possessive, a quotation immediately after its introducer, a parenthetical whose **ownership
+prefix** is identifiers and separators, and a short enumerated set of introducing phrases. The
+ownership prefix is the content before the explanatory marker `F2` already recognises, or the
+whole content when there is none — so `` (`RUN-16`, `SEQ-4`) `` and
+`` (`SEQ-4`; but see `RUN-16` …) `` both block on their leading claim, and the words after the
+marker claim nothing. Testing the whole parenthetical instead would drop the second, which the
+table above records as a real misattribution. Everything broader — ownership inferred across
 unrestricted intervening prose — still runs, and reports, but **does not fail the build**.
 
 ## Consequences
