@@ -1,4 +1,6 @@
 claude
 -p
 <implementer prompt>
+--model
+<implementer model>
 --dangerously-skip-permissions

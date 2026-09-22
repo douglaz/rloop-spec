@@ -134,13 +134,13 @@ render() { # render <template file> ; placeholders from variables P_*
   t="${t//\{\{DIRTY_AT_START\}\}/$P_DIRTY_AT_START}"
   printf '%s' "$t"
 }
-expected_argv() { # expected_argv <argv fixture> <prompt text> <session> <model> -> NUL-joined
+expected_argv() { # expected_argv <argv fixture> <prompt text> <session> <model> -> NUL-joined; one model per fixture
   local line
   while IFS= read -r line; do
     case "$line" in
       "<pick prompt>"|"<judge prompt>"|"<implementer prompt>"|"<review prompt>") printf '%s\0' "$2" ;;
       "<session id>") printf '%s\0' "$3" ;;
-      "<manager model>") printf '%s\0' "$4" ;;
+      "<manager model>"|"<implementer model>") printf '%s\0' "$4" ;;
       *) printf '%s\0' "$line" ;;
     esac
   done < "$1"
@@ -162,12 +162,16 @@ $repo/run/feedback-1-astra.md
 $repo/run/feedback-1-sol.md"
 P_DIRTY_AT_START=" M README
 ?? untracked.txt"
-ok=1; detail=""
+ok=1; detail=""; prompt_ok=1; prompt_detail=""
 check_call() { # check_call <recorded glob> <argv fixture> <prompt fixture> <session> <model> <label>
-  local recf; recf=$(ls $1 2>/dev/null | head -1)
-  [ -n "$recf" ] || { ok=0; detail="$detail [$6: not spawned]"; return; }
-  expected_argv "$2" "$(render "$3")" "$4" "$5" > "$work/expected.argv"
-  argv_matches "$recf" "$work/expected.argv" || { ok=0; detail="$detail [$6: argv/prompt differ]"; }
+  local recf prompt arg seen=0; recf=$(ls $1 2>/dev/null | head -1)
+  [ -n "$recf" ] || { ok=0; detail="$detail [$6: not spawned]"; prompt_ok=0; prompt_detail="$prompt_detail [$6: not spawned]"; return; }
+  prompt="$(render "$3")"
+  expected_argv "$2" "$prompt" "$4" "$5" > "$work/expected.argv"
+  argv_matches "$recf" "$work/expected.argv" || { ok=0; detail="$detail [$6: argv differs]"; }
+  # CNF-12 reads the prompt argument alone; where it sits among the others is CNF-11's
+  while IFS= read -r -d '' arg; do [ "$arg" = "$prompt" ] && seen=1; done < "$recf"
+  [ "$seen" = 1 ] || { prompt_ok=0; prompt_detail="$prompt_detail [$6: prompt differs]"; }
 }
 check_call "$rec/*-manager-0.argv" "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid" claude-fable-5-1 pick
 check_call "$rec/*-implementer-1.argv" "$fx/argv/AGT-5.txt" "$fx/prompts/PRM-3.txt" "$sid" claude-fable-5-1 implementer
@@ -190,7 +194,7 @@ $repo/run/feedback-1-astra.md
 $repo/run/feedback-1-sol.md"
 ok=1; detail=""
 check_call "$rec/*-manager-0.argv" "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid" claude-opus-5 "pick (clean, no instruction)"
-check_call "$rec/*-implementer-1.argv" "$fx/argv/AGT-6.txt" "$fx/prompts/PRM-3.txt" "$sid" x "codex implementer"
+check_call "$rec/*-implementer-1.argv" "$fx/argv/AGT-6.txt" "$fx/prompts/PRM-3.txt" "$sid" gpt-6-astra "codex implementer"
 check_call "$rec/*-manager-1.argv" "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid" claude-opus-5 "judge (clean)"
 argv2_ok=$ok; argv2_detail="$detail"
 # a third Run: the codex Manager preset, at its default model, resuming the id the pick reported
@@ -208,7 +212,16 @@ $repo/run/feedback-1-sol.md"
 ok=1; detail=""
 check_call "$rec/*-manager-0.argv" "$fx/argv/AGT-3-2.txt" "$fx/prompts/PRM-1.txt" "$sid" gpt-6-astra "codex pick"
 check_call "$rec/*-manager-1.argv" "$fx/argv/AGT-4-2.txt" "$fx/prompts/PRM-2.txt" "$sid" gpt-6-astra "codex judge"
-if [ "$argv_ok" = 1 ] && [ "$argv2_ok" = 1 ] && [ "$ok" = 1 ]; then verdict CNF-11 ok "every role's argv is its fixture with the placeholders filled, under both Manager presets"; verdict CNF-12 ok "every prompt is its fixture rendered"; else verdict CNF-11 fail "$argv_detail $argv2_detail $detail"; verdict CNF-12 fail "see CNF-11"; fi
+argv3_ok=$ok; argv3_detail="$detail"; prompts_ok=$prompt_ok; prompts_detail="$prompt_detail"
+# a fourth Run: an Implementer model no preset defaults to. CNF-11's alone, as an Implementation without
+# the flag spawns nothing here (AGT-2); its own record directory, as CNF-23 reads the third Run's
+repo="$(new_repo)"; rec4="$work/rec-argv4"
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec4" --run-dir "$repo/run" --implementer-model claude-opus-5)
+P_TASK_FILE="$repo/run/task.md"; P_RUN_DIR="$repo/run"
+ok=1; detail=""
+check_call "$rec4/*-implementer-1.argv" "$fx/argv/AGT-5.txt" "$fx/prompts/PRM-3.txt" x claude-opus-5 "implementer (--implementer-model claude-opus-5)"
+if [ "$argv_ok" = 1 ] && [ "$argv2_ok" = 1 ] && [ "$argv3_ok" = 1 ] && [ "$ok" = 1 ]; then verdict CNF-11 ok "every role's argv is its fixture with the placeholders filled, under both presets of the Manager and the Implementer, and a model given to each"; else verdict CNF-11 fail "$argv_detail $argv2_detail $argv3_detail $detail"; fi
+if [ "$prompts_ok" = 1 ]; then verdict CNF-12 ok "every prompt is its fixture rendered"; else verdict CNF-12 fail "$prompts_detail"; fi
 
 # --- CNF-23: the codex Manager's session id ------------------------------------------------------------
 ok=1; detail=""

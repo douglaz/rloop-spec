@@ -72,8 +72,10 @@ toplevel, and standard input at end of file on first read. (`AGT-12`, `AGT-13`)
 **CNF-11** For each role the recorded argument list equals the fixture in
 `conformance/fixtures/argv/` with the placeholders filled in: the pick's `<session id>` is the
 `session` file's content and every judge call carries that same id; `<manager model>` is
-`--manager-model`'s value, or the preset's default; `--manager codex` produces `AGT-3`'s and
-`AGT-4`'s second lists and the default produces their first;
+`--manager-model`'s value, or the preset's default; `<implementer model>` is
+`--implementer-model`'s value, or the preset's default, asserted for the claude default, the codex
+default and a non-default value given on the command line; `--manager codex` produces `AGT-3`'s
+and `AGT-4`'s second lists and the default produces their first;
 `--implementer codex` produces
 `AGT-6`'s list and the default `AGT-5`'s; the four Reviewers' lists are `AGT-7`, `AGT-8` and
 `AGT-10`'s, one each, with their `RLOOP_REVIEWER` names. (`AGT-3`, `AGT-4`, `AGT-5`, `AGT-6`,

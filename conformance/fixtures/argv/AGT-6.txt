@@ -1,4 +1,6 @@
 codex
 exec
 --dangerously-bypass-approvals-and-sandbox
+-m
+<implementer model>
 <implementer prompt>

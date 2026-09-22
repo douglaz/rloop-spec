@@ -15,6 +15,7 @@ rloop [OPTIONS] [INSTRUCTION]
   --manager claude|codex       which Manager preset the pick and judges use   (default: claude)
   --implementer claude|codex   which Implementer preset a Round uses          (default: claude)
   --manager-model MODEL        the Manager's model                       (default: the preset's, AGT-3)
+  --implementer-model MODEL    the Implementer's model                   (default: the preset's, AGT-5)
   --base REF                   the ref Reviewers diff against                  (default: HEAD at start)
   --run-dir PATH               the Run Directory, which must not exist yet     (default: DIR-2)
   --max-rounds N               Rounds per Run                                  (default: 10)
@@ -97,18 +98,28 @@ it judges Round 3 remembering why it wrote Round 2's brief.*
 **AGT-5** The Implementer, with `--implementer claude`, MUST be:
 
 ```text
-claude -p <implementer prompt> --dangerously-skip-permissions
+claude -p <implementer prompt> --model <implementer model> --dangerously-skip-permissions
 ```
+
+`<implementer model>` is `--implementer-model`'s value, which defaults to `claude-fable-5-1` under
+`--implementer claude` and to `gpt-6-astra` under `--implementer codex`, the same defaults `AGT-3`
+gives the Manager.
 
 **AGT-6** The Implementer, with `--implementer codex`, MUST be:
 
 ```text
-codex exec --dangerously-bypass-approvals-and-sandbox <implementer prompt>
+codex exec --dangerously-bypass-approvals-and-sandbox -m <implementer model> <implementer prompt>
 ```
 
+with `<implementer model>` as `AGT-5` gives it.
+
 *Both run with permissions bypassed: writing is the Implementer's job, and codex's workspace
-sandbox blocks the network and `.git`, which breaks `nix`, `cargo fetch` and commits. Neither
-carries a model flag: the CLI's configured default is the Implementer's model.*
+sandbox blocks the network and `.git`, which breaks `nix`, `cargo fetch` and commits. Until
+2026-09-22 neither line carried a model flag and the CLI's configured default was the
+Implementer's model; that day `ADR-0008` needed every Seat to have a model rloop can name, and a
+Seat filled by a CLI's configured default is one rloop cannot Probe. The cost is live: an operator
+whose `claude` default is not `claude-fable-5-1`, or whose `codex` default is not `gpt-6-astra`,
+now gets that model unless they pass `--implementer-model`.*
 
 **AGT-7** Reviewer `fable` MUST be:
 
