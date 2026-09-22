@@ -39,6 +39,10 @@ _Avoid_: Critic, checker
 **Panel**:
 The **Reviewers** `AGT-11` designates for one **Round**, each a different model, run side by side. A Reviewer stays one whether or not it was called.
 
+**Seat**:
+A place in a **Run** where exactly one model is called: the **Manager**'s, the **Implementer**'s, and one for each **Reviewer** of the **Panel**. Each seat has its own model and its own bound, and one model may hold several seats.
+_Avoid_: Slot, role, agent
+
 **Feedback File**:
 One **Reviewer**'s findings for one **Round**, written for the **Manager**. A **Reviewer** that failed leaves what it wrote with rloop's note after it; one that was never called leaves rloop's note alone (`RUN-15`).
 _Avoid_: Review, findings file
