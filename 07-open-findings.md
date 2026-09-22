@@ -13,21 +13,57 @@ on a seed repository, passing meaning the suite is green and one real Run comple
 run of the gate recorded. Deferred by the owner as an interesting idea for later; the shape
 sketched here is the one to start from. Until it exists, `CNF-22` is the only live check.
 
-## F2 — Citation and obligation gates (citations accepted 2026-09-21; obligations still deferred)
+## F2 — Citation and obligation gates (citations delivered 2026-09-22; obligations still deferred)
 
-provisiond-spec's `check_citations.py` (a quoted phrase attributed to a requirement whose body
-does not contain it) and `check_obligations.py` (a duty assigned to another requirement's
-subject) caught drift in a set of 700 requirements over months. This set has about eighty.
-They are added the first time this set is found to have drifted in either way.
+provisiond-spec's citation and obligation gates supplied the precedent. A probe here then found
+candidate restatements, triggering the accepted citation work. Delivered: the restatement check
+in `tools/check_ids.py` and the quoted-attribution part of provisiond-spec's
+`check_citations.py`, ported to `tools/check_citations.py`. Amended `RUN-3` to point at `SEQ-4`
+for the Sequence check while retaining its own lone Run permission and dirty-at-start recording.
+Amended `OVR-4` into a pointer to `AGT-15`, removing its duplicate process-lifetime prohibition
+and the corresponding home exemption; its identifier and conformance coverage remain.
+Amended `RUN-18` to point to `OVR-3` for git mutations while retaining its own rule about the
+Implementer's commit choice. Wider association exposed that duplicate and the obsolete modal in
+`RUN-16`'s historical note; the latter is now reported as historical prose in the same place.
 
-**The trigger fired.** One pull request produced eight findings of a rule living in more than one
-place. Accepted: `check_citations.py`, ported, together with a restatement check in
-`tools/check_ids.py`, which already parses every definition and every citation — a line that cites
-another requirement while stating a rule of its own must carry the owner's words verbatim, and
-`check_citations.py` is what then proves the quote is the owner's. Eight lines in the set are
-flagged today. `check_obligations.py` stays deferred: of the eight, the one obligation finding was
-a paraphrase, not a duty assigned to another requirement's subject, and no instance of the shape
-that gate catches has appeared.
+A line citing another requirement and carrying an uppercase RFC-2119 keyword either defines
+its own rule or carries the cited owner's words in backticks. Exact normative phrases have no
+minimum word count; backticking only a modal (including its negation) does not quote the rule.
+Both gates retain associations across sentences, semicolons and wrapped lines within a
+paragraph. Blank lines, list items, table rows, headings and requirement definitions end that
+association. Backtick spans can wrap within a unit but cannot absorb another one, even after an
+unmatched delimiter. Being inside a requirement body does not excuse a second rule.
+`tools/restatement-homes.json` records the reviewed defining clauses by enclosing owner and
+exact normalized-text digest, with the reason each citation names
+an input, command, subject or related operation. A changed clause requires renewed ownership
+review; a new definition line is not automatically exempt. Fingerprints cover individual clauses,
+not entire association units, so an adjacent new rule still needs review. The digest ignores
+whitespace and Markdown emphasis, not changed words. Self-citations remain at their own home.
+
+The citation check compares a contiguous phrase against that owner's body only, ending at the
+next definition or section heading. It preserves case, punctuation and words while normalizing
+wrapping and Markdown emphasis. Supported attributions are identifier-colon-quote, direct speech
+(`says`, `states`, `reads` and their past tenses), possessive wording, a quote immediately followed
+by a parenthetical identifier, and a normative backtick quote with a citation in the same unit.
+For the last shape the nearest citation is the owner; use the explicit colon shape when that
+would be ambiguous. Direct speech takes the quote immediately after the verb, optionally with
+`that`, a colon, a dash or an intervening input identifier. A later parenthetical pointer cannot
+replace an explicit speaker: both claimed relationships are checked. A parenthetical attribution
+without an RFC-2119 keyword retains the source's four-word prose heuristic, so short code labels
+citing their definitions are not mistaken for prose quotations. Normative phrases and explicit
+introducers have no such minimum. No other document, historical word, teaching marker or baseline
+excuses a false current attribution. Historical discussion can describe removed wording without
+presenting it as a quotation of a current identifier.
+
+The source's unquoted-attribution ratchet, baseline, Lean-name machinery and historical self-test
+were not ported. Unquoted summaries, implicit attribution across independent blocks, fenced
+examples and internal contradictions without a lexical signal still need review. An exact quote establishes
+wording, not the correctness of the argument using it. The controls in
+`tools/test_citation_gates.py` exercise both checks together, including changed words, misleading
+code spans and owner-boundary failures; README's Gates table and CI carry the invocations.
+
+`check_obligations.py` stays deferred: the observed obligation finding was a paraphrase, not a
+duty assigned to another requirement's subject, and no instance of that gate's shape appeared.
 
 Two of the four shapes recorded against this needed no gate at all. The copy in an Implementation's
 `README.md` was deleted for a pointer, and the Specification's own operator section now cites its
@@ -182,9 +218,9 @@ failure. Retrying that adviser each Round also spends the Manager's turn on a kn
 Amended `RUN-20`, which now owns the whole policy and is where it is read: what an answer is, how
 a model that did not answer is replaced and why it is not called again, the bounds, the
 single-vendor case and what a blocked report must say. Two of its rules are the ones this finding
-exists to explain. `The Manager MUST record every model called and what each did` is what makes
-selective disclosure visible — without it the quorum is satisfiable by re-rolling advisers until
-two agree. And the blocked report states two independent facts rather than choosing a cause,
+exists to explain. `RUN-20`: `The Manager MUST record every model called and what each did` is
+what makes selective disclosure visible — without it the quorum is satisfiable by re-rolling
+advisers until two agree. And the blocked report states two independent facts rather than choosing a cause,
 because an adviser that hangs has not disagreed and no one can say whether its answer would have
 settled the question. Amended `PRM-1` and `PRM-2` to carry the policy at pick and judge,
 regenerated their fixtures, and replaced the Consultation glossary entry with a citation to its
@@ -240,4 +276,3 @@ exception. The Panel was therefore one substantive reviewer, `opus`, exactly as 
 probe existed. A silent seat is worse than a dead one: a dead seat is visibly absent in
 `RUN-15`'s accounting, while thirteen bytes read as a review that found nothing. Fixing the seat
 that hangs did not fix the Panel.
-

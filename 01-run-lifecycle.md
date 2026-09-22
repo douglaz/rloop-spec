@@ -20,11 +20,11 @@ recomputed during the Run. *A base recomputed per Round would hide the earlier R
 the later Rounds' Reviewers.*
 
 **RUN-3** rloop MUST record, once before the pick, the paths `git status --porcelain` lists, as the
-**dirty-at-start list** (`PRM-2`'s `{{DIRTY_AT_START}}`). A lone Run MAY start on a dirty tree; a
-Run inside a Sequence MUST NOT (`SEQ-4`). *The list is how the Manager tells the caller's unrelated
-edits from the Implementer's work when it commits (`SEQ-8`). A path the Run itself dirties after
-the list is taken — the tracker file the Manager claims the task in at the pick — is neither the
-caller's nor the Implementer's; it is the Manager's, and `SEQ-8` has the Manager commit it with
+**dirty-at-start list** (`PRM-2`'s `{{DIRTY_AT_START}}`). A lone Run MAY start on a dirty tree;
+`SEQ-4` owns the clean-tree check for a Run inside a Sequence. *The list is how the Manager tells
+the caller's unrelated edits from the Implementer's work when it commits (`SEQ-8`). A path the Run
+itself dirties after the list is taken — the tracker file the Manager claims the task in at the
+pick — is neither the caller's nor the Implementer's; it is the Manager's, and `SEQ-8` has the Manager commit it with
 the accepted work. A Sequence that finds it uncommitted at the next Run stops there (`SEQ-4`),
 which is the check working, not a defect.*
 
@@ -208,8 +208,8 @@ judge call resumes it (`AGT-3`, `AGT-4`), and rloop MUST write its id to the `se
 (`DIR-4`). Under `--manager claude` the id is one rloop chose before the pick. Under `--manager
 codex` it is the `thread_id` of the first `thread.started` event on the pick's standard output,
 which rloop reads for this and for nothing else (`DIR-4`). A pick that reports no id, and a judge
-call whose resume fails, are each a failed Manager call: exit 2. *Until 2026-09-20 this read "the
-pick MUST start the Manager's session under an id rloop chose", which only one of the two presets
+call whose resume fails, are each a failed Manager call: exit 2. *Until 2026-09-20 this required the
+pick to start the Manager's session under an id rloop chose, which only one of the two presets
 can do: `codex` has no flag that sets a session id and mints its own.*
 
 ## Decisions the Manager may not make alone
@@ -274,5 +274,6 @@ the control flow nothing and why only a live Run can show it happens (`CNF-22`).
 **RUN-17** On every exit rloop MUST leave the Run Directory as it is: no cleanup, no deletion, on
 success or failure. It is the evidence.
 
-**RUN-18** rloop MUST NOT commit, and MUST NOT tell an Implementer whether to commit: the
-repository's own instructions decide that. The Manager's obligations at `done` are `SEQ-8`.
+**RUN-18** rloop MUST NOT tell an Implementer whether to commit: the repository's own instructions
+decide that. `OVR-3` owns rloop's prohibition on git mutations. The Manager's obligations at
+`done` are `SEQ-8`.

@@ -56,7 +56,7 @@ Specification nevertheless hands an Implementation no file to read.
 no checkout, no stash, no reset, no clean, no branch. It reads git — `rev-parse`, `status` — and
 nothing else. The Manager commits accepted work (`SEQ-8`, `ADR-0004`).
 
-**OVR-4** rloop MUST NOT exit while an agent process it started is still running (`AGT-15`).
+**OVR-4** `AGT-15` owns the process-lifetime rule and signal handling.
 
 ## Non-goals
 

@@ -5,6 +5,7 @@
   * every cited id is defined somewhere               (dangling citations)
   * no id is missing from a namespace's sequence      (renumbering / gaps)
   * every cited ADR exists on disk                    (bad ADR references)
+  * a cited normative clause has one home or quotes its owner (restatements)
 
 Identifiers are append-only (README.md, *Requirement conventions*). A withdrawn id may be absent
 from the documents only if the README's "Withdrawn identifiers" table lists it.
@@ -13,6 +14,8 @@ Exit 0 = clean, 1 = failures.
 """
 
 import glob
+import hashlib
+import json
 import os
 import re
 import sys
@@ -40,6 +43,49 @@ def number(rid):
 
 def prefix(rid):
     return re.match(r"([A-Z]+)", rid).group(1)
+
+
+# Reviewed clauses are recorded only when they define their enclosing
+# requirement's own rule. Exact text (apart from wrapping/emphasis), never an id
+# or document exemption: an edit reopens the ownership question. See F2.
+def clause_key(home, text):
+    from spec_text import norm
+    return home, hashlib.sha256(norm(text).encode()).hexdigest()
+
+
+def reviewed_homes():
+    with open(os.path.join(ROOT, "tools", "restatement-homes.json")) as f:
+        return {(r["owner"], r["sha256"]): r["reason"] for r in json.load(f)}
+
+
+def restatements(docs, reqs):
+    from spec_text import RFC, attributions, clauses, containing, norm, prose, units
+
+    failures = []
+    homes = reviewed_homes()
+    for document, text in docs.items():
+        for unit in units(prose(text)):
+            cites = list(CITE_RE.finditer(unit.text))
+            keywords = list(RFC.finditer(unit.text))
+            if not cites or not keywords:
+                continue
+            position = unit.start + len(unit.text) - len(unit.text.lstrip())
+            home = containing(reqs, document, position)
+            if all(c[1] == home for c in cites):
+                continue
+            # A modal alone (including MUST NOT) does not quote a rule. Any
+            # phrase with content beyond its modal can take the quotation route;
+            # the citation gate verifies the actual words against their owner.
+            quoted = [q for _, q in attributions(unit)
+                      if unit.text[q.start] == "`" and
+                      re.search(r"\w", re.sub(r"\bNOT\b", "", RFC.sub("", norm(q.text))))]
+            defining = [c for c in clauses(unit.text) if clause_key(home, c.text) in homes]
+            uncovered = [k for k in keywords
+                         if not any(q.start <= k.start() < q.end for q in quoted + defining)]
+            if uncovered:
+                failures.append((document, unit.start + uncovered[0].start(),
+                                 sorted({c[1] for c in cites}), norm(unit.text)))
+    return failures
 
 
 def main():
@@ -99,7 +145,18 @@ def main():
     print("NUMBER GAPS:", gaps or "none")
     print("OUTLIER IDS:", outliers or "none")
     print("BAD ADR REFS:", sorted(bad_adrs) or "none")
-    return 1 if (dupes or dangling or gaps or outliers or bad_adrs) else 0
+    from spec_text import line_at, load
+    docs, reqs = load(ROOT)
+    repeated = restatements(docs, reqs)
+    for document, position, owners, clause in repeated:
+        print(f"RESTATEMENT: {document}:{line_at(docs[document], position)} "
+              f"cites {', '.join(owners)} outside its owning definition:")
+        print(f"  {clause}")
+        print("  Use a pointer or a backtick quotation of the cited owner's words;")
+        print("  for a defining clause, review ownership and record its exact clause in restatement-homes.json.")
+    if not repeated:
+        print("RESTATEMENTS: none")
+    return 1 if (dupes or dangling or gaps or outliers or bad_adrs or repeated) else 0
 
 
 if __name__ == "__main__":

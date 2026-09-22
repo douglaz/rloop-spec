@@ -1,0 +1,257 @@
+[
+  {
+    "owner": "OVR-1",
+    "sha256": "883d6e5509be3c6579a396775f704cab36f621e1908ffd0d97b1a7331a582ab5",
+    "reason": "Owns the permitted inputs; RUN-21 supplies how to read the Probe output."
+  },
+  {
+    "owner": "OVR-2",
+    "sha256": "afc35f7a7599971a1d181b691262327e2cce3c46a790095044f0cf10437505ef",
+    "reason": "Owns byte-for-byte reproduction; AGT-18 identifies one of the command lines."
+  },
+  {
+    "owner": "RUN-3",
+    "sha256": "dc5083e3405446854ee60a4d7c22ea781d0dfb6e0b9a19d1e35fc92f668e435f",
+    "reason": "Owns recording the dirty-at-start list; PRM-2 names its consumer and placeholder."
+  },
+  {
+    "owner": "RUN-4",
+    "sha256": "9754a76428ce32c7bb56a274397e3cf91a79619b7569398ca1afc08942a68142",
+    "reason": "Owns creation before the pick and the file boundary; DIR identifiers name the directory and exception."
+  },
+  {
+    "owner": "RUN-5",
+    "sha256": "15f9dc120c132592ff6513f9e9c4965a856caeda3d652752abcef5227425c28a",
+    "reason": "Owns the initial call; AGT-3 and PRM-1 identify its command and prompt."
+  },
+  {
+    "owner": "RUN-6",
+    "sha256": "299c947b8c33ae80d4bec8560214a7b321e8550b9790e4d4a698ee8c30c5f102",
+    "reason": "Owns the transition into Round 1; DIR-5 identifies the snapshot operation."
+  },
+  {
+    "owner": "RUN-21",
+    "sha256": "fda2e44b98a8be6c810313c7fb60453f23b69044334a5499674a4c9c2785c3ee",
+    "reason": "Owns Probe timing and recording; AGT-18, AGT-1 and DIR-4 identify the command, option and file."
+  },
+  {
+    "owner": "RUN-13",
+    "sha256": "ff9c01c59a52764af84332c39a7bb15cc72134f530b9e04ff5c7cf4bc4f28baa",
+    "reason": "Owns the cap warning; AGT-4 identifies the resume command shapes, not the warning."
+  },
+  {
+    "owner": "RUN-14",
+    "sha256": "c64ac0e4827449c8c029aa34486e7573b7d786d5dca65bc5e9b69c1515ee39f1",
+    "reason": "Owns continuation after Implementer failure; PRM-2 identifies the prompt receiving its log."
+  },
+  {
+    "owner": "RUN-15",
+    "sha256": "40de213f6228be82b3e198f1dcb15401f04030478f78936bdbee401e3c3bc96e",
+    "reason": "Owns whether a Reviewer is called; RUN-21 supplies the recorded availability input."
+  },
+  {
+    "owner": "RUN-16",
+    "sha256": "d21ea29c9bba572e0958f0a1251f734c262d749ff43c1b2be02cd8ac97f1058a",
+    "reason": "Owns session continuity and id persistence; AGT-3/AGT-4 identify commands and DIR-4 the file."
+  },
+  {
+    "owner": "RUN-20",
+    "sha256": "608e47c06263d4fecd7183da7dda988e4b0fb852e8efc5f2c99f183d31b5ebe3",
+    "reason": "Owns the Consultation prerequisite; PRM-1 identifies the adviser command lines."
+  },
+  {
+    "owner": "AGT-2",
+    "sha256": "23d86caa51ec616ecec27d18c1cbf51d4ebba6b6ad93793924df4f96e12a5a52",
+    "reason": "Owns usage-error handling; SEQ-3 identifies a forbidden combination, not the handling rule."
+  },
+  {
+    "owner": "AGT-11",
+    "sha256": "479c4c444d6afe1865abed54b71a9943a5d6ad25e93e53b98467eba2db5677c2",
+    "reason": "Owns Panel composition; command identifiers and DIR-4 supply the members and filenames."
+  },
+  {
+    "owner": "AGT-12",
+    "sha256": "db937cf93c5a0bb1e4ff6df514bbc2928d5c761486cf920dd0dafedf16fed923",
+    "reason": "Owns standard input; AGT-18 identifies the Probe to which this also applies."
+  },
+  {
+    "owner": "AGT-13",
+    "sha256": "b0f03ac2758a0515f6b1b1cef3babf273431c17765a8181070c31da5b8d81c1e",
+    "reason": "Owns working directory, streams and environment; citations identify the Probe and file names."
+  },
+  {
+    "owner": "AGT-14",
+    "sha256": "efd47bc3aa530ee0af8a65d57f965787d705aabd81e0a7e7f8c8f4103622b1a9",
+    "reason": "Owns process timeout bounds; citations identify the Probe and its command-line option."
+  },
+  {
+    "owner": "AGT-15",
+    "sha256": "3a5bb287c667addc1b76ab2f122ea126077a7900c01f8ea7cab68b237f10d2ff",
+    "reason": "Owns waiting for processes; AGT-18 identifies the Probe included in that scope."
+  },
+  {
+    "owner": "AGT-16",
+    "sha256": "f9eeba52c0854994a092a2f87c0f63344ed3d70e238cdc708654b06927f34284",
+    "reason": "Owns process groups; citations identify the Probe and consumers of those groups."
+  },
+  {
+    "owner": "AGT-18",
+    "sha256": "7f0e15f20c401a21403530dee55fabceea4b03fb426be9ecee7866e4dcdd6f91",
+    "reason": "Owns the Probe command line; RUN-21 identifies the operation invoking it."
+  },
+  {
+    "owner": "DIR-6",
+    "sha256": "f0b91c237bff20128f1d50cbac550d9a5461df2d36b39d890c5eeae54b807318",
+    "reason": "Owns Checkpoint operations; RUN-7 identifies their positions in the Round."
+  },
+  {
+    "owner": "DIR-10",
+    "sha256": "304ae24b56ada2f4e7ca74b22cdf9d42d918dee04c30a613314fa459b6a5bafc",
+    "reason": "Owns the prompt boundary instruction; PRM-5 identifies its verbatim sentence."
+  },
+  {
+    "owner": "SEQ-1",
+    "sha256": "4e6a329abe3bd90dd209b7ada065b060bd3fb65005b795204e9a7f89fa5d9a13",
+    "reason": "Owns independent Runs in order; DIR-2 identifies their directories."
+  },
+  {
+    "owner": "SEQ-8",
+    "sha256": "3b68bd8dd23671200d919a73fcbc4a32803dbaafdf0bbe9e1d0354a122bae758",
+    "reason": "Owns the commit post-condition and lone Run warning; PRM-2 identifies the prompt, SEQ-4 the separate Sequence check."
+  },
+  {
+    "owner": "SEQ-8",
+    "sha256": "92d237813bb9ca8fa7c1b6d852919b995409796983ac7dd02b31638ab174de09",
+    "reason": "Owns the commit post-condition and lone Run warning; PRM-2 identifies the prompt, SEQ-4 the separate Sequence check."
+  },
+  {
+    "owner": "SEQ-10",
+    "sha256": "d94079db7f64b2e7d8c63dcae181ec56f88fa7ad35c9bc11902c9f7ec069d989",
+    "reason": "Owns disclosure in README; RUN-2 identifies the base affected by the documented hole."
+  },
+  {
+    "owner": "OVR-1",
+    "sha256": "e205072a5f349bfb3af4d86e22c2f47e7a6f935d98917aca2c2a5619006af1f9",
+    "reason": "Owns the permitted reads, including the output-parsing prohibition; RUN-21 names the Probe interpretation, F9 and DIR-4 the historical rationale."
+  },
+  {
+    "owner": "OVR-3",
+    "sha256": "a21148680295305073af7a62273c7d7800576b05a7e871e8ca13290344eb39ac",
+    "reason": "Owns the ban on git mutations by rloop; SEQ-8 assigns committing to the Manager, a different subject."
+  },
+  {
+    "owner": "RUN-2",
+    "sha256": "5e95b48b9e06f31ac3ec7f46e870f3b419c300da26f6e99788657aa2dea379db",
+    "reason": "Owns fixing the base before the pick; PRM-4 identifies its consumer, the Reviewer prompt."
+  },
+  {
+    "owner": "RUN-3",
+    "sha256": "8a81e96eb558dc44e82b960ce8eee0b0968b77283c057bf7c7667e2ee95b434e",
+    "reason": "Owns permission for a lone Run to start dirty; SEQ-4 owns the separate Sequence check and PRM-2/SEQ-8 identify consumers of the recorded list."
+  },
+  {
+    "owner": "RUN-8",
+    "sha256": "2b92cf399f6afeaefc541f312fdb0e63c3ffd2c38243b55386437a4e5fec96f4",
+    "reason": "Owns concurrent Panel spawning and waiting before the Checkpoint; DIR-4 names the output file."
+  },
+  {
+    "owner": "RUN-13",
+    "sha256": "bdd4ff19892c6791797557a0071d04eaa5b3a366f2028d47b949d658be1c0623",
+    "reason": "Owns the Round cap and resulting exit; AGT-4 identifies the resume command in the separate cap-warning clause."
+  },
+  {
+    "owner": "RUN-15",
+    "sha256": "d747f92cb52ca837e7d08f653004eac0ee20c8f1ee7f58677825edcd2563b4e2",
+    "reason": "Owns the exact unavailable-Reviewer Feedback File content; RUN-21 supplies availability and PRM-2 interprets a different failure line."
+  },
+  {
+    "owner": "RUN-19",
+    "sha256": "20e270c1c65472e40eb184f333a4ad494e3dc55a661ab464aa971f4b2d468a58",
+    "reason": "Owns blocking on specification ambiguity; PRM-1/PRM-2 carry that policy to the Manager and SEQ-6 consumes the outcome."
+  },
+  {
+    "owner": "AGT-1",
+    "sha256": "d1ecbde6a9f0197ebee0f042828693a6d2e56297788638c394f8171da4a8da35",
+    "reason": "Owns accepted option syntax; PRM-1 names the consumer of the adjacent INSTRUCTION argument."
+  },
+  {
+    "owner": "AGT-14",
+    "sha256": "b941ca778f634e7a3767cccbfc43bdf6bc07c8c5ae7a05550c448a1c3d3dfde5",
+    "reason": "Owns the timeout signal sequence and failure result; AGT-1 supplies options, AGT-18 names the Probe and RUN-11/RUN-14/RUN-15 consume the failure."
+  },
+  {
+    "owner": "AGT-15",
+    "sha256": "a85ba8b117670e7ae97df5250e8b73ba6833a8ba4a8bf2ab8c67cd33d987a875",
+    "reason": "Owns handling interruption signals and escalation; AGT-18 names the included Probe and RUN-17 separately owns retention."
+  },
+  {
+    "owner": "AGT-15",
+    "sha256": "bc463a60742dafe8cced54c2f3577a01cc2a9526e72dcd3c89445c1441b7216f",
+    "reason": "Owns handling interruption signals and escalation; AGT-18 names the included Probe and RUN-17 separately owns retention."
+  },
+  {
+    "owner": "PRM-5",
+    "sha256": "067946ece8f45afcf62e135c5251e51c32a972827425a945240ff103b5265630",
+    "reason": "Owns placement of the shared prompt sentence; DIR-10 supplies its rationale, not its placement rule."
+  },
+  {
+    "owner": "DIR-2",
+    "sha256": "16a995aaa78724eb74611a967b1917c27c2f75a7570b2928a30e565426329feb",
+    "reason": "Owns default Run Directory naming and ignore-file creation; SEQ-3 separately owns the incompatible option combination."
+  },
+  {
+    "owner": "DIR-4",
+    "sha256": "63d5cb62385903fd6a08b8586101f11495ce677f6ac148ba9550ec99f5de2e5e",
+    "reason": "Owns preserving output bytes; RUN-16/RUN-21 identify permitted readers and RUN-14/RUN-15 identify output consumers/producers."
+  },
+  {
+    "owner": "DIR-5",
+    "sha256": "c30c734fff8bcbba261cd68e2b14fc6efab05c747c15f7507692d3fe744cf754",
+    "reason": "Owns Task File snapshots; RUN-12 names the later comparison consuming them."
+  },
+  {
+    "owner": "DIR-6",
+    "sha256": "fba638103da82f7b6bd2e8bc01fff1ab6aaacd069dc6a82f4401c597670b52e9",
+    "reason": "Owns Checkpoint overwrite and unlink-before-restore operations; PRM-2 identifies who consumes the retained evidence."
+  },
+  {
+    "owner": "DIR-6",
+    "sha256": "2ed83c9b4002fc88becee2f04e3e2cb98296acd5aa083c71b8b2722ee546e8bc",
+    "reason": "Owns Checkpoint overwrite and unlink-before-restore operations; PRM-2 identifies who consumes the retained evidence."
+  },
+  {
+    "owner": "SEQ-4",
+    "sha256": "4e5edb9f6afaddfadf9704b11ff0053375e27a67e4597edd42abf398444f0424",
+    "reason": "Owns the clean-tree check; DIR-2 supplies ignored paths and SEQ-8 the Manager obligation this check enforces."
+  },
+  {
+    "owner": "SEQ-7",
+    "sha256": "74bd789fc25cbd20db0843d558828ec2114e64452c86dc442625bee7b7f633b0",
+    "reason": "Owns aggregation and framing of Sequence standard output; RUN-10 identifies individual Run output."
+  },
+  {
+    "owner": "CNF-3",
+    "sha256": "540865989503630a3c6f87897d785fb2d0ce1c10c077a53fb56e46b37596d6a6",
+    "reason": "Owns executable scenario replay and assertions by the suite; the cited requirements identify the behaviors being tested."
+  },
+  {
+    "owner": "CNF-4",
+    "sha256": "9f2791d4a3ba3b88b1cce7dfce6be59864e59a4d403e567065e32aacd2b81b8b",
+    "reason": "Owns the suite negative control; RUN-11 identifies a failure behavior tested, not the suite self-check duty."
+  },
+  {
+    "owner": "CNF-22",
+    "sha256": "bab2d7f7411f032b8d058d8159049d1254545346dd533839174b5d330ad49357",
+    "reason": "Owns required live observations and evidence per Implementation release; cited requirements identify the observed behaviors, not observation duties."
+  },
+  {
+    "owner": "CNF-22",
+    "sha256": "8fa4346e8dbc840b793abadc851f9412a4af1677c8d11af84bd3cb156b2b36f7",
+    "reason": "Owns required live observations and evidence per Implementation release; cited requirements identify the observed behaviors, not observation duties."
+  },
+  {
+    "owner": "RUN-18",
+    "sha256": "9c6652dbcf989ea28be646244b2a294ae0fd9355acb736348b2e5514ddf61a3d",
+    "reason": "Owns leaving the Implementer commit choice to repository instructions; OVR-3 supplies the git-mutation prohibition and SEQ-8 separately governs Manager commits."
+  }
+]

@@ -31,7 +31,8 @@ run() {
 
 # The formal gate runs first: the regions and scenarios gates read what it writes.
 run "formal       (Lean build, axiom policy, @[req] index, regions, scenarios)" bash tools/check_formal.sh
-run "identifiers  (append-only, dangling, gaps, ADR refs)" python3 tools/check_ids.py
+run "identifiers  (append-only, dangling, gaps, ADR refs, restatements)" python3 tools/check_ids.py
+run "citations    (quoted words occur in the cited owner's body)" python3 tools/check_citations.py
 run "coverage     (every requirement cited by a CNF item or excused)" python3 tools/check_coverage.py
 run "regions      (a marked region is what its declaration emits)" python3 tools/check_regions.py
 run "fixtures     (the suite's fixtures are the documents' blocks)" python3 tools/check_fixtures.py
