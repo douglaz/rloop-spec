@@ -287,3 +287,42 @@ exception. The Panel was therefore one substantive reviewer, `opus`, exactly as 
 probe existed. A silent seat is worse than a dead one: a dead seat is visibly absent in
 `RUN-15`'s accounting, while thirteen bytes read as a review that found nothing. Fixing the seat
 that hangs did not fix the Panel.
+
+## F15 — `PRM-4`'s amended closing line, live (closed 2026-09-22)
+
+`PRM-4` ended `If there is nothing to report, write exactly: No findings.`, the last and most
+specific instruction in the report block, and it swallowed item 0 on the clean path. The codex
+Reviewers were obeying it. rloop-spec#4 diagnosed that; `3da20a8` replaced the sentence with
+`If you have nothing for items 1 and 2, write item 0 and then exactly: No findings.` and
+rloop-bash `d37b128` adopted it.
+
+**Before**, across three Runs on the unamended prompt: six codex reports, every one of them the
+bare thirteen-byte literal, none carrying item 0.
+
+**After**, the four-Round Run that built the restatement gates, on rloop-bash `d37b128` — the
+executing store path was checked for the amended bytes first, because `nix run` had silently
+served a cached older build on an earlier attempt:
+
+| Round | `astra` | `sol` |
+|---|---|---|
+| 1 | 1551 | 3126 |
+| 2 | 1760 | 1411 |
+| 3 | 1297 | 1191 |
+| 4 | 146 | 1121 |
+
+Eight reports, eight carrying item 0. The Round 4 `astra` report is the one that matters, because
+it is **clean** and still 146 bytes rather than thirteen: `0. I ran everything I needed. Both
+unpiped aggregate gate runs exited 0; all 41 regression tests and six independent probes passed.`
+followed by the literal. Provenance restored, and the literal kept, so a clean report is still
+machine-recognisable. `sol`'s Round 2 report carried the other half of item 0's purpose — a
+control it could not run, which the Manager would otherwise never have learnt.
+
+*What it bought, in the same Run.* Reviewers that had been silent for six consecutive reports
+drove Rounds 2, 3 and 4, each on a real defect in the gates being built: a restatement escaping
+past a semicolon, a quotation misattributed across intervening prose, a short quotation with a
+false owner, and the normalizer disagreeing with this finding's own description of it. Round 1's
+work passed every gate and would have merged. The prompt fix is why it did not.
+
+*What it does not settle.* Two models, one repository, one task shape. `00-overview.md` says the
+prompts are `checked for equality, never for quality`; this is one observation, not a property.
+
