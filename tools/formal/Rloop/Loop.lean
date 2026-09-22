@@ -8,9 +8,10 @@ nothing an agent does is — an agent's behaviour is an input, `Behaviour`, and 
 holds for all of them.
 
 The model carries no bytes, processes or git. A Task File is a content identity (`Nat`); a
-Finished File is the `Status` its first line parses to; a Panel is the class of how many
-Reviewers succeeded; interference by a non-Manager (`ADR-0003`) is an input at two points of a
-Round. What the model omits is written on the theorem that depends on it. -/
+Finished File is the `Status` its first line parses to; a Panel is which Reviewers rloop called
+and the class of how many of them succeeded; interference by a non-Manager (`ADR-0003`) is an
+input at two points of a Round. What the model omits is written on the theorem that depends on
+it. -/
 
 namespace Rloop
 
@@ -65,12 +66,13 @@ inductive Point | afterImplementer | afterPanel
 
 /-- The guards a dated decision added, each a parameter so its absence has a witness
 (`ADR-0002`): the no-decision comparison (`RUN-12`), the round cap (`RUN-13`), the zero-survivor
-abort (`RUN-15`) and the Checkpoint (`DIR-6`). A theorem takes `Guards.all`; a witness turns one
-off. -/
+abort (`RUN-15`), that abort counting a Reviewer never called as down (`RUN-15`), and the
+Checkpoint (`DIR-6`). A theorem takes `Guards.all`; a witness turns one off. -/
 structure Guards where
   noDecision : Bool := true
   cap : Bool := true
   panelAbort : Bool := true
+  notRunDown : Bool := true
   checkpoint : Bool := true
   deriving DecidableEq, Repr
 
@@ -103,10 +105,10 @@ def decide (g : Guards) (phase : Phase) (prev current : Option Nat) (round maxRo
         else .next
 
 /-- One agent process rloop started, in the order it started them. A `panel` entry is the whole
-Panel: its membership is independent of its outcome class. The Reviewers it names run at once and
-the Conformance Suite compares them as a set (`ADR-0002`). The model has no availability input, so
-every Panel it builds names all four; a Reviewer `RUN-21` reads as unavailable is never called and
-is therefore not in the Panel a real Run spawns, which this cannot yet express (`F13`). -/
+Panel: the class of how many of the Reviewers rloop called succeeded, and those Reviewers, which
+run at once and which the Conformance Suite compares as a set (`ADR-0002`). A Reviewer `RUN-21`
+recorded `unavailable` stays a Reviewer of the Panel (`RUN-15`) but is not a process rloop
+started, so it is not a member here. -/
 inductive Spawn
   | pick
   | implementer (round : Nat) (ok : Bool)
@@ -115,13 +117,16 @@ inductive Spawn
   deriving DecidableEq, Repr
 
 /-- The agents' behaviour, as a total function of the Round so that no Round is ever "off the end
-of the script". -/
+of the script". `available k r` is false exactly when `RUN-21` recorded `r` `unavailable` before
+Round `k`'s Panel; `unknown` means call it, so it is `true`, and so is every Reviewer by default.
+`panel k` is the class of the Reviewers that were called. -/
 structure Behaviour where
   pick : ManagerResult
   implementer : Nat → Bool
   panel : Nat → Panel
   judge : Nat → ManagerResult
   interference : Nat → Point → Interference
+  available : Nat → Reviewer → Bool := fun _ _ => true
 
 /-- A Behaviour with the interference removed: what the Checkpoint is supposed to make every Run
 equivalent to. -/
@@ -150,6 +155,14 @@ def afterManager (d : Disk) (r : ManagerResult) : Disk :=
   let t := r.writesTask.or d.task
   { task := t, snapshot := t, leftover := d.leftover }
 
+/-- Every Reviewer of the Panel is down (`RUN-15`), given the class `p` of the Reviewers `called`.
+A called Reviewer is down when it failed; one never called is down too under `notRunDown`, so the
+Panel is all down when none was called or none of the called succeeded. Without it only a failure
+counts, and the Panel is all down only when all four were called and failed. -/
+def allDown (g : Guards) (p : Panel) (called : List Reviewer) : Bool :=
+  if g.notRunDown then called.isEmpty || p == .none
+  else called == Reviewer.all && p == .none
+
 /-- The Rounds, with `fuel` the Rounds the cap still allows; `round` is the one about to run. -/
 def rounds (g : Guards) (b : Behaviour) (maxRounds : Nat) :
     (fuel round : Nat) → Disk → List Spawn → Exit × List Spawn
@@ -158,8 +171,9 @@ def rounds (g : Guards) (b : Behaviour) (maxRounds : Nat) :
     let ok := b.implementer round
     let d := applyInterference g d (b.interference round .afterImplementer)
     let p := b.panel round
-    let trace := .panel round p Reviewer.all :: .implementer round ok :: trace
-    if g.panelAbort && p == .none then (.e2, trace.reverse)
+    let called := Reviewer.all.filter (b.available round)
+    let trace := .panel round p called :: .implementer round ok :: trace
+    if g.panelAbort && allDown g p called then (.e2, trace.reverse)
     else
       let d := applyInterference g d (b.interference round .afterPanel)
       let r := b.judge round

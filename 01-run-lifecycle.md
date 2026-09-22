@@ -201,7 +201,9 @@ differently need two different lines.*
 Both count as down. When **every** Reviewer of a Panel is down — failed, or not run — rloop MUST
 exit 2 without calling the judge. *One Reviewer down is a degraded Panel the Manager can weigh;
 four down is a broken environment.*
-`Rloop.panel_none_aborts` and `Rloop.panel_abort_off_judges` are the pair.
+`Rloop.panel_none_aborts` and `Rloop.panel_abort_off_judges` are the pair for failed Reviewers;
+`Rloop.not_run_and_failed_aborts` and `Rloop.not_run_down_off_judges` are the pair for Reviewers
+not run, and `Rloop.none_called_aborts` is the Panel that called none.
 
 **RUN-16** The Manager MUST be one session for the whole Run: the pick establishes it, every
 judge call resumes it (`AGT-3`, `AGT-4`), and rloop MUST write its id to the `session` file

@@ -122,11 +122,18 @@ rloop will not have. Open by decision; the Finished File's report is the mitigat
 ## F4 — The scenario alphabet is a choice (open)
 
 `Rloop.Scenarios` enumerates seven Manager outcomes, two Implementer outcomes, three Panel
-classes, one interference point per script, and caps 1 and 2. Fable's review of `ADR-0002`
-argued depth 2 suffices because the decision is memoryless apart from the Round counter; astra's
-asked for cap 3 and the default of 10 as explicit lines. Cap 10 is `CNF-3`'s job only through
-`--max-rounds`; a cap-3 enumeration was not added. Revisit if an Implementation passes the suite
-and fails live on a Round-3 behaviour.
+classes, one interference point per script, a block of probe scripts, and caps 1 and 2. Fable's
+review of `ADR-0002` argued depth 2 suffices because the decision is memoryless apart from the
+Round counter; astra's asked for cap 3 and the default of 10 as explicit lines. Cap 10 is
+`CNF-3`'s job only through `--max-rounds`; a cap-3 enumeration was not added. Revisit if an
+Implementation passes the suite and fails live on a Round-3 behaviour.
+
+The probe scripts (`F13`) took the count from 206 to 227. They are a block of their own, not an
+axis crossed with the rest: the Panel's class and its membership are independent in the model, so
+a cross product would add lines that differ only in one trace token's members while taking the
+same decision path, which is the growth `ADR-0002` reduced the Panel to classes to avoid. The cost
+is stated: the 206 lines leave the probe unscripted, so an Implementation whose availability
+reading leaks into a Round the block does not script is caught only by the block.
 
 ## F5 — The first Implementation's findings (closed 2026-09-18)
 
@@ -275,19 +282,30 @@ counterparts without retrying a non-answering model in the Run, recording all ca
 single-vendor Consultation, and leaving time to write the file the outcome needs — naming the
 silent models and saying whether those that answered agreed. This amendment adds no duty to rloop.
 
-## F13 — The model cannot yet express a partial Panel (open 2026-09-21)
+## F13 — The model cannot yet express a partial Panel (closed 2026-09-22)
 
-`RUN-15` now has three arms — a Reviewer that failed, one that was never called, and the
+`RUN-15` has three arms — a Reviewer that failed, one that was never called, and the
 zero-survivor abort that counts both — but `Rloop.panel_none_aborts` and
-`Rloop.panel_abort_off_judges`, which `RUN-15` cites as its pair, model only `panel := .none`
-(`Properties.lean`). The model has no input for availability, so `Loop.lean`'s single construction
-site still passes `Reviewer.all` and no enumerated scenario omits a Reviewer. The behaviour is
-therefore specified and covered by `CNF-27`, and proved for the failure arm only.
+`Rloop.panel_abort_off_judges`, which `RUN-15` cited as its pair, modelled only `panel := .none`
+(`Properties.lean`). The model had no input for availability, so `Loop.lean`'s single construction
+site passed `Reviewer.all` and no enumerated scenario omitted a Reviewer: the behaviour was
+specified and covered by `CNF-27`, and proved for the failure arm only.
 
-Closing it is `rl-availability-scenario-axis-rnp`, which adds availability to `Scenarios.lean`'s
-alphabet and is blocked on the recording change landing first. Until then the citation in `RUN-15`
-is narrower than the rule above it, and this is where that is written down rather than left for a
-reader to notice.
+Closed by `rl-availability-scenario-axis-rnp`. `Behaviour` gained `available`, keyed by Round and
+Reviewer; a Panel's spawn names the Reviewers called, not `Reviewer.all`; and the zero-survivor
+abort counts a Reviewer not run as down, a guard of its own, `notRunDown`, so that its absence has
+a witness. `RUN-15` now cites `Rloop.not_run_and_failed_aborts`, `Rloop.not_run_down_off_judges`
+and `Rloop.none_called_aborts` beside the first pair. `conformance/scenarios.tsv` gained a `probe`
+column and a block of probe scripts (`F4` has the count): each family at 100% and both; both with
+the codex Reviewers failing, the reachable form of all four down, since `RUN-21` gives no codex
+model a family; `fable` unavailable in Round 1 and back in Round 2; and three probes read as
+`unknown` — the matching line with a non-zero exit, the words not at the start of a line, and
+families outside the table. The lines where not-run and failed Reviewers make the Panel all down
+are the ones `lake exe scenarios --controls` counts for `notRunDown`.
+`conformance/test-panel-trace` shows each case red against a mutant of `rloop-bash`: a table
+without Opus or without Fable, a not-run Reviewer not counted down, verdicts remembered across
+Rounds, the probe's exit status ignored, an unanchored match, and families given to the codex
+Reviewers or matched by any name.
 
 ## F14 — The probe, live (closed 2026-09-21)
 

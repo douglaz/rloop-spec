@@ -92,7 +92,7 @@ theorem rounds_implementers_le (g : Guards) (hg : g.cap = true) (b : Behaviour) 
           (afterManager (applyInterference g (applyInterference g d
             (b.interference round .afterImplementer)) (b.interference round .afterPanel))
             (b.judge round))
-          (.judge round :: .panel round (b.panel round) Reviewer.all ::
+          (.judge round :: .panel round (b.panel round) (Reviewer.all.filter (b.available round)) ::
             .implementer round (b.implementer round) :: tr) hle
         simp only [implementers_cons_judge, implementers_cons_panel,
           implementers_cons_implementer] at this
@@ -180,6 +180,32 @@ theorem panel_none_aborts :
 theorem panel_abort_off_judges :
     ((run { Guards.all with panelAbort := false } orphaned 3).2.any (Spawn.isJudgeOf 1)) = true := by
   decide
+
+/-- The first Panel reads both claude Reviewers `unavailable` and loses the two it calls: two
+Reviewers not run and two failed. -/
+def halfRun : Behaviour :=
+  { orphaned with available := fun _ r => r != .fable && r != .opus }
+
+/-- Not run and failed are both down, so that Panel is all down: exit 2 before the judge, with only
+the Reviewers called in the trace. -/
+@[req "RUN-15"]
+theorem not_run_and_failed_aborts :
+    run Guards.all halfRun 3 = (.e2, [.pick, .implementer 1 true, .panel 1 .none [.astra, .sol]]) := by
+  decide
+
+/-- With a Reviewer never called no longer counted as down, two failures of four read as a degraded
+Panel and the judge is called. -/
+@[req "RUN-15"]
+theorem not_run_down_off_judges :
+    ((run { Guards.all with notRunDown := false } halfRun 3).2.any (Spawn.isJudgeOf 1)) = true := by
+  decide
+
+/-- A Panel that called no Reviewer at all is all down, whatever class the script gives it. -/
+@[req "RUN-15"]
+theorem none_called_aborts (p : Panel) :
+    run Guards.all { restless with panel := fun _ => p, available := fun _ _ => false } 3 =
+      (.e2, [.pick, .implementer 1 true, .panel 1 p []]) := by
+  cases p <;> decide
 
 /-! ## `RUN-12` — no decision -/
 

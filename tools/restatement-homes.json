@@ -231,7 +231,7 @@
   },
   {
     "owner": "CNF-3",
-    "sha256": "540865989503630a3c6f87897d785fb2d0ce1c10c077a53fb56e46b37596d6a6",
+    "sha256": "b15eb7298029913d0f39d60713b1b1f6912ea1d142e5a3959307018b163e5c40",
     "reason": "Owns executable scenario replay and assertions by the suite; the cited requirements identify the behaviors being tested."
   },
   {

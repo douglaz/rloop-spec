@@ -69,13 +69,13 @@ observed_trace() { # observed_trace <record dir>
 
 # --- CNF-3: the scenarios ---------------------------------------------------------------------------
 run_scenarios() { # run_scenarios <scenarios file> -> prints "<failures> <total>"
-  local file="$1" total=0 bad=0 id max pick rounds interf exp_exit exp_trace repo rec got_exit got_trace
-  while IFS=$'\t' read -r id max pick rounds interf exp_exit exp_trace; do
+  local file="$1" total=0 bad=0 id max pick rounds interf probe exp_exit exp_trace repo rec got_exit got_trace
+  while IFS=$'\t' read -r id max pick rounds interf probe exp_exit exp_trace; do
     [ "$id" = id ] && continue
     total=$((total + 1))
     repo="$(new_repo)"; rec="$work/rec-$id"
     got_exit=$(RLOOP_FAKE_PICK="$pick" RLOOP_FAKE_ROUNDS="${rounds/#-/}" RLOOP_FAKE_INTERFERENCE="$interf" \
-      run_rloop "$repo" "$rec" --run-dir "$repo/run" --max-rounds "$max")
+      RLOOP_FAKE_PROBE="${probe/#-/}" run_rloop "$repo" "$rec" --run-dir "$repo/run" --max-rounds "$max")
     got_trace="$(observed_trace "$rec")"
     if [ "$got_exit" != "$exp_exit" ] || [ "$got_trace" != "$exp_trace" ]; then
       bad=$((bad + 1))

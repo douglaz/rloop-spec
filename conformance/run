@@ -36,7 +36,7 @@ if [ "$bad" = 0 ]; then verdict CNF-3 ok "$total scenarios replayed"; else verdi
 
 if [ "$self_check" = 1 ]; then
   flipped="$work/flipped.tsv"
-  awk -F'\t' 'BEGIN{OFS="\t"} NR==2{$6=($6=="0")?"2":"0"} {print}' "$scenarios_file" > "$flipped"
+  awk -F'\t' 'BEGIN{OFS="\t"} NR==2{$7=($7=="0")?"2":"0"} {print}' "$scenarios_file" > "$flipped"
   read -r bad2 _ <<< "$(run_scenarios "$flipped" | tail -1)"
   if [ "$bad2" -ge 1 ]; then verdict CNF-4 ok "a flipped expectation made the suite red"; else verdict CNF-4 fail "the suite stayed green over a flipped expectation"; fi
 else

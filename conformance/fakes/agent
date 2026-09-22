@@ -11,12 +11,14 @@
 #   RLOOP_FAKE_RUNS          for a Sequence: pick outcomes per Run, comma-separated (done,done,idle);
 #                            each Run's Rounds are then RLOOP_FAKE_ROUNDS
 #   RLOOP_FAKE_SLEEP_<ROLE>  seconds to sleep before acting (ROLE = MANAGER|IMPLEMENTER|REVIEWER|PROBE)
-#   RLOOP_FAKE_PROBE         what the availability probe writes (default: clear):
-#                            clear = aggregate at 67, no family named; aggregate = aggregate at
-#                            100, no family named; fable / opus = that family at 100;
-#                            both = Fable and Opus each at 100, on separate lines;
+#   RLOOP_FAKE_PROBE         what the availability probe writes (default: clear), one shape for
+#                            every Round or one per Round joined by | (a Round past the last
+#                            writes the last): clear = aggregate at 67, no family named;
+#                            aggregate = aggregate at 100, no family named; fable / opus = that
+#                            family at 100; both = Fable and Opus each at 100, on separate lines;
 #                            under = 99; garbage = no usage line; silent = nothing;
-#                            fail = the fable line but exit 3; loose = the words mid-line
+#                            fail = the fable line but exit 3; loose = the words mid-line;
+#                            unlisted = families outside RUN-21's table at 100, codex-like ones too
 #   RLOOP_FAKE_IGNORE_TERM   1 = trap and ignore SIGTERM
 #   RLOOP_FAKE_GRANDCHILD    1 = spawn a background sleeper and record its pid
 #   RLOOP_FAKE_DIRTY_AT_DONE 1 = the Manager leaves an untracked file in the tree when it writes done
@@ -149,15 +151,19 @@ case "$role" in
     ;;
   probe)
     # RUN-21 reads one shape and calls everything else unknown; RLOOP_FAKE_PROBE picks which
-    # shape this Round's probe writes, so the suite can drive every fail-open path.
-    case "${RLOOP_FAKE_PROBE:-clear}" in
+    # shape this Round's probe writes, so the suite can drive every fail-open path, and a Round's
+    # own shape lets one Round report exhaustion and a later one capacity.
+    shapes="${RLOOP_FAKE_PROBE:-clear}"
+    shape=$(echo "$shapes" | tr '|' '\n' | sed -n "${round}p")
+    [ -n "$shape" ] || shape="${shapes##*|}"
+    case "$shape" in
       clear)   printf 'Current week (all models): 67%% used · resets Sep 24, 3pm (UTC)\n' ;;
       aggregate) printf 'Current week (all models): 100%% used\n' ;;
       both)    printf 'Current week (%s): 100%% used\n' Fable Opus ;;
       fable|opus)
                printf 'Current week (all models): 67%% used · resets Sep 24, 3pm (UTC)\n'
                printf 'Current week (%s): 100%% used · resets Sep 24, 3pm (UTC)\n' \
-                 "$([ "${RLOOP_FAKE_PROBE}" = fable ] && echo Fable || echo Opus)" ;;
+                 "$([ "$shape" = fable ] && echo Fable || echo Opus)" ;;
       under)   printf 'Current week (Fable): 99%% used · resets Sep 24, 3pm (UTC)\n' ;;
       garbage) printf 'this is not a usage report\n' ;;
       silent)  : ;;
@@ -166,6 +172,10 @@ case "$role" in
       fail)    printf 'Current week (Fable): 100%% used · resets Sep 24, 3pm (UTC)\n'; status=3 ;;
       # The same words, not at the start of a line: RUN-21 anchors, so this must stay unknown.
       loose)   printf 'I checked and Current week (Fable): 100%% used right now.\n' ;;
+      # Exhausted families RUN-21's table does not hold, two spelled like the codex Reviewers and two
+      # as their models: a Reviewer's family comes from that table or nowhere, so all stay unknown.
+      unlisted) printf 'Current week (%s): 100%% used · resets Sep 24, 3pm (UTC)\n' \
+                 Sonnet Astra Sol gpt-6-astra gpt-5.6-sol ;;
     esac
     outcome=ok
     ;;

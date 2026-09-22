@@ -27,10 +27,11 @@ the suite's control flow independent of `02` and `03`. (`AGT-13`)
 **CNF-3** For every line of `conformance/scenarios.tsv` the suite MUST run the executable in a
 fresh git repository with the line's script loaded into the fakes and `--max-rounds` set to the
 line's cap, and assert the exit status equals the line's and the recorded spawns equal the line's
-trace — a Panel compared as the set of the four Reviewers, the rest in order. The file is what
-`tools/formal/` enumerates (`ADR-0002`, `tools/check_scenarios.py`). This item is the executable
-form of the decision table and the Round: (`RUN-5`, `RUN-6`, `RUN-7`, `RUN-9`, `RUN-10`, `RUN-11`,
-`RUN-12`, `RUN-13`, `RUN-14`, `RUN-15`, `DIR-5`, `DIR-6`, `DIR-7`, `OVR-1`)
+trace — a Panel compared as the set of the Reviewers rloop called, the rest in order. The file is
+what `tools/formal/` enumerates (`ADR-0002`, `tools/check_scenarios.py`). This item is the
+executable form of the decision table and the Round: (`RUN-5`, `RUN-6`, `RUN-7`, `RUN-9`,
+`RUN-10`, `RUN-11`, `RUN-12`, `RUN-13`, `RUN-14`, `RUN-15`, `RUN-21`, `DIR-5`, `DIR-6`, `DIR-7`,
+`OVR-1`)
 
 **CNF-4** The suite MUST be able to fail: run with `--self-check` it flips one expected exit in
 a copy of the scenario file, replays it, and requires a red result. The scenario file is shown

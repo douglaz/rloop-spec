@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Reproduce Panel membership checks with only the Conformance Suite's dependencies:
 #   conformance/test-panel-trace ../rloop-bash/result/bin/rloop
-# The argument must be the rloop-bash script with its two literal Reviewer loops. Mutants are
-# made only in scratch space; neither the executable nor its checkout is modified. The normal
+# The argument must be the rloop-bash script with its two literal Reviewer loops and its probe
+# reading (RUN-21). Mutants are made only in scratch space; neither the executable nor its checkout is modified. The normal
 # Conformance Suite remains implementation-independent. No expected scenario is edited here.
 set -u
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -110,10 +110,10 @@ rm -rf "$repo" "$rec"
 
 # Select existing generated scenarios, leaving every field (including expectations) intact.
 select_scenario() {
-  awk -F '\t' -v rounds="$1" 'NR==1 || ($4==rounds && $5=="-" && !found++)' \
+  awk -F '\t' -v rounds="$1" 'NR==1 || ($4==rounds && $5=="-" && $6=="-" && !found++)' \
     "$here/scenarios.tsv" > "$work/one.tsv"
   assert_equal "$(wc -l < "$work/one.tsv" | tr -d ' ')" 2 'one selected scenario'
-  IFS=$'\t' read -r id cap pick rounds interference exp_exit exp_trace < <(tail -1 "$work/one.tsv")
+  IFS=$'\t' read -r id cap pick rounds interference probe exp_exit exp_trace < <(tail -1 "$work/one.tsv")
 }
 positive() {
   exe="$original"
@@ -131,11 +131,14 @@ done
 # Skip sol in both the spawn loop and the wait loop so the remaining Reviewers and Manager
 # still finish normally. The failing verdict must have the correct exit and differ ONLY in
 # that Round's observed membership. This calls precisely run's scenario-comparison path.
-assert_equal "$(grep -c '^  for rv in fable opus astra sol; do$' "$original")" 2 \
+# Both loops are in do_round; the probe's verdict loop, outside it, is left alone.
+assert_equal "$(sed -n '/^do_round() {/,/^}/p' "$original" | grep -c '^  for rv in fable opus astra sol; do$')" 2 \
   'rloop-bash mutation sites'
 for skipped_round in 1 2; do
-  sed "/^  for rv in fable opus astra sol; do$/a\\
-    if [ \"\$r\" = $skipped_round ] \&\& [ \"\$rv\" = sol ]; then continue; fi" \
+  sed "/^do_round() {/,/^}/{
+/^  for rv in fable opus astra sol; do$/a\\
+    if [ \"\$r\" = $skipped_round ] \&\& [ \"\$rv\" = sol ]; then continue; fi
+}" \
     "$original" > "$work/omit-sol"
   chmod +x "$work/omit-sol"
   rounds='impl=ok;panel=all;judge=done'
@@ -152,3 +155,39 @@ for skipped_round in 1 2; do
     "$id isolated membership mismatch"
   echo "PASS: $id negative control rejected (1 of 1 scenarios differ); skipped sol in Round $skipped_round"
 done
+
+# The probe scripts (RUN-21, RUN-15): every generated line carrying one probe column passes
+# against the executable and goes red against a mutant that gets that case wrong. Lines are
+# selected, never edited; each mutation site must exist exactly once, or the mutant proves nothing.
+probe_case() { # probe_case <probe column> <label> <mutation site, fixed string> <sed expression>
+  local probe="$1" label="$2" site="$3" expr="$4" n result
+  awk -F '\t' -v p="$probe" 'NR==1 || $6==p' "$here/scenarios.tsv" > "$work/probe.tsv"
+  n=$(( $(wc -l < "$work/probe.tsv") - 1 ))
+  [ "$n" -ge 1 ] || die "$label: no generated line has probe $probe"
+  exe="$original"
+  assert_equal "$(run_scenarios "$work/probe.tsv" 2>/dev/null)" "0 $n" "$label, unmutated"
+  assert_equal "$(grep -cF -- "$site" "$original")" 1 "$label: mutation site"
+  sed "$expr" "$original" > "$work/mutant"; chmod +x "$work/mutant"
+  cmp -s "$original" "$work/mutant" && die "$label: the mutation changed nothing"
+  exe="$work/mutant"
+  result=$(run_scenarios "$work/probe.tsv" 2> "$work/diagnostic")
+  cat "$work/diagnostic"
+  [ "${result%% *}" -ge 1 ] || die "$label: the mutant passed all $n lines with probe $probe"
+  echo "PASS: $label: the mutant fails ${result%% *} of $n lines with probe $probe"
+}
+probe_case opus 'Opus unavailable; mutant: the table has no Opus row' \
+  ' opus) fam=Opus ;;' 's/ opus) fam=Opus ;;//'
+probe_case fable 'Fable unavailable; mutant: the table has no Fable row' \
+  ' fable) fam=Fable ;;' 's/ fable) fam=Fable ;;//'
+probe_case both 'all four down; mutant: a Reviewer not run is not counted down' \
+  'pids+=("")' '/pids+=("")/{n;/failed=\$((failed + 1))/d}'
+probe_case 'fable|clear' 'Fable re-admitted in Round 2; mutant: verdicts remembered across Rounds' \
+  "  unavail=' '" "s/^  unavail=' '\$/  unavail=\"\${unavail:- }\"/"
+probe_case fail 'a probe that fails; mutant: its exit status ignored' \
+  'if [ "$pst" = 0 ] && [ -n "$fam" ]' 's/if \[ "\$pst" = 0 \] && \[ -n "\$fam" \]/if [ -n "$fam" ]/'
+probe_case loose 'a probe that does not parse; mutant: the match not anchored' \
+  'case $line in "Current week' 's/case \$line in "Current week/case $line in *"Current week/'
+probe_case unlisted 'families outside the table; mutant: the codex Reviewers given families' \
+  "*) fam='' ;;" "s/ \*) fam='' ;;/ astra) fam=Astra ;; sol) fam=Sol ;; *) fam='' ;;/"
+probe_case unlisted 'families outside the table; mutant: any family name matches' \
+  '"Current week ($fam): 100% used"*)' 's/"Current week (\$fam): 100% used"\*)/"Current week ("*"): 100% used"*)/'
