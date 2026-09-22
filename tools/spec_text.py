@@ -14,7 +14,7 @@ from check_ids import CITE_RE, DEF_RE
 RFC = re.compile(r"\b(?:MUST|SHALL|SHOULD|MAY|REQUIRED|RECOMMENDED|OPTIONAL)\b")
 INLINE = re.compile(r"(?<!`)(`+)(?!`)(.+?)(?<!`)\1(?!`)", re.S)
 DOUBLE = re.compile(r'“([^”\n]*(?:\n(?!\s*\n)[^”\n]*)*)”|"([^"\n]*(?:\n(?!\s*\n)[^"\n]*)*)"')
-BOUNDARY = re.compile(r"\n[ \t]*\n|\n(?=\s*(?:[-*] |\d+\. |\||#{1,6} ))")
+BOUNDARY = re.compile(r"\n[ \t]*\n|\n(?=\s*(?:[-*+] |\d+\. |\||#{1,6} ))")
 SENTENCE = re.compile(r"[.!?;](?:[*_]+)?(?=\s|$)")
 
 
@@ -135,8 +135,9 @@ def attributions(unit):
     """Yield (owner, quotation) for explicit shapes and normative backtick spans.
 
     Explicit shapes: ID: quote, ID says quote, ID's quote, quote (ID).
-    Direct speech can cross an input ID; the quote otherwise follows its verb
-    immediately (optionally with 'that', a colon or a dash).
+    Direct speech can cross ordinary prose, asides and input IDs, but stops at
+    sentence punctuation or another quote. The latest explicit introducer wins.
+    Every owner in an attached parenthetical is checked as well.
     Otherwise a normative backtick quote binds to the nearest citation in the
     association unit. Every such quote takes the same route in both gates.
     """
@@ -151,32 +152,30 @@ def attributions(unit):
         # than attributing prose. Explicit introducers also check short quotes.
         phrase = len(norm(q.text).split()) >= 4 or RFC.search(q.text)
         before = [c for c in cites if c.end() <= q.start]
-        after = [c for c in cites if c.start() >= q.end]
         # An explicit speaker must not be replaced by a later pointer. Keep
         # parenthetical claims too; both relationships must verify if present.
-        direct = [(c, m) for c, m in intros if m.end() <= q.start and
-                  re.fullmatch(r"\s*(?:that\s+)?[:—-]?\s*",
-                               CITE_RE.sub("", text[m.end():q.start]))]
+        direct = [c for c, m in intros if m.end() <= q.start and
+                  re.fullmatch(r'[^.!?;`"“”]*', CITE_RE.sub("", text[m.end():q.start]))]
+        if before and re.fullmatch(r"\s*(?::|(?:'s|’s))\s*", text[before[-1].end():q.start]):
+            direct.append(before[-1])
         owner = None
         if direct:
-            owner = direct[-1][0][1]
-        elif before and re.fullmatch(r"\s*(?::|(?:'s|’s))\s*", text[before[-1].end():q.start]):
-            owner = before[-1][1]
+            owner = max(direct, key=lambda c: c.start())[1]
         elif previous and re.fullmatch(r"\s*(?:,\s*)?(?:and|or|also)?\s*",
                                       text[previous[1].end:q.start]):
             owner = previous[0]
-        parenthetical = (after[0][1] if phrase and after and
-                         re.fullmatch(r"\s*\(\s*", text[q.end:after[0].start()]) else None)
-        if owner:
-            yield owner, q
-            if parenthetical and parenthetical != owner:
-                yield parenthetical, q
-        else:
+        parenthetical = []
+        attached = re.match(r"\s*\(([^()]*)\)", text[q.end:]) if phrase else None
+        if attached:
+            claims = list(CITE_RE.finditer(attached[1]))
+            if claims and not attached[1][:claims[0].start()].strip():
+                parenthetical = [c[1] for c in claims]
+        if not owner:
             if parenthetical:
-                owner = parenthetical
+                owner = parenthetical[0]
             elif RFC.search(q.text) and text[q.start] == "`" and cites:
                 owner = min(cites, key=lambda c: min(abs(c.end() - q.start),
                                                     abs(c.start() - q.end)))[1]
-            if owner:
-                yield owner, q
+        for claimed in dict.fromkeys(([owner] if owner else []) + parenthetical):
+            yield claimed, q
         previous = (owner, q) if owner else None

@@ -25,14 +25,18 @@ and the corresponding home exemption; its identifier and conformance coverage re
 Amended `RUN-18` to point to `OVR-3` for git mutations while retaining its own rule about the
 Implementer's commit choice. Wider association exposed that duplicate and the obsolete modal in
 `RUN-16`'s historical note; the latter is now reported as historical prose in the same place.
+The direct-speech scan also read `ADR-0006`'s relative-clause probe reference as a speaker
+claim about the report format. That reference is now an unambiguous pointer to `AGT-18`;
+`RUN-21` remains the report format's owner. No defining-clause exemption was added.
 
 A line citing another requirement and carrying an uppercase RFC-2119 keyword either defines
 its own rule or carries the cited owner's words in backticks. Exact normative phrases have no
 minimum word count; backticking only a modal (including its negation) does not quote the rule.
 Both gates retain associations across sentences, semicolons and wrapped lines within a
-paragraph. Blank lines, list items, table rows, headings and requirement definitions end that
-association. Backtick spans can wrap within a unit but cannot absorb another one, even after an
-unmatched delimiter. Being inside a requirement body does not excuse a second rule.
+paragraph. Blank lines, list items (`-`, `*`, `+` and numbered items), table rows, headings and
+requirement definitions end that association. Backtick spans can wrap within a unit but cannot
+absorb another one, even after an unmatched delimiter. Being inside a requirement body does not
+excuse a second rule.
 `tools/restatement-homes.json` records the reviewed defining clauses by enclosing owner and
 exact normalized-text digest, with the reason each citation names
 an input, command, subject or related operation. A changed clause requires renewed ownership
@@ -44,12 +48,16 @@ The citation check compares a contiguous phrase against that owner's body only, 
 next definition or section heading. It preserves case, punctuation and words while normalizing
 wrapping and Markdown emphasis. Supported attributions are identifier-colon-quote, direct speech
 (`says`, `states`, `reads` and their past tenses), possessive wording, a quote immediately followed
-by a parenthetical identifier, and a normative backtick quote with a citation in the same unit.
+by parenthetical identifiers, and a normative backtick quote with a citation in the same unit.
 For the last shape the nearest citation is the owner; use the explicit colon shape when that
-would be ambiguous. Direct speech takes the quote immediately after the verb, optionally with
-`that`, a colon, a dash or an intervening input identifier. A later parenthetical pointer cannot
-replace an explicit speaker: both claimed relationships are checked. A parenthetical attribution
-without an RFC-2119 keyword retains the source's four-word prose heuristic, so short code labels
+would be ambiguous. Direct speech reaches the next quote through ordinary prose, comma- or
+dash-delimited asides and input identifiers, stopping at sentence punctuation (`.`, `!`, `?`,
+`;`) or another quote. The latest explicit introducer supplies the speaker. This lexical scan
+does not parse relative clauses; use a pointer for a reference that could look like direct speech.
+A later parenthetical pointer cannot replace an explicit speaker: every identifier in immediately
+attached, non-nested parentheses beginning with a cited identifier is checked too, without collecting
+citations beyond the closing parenthesis. A parenthetical attribution without an RFC-2119 keyword
+retains the source's four-word prose heuristic, so short code labels
 citing their definitions are not mistaken for prose quotations. Normative phrases and explicit
 introducers have no such minimum. No other document, historical word, teaching marker or baseline
 excuses a false current attribution. Historical discussion can describe removed wording without

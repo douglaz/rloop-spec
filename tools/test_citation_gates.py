@@ -123,6 +123,54 @@ class CitationControls(unittest.TestCase):
         self.ids()
         self.citations(1, "CITATION:", "SEQ-5 (05-sequence.md)", "MUST exit 7")
 
+    def test_speaker_survives_intervening_prose_and_later_pointer(self):
+        for gap in (" the rule is ", ", in short, "):
+            with self.subTest(gap=gap):
+                path = self.root / "control.md"
+                path.write_text(f"`SEQ-4` says{gap}`{QUOTE}` (`RUN-16`).")
+                self.ids()
+                self.citations(1, "CITATION: control.md:1",
+                               "SEQ-4 (05-sequence.md)", QUOTE)
+                path.write_text(f"`RUN-16` says{gap}`{QUOTE}` (`RUN-16`).")
+                self.ids()
+                self.citations()
+                path.write_text(f"`RUN-16` says{gap}`{QUOTE}` (`SEQ-4`).")
+                self.citations(1, "CITATION: control.md:1",
+                               "SEQ-4 (05-sequence.md)", QUOTE)
+
+    def test_every_attached_parenthetical_owner_is_verified(self):
+        path = self.root / "control.md"
+        for intro in ("", "`RUN-16` says the rule is "):
+            with self.subTest(intro=intro):
+                path.write_text(f"{intro}`{QUOTE}` (`RUN-16`, `SEQ-4`).")
+                self.ids()
+                self.citations(1, "CITATION: control.md:1",
+                               "SEQ-4 (05-sequence.md)", QUOTE)
+        # Both definitions contain this short normative phrase.
+        path.write_text("`MUST exit 2` (`SEQ-5`, `RUN-1`).")
+        self.ids()
+        self.citations()
+        path.write_text("`RUN-16` says `MUST exit 2` (`SEQ-5`, `RUN-1`).")
+        self.citations(1, "CITATION: control.md:1", "RUN-16", "MUST exit 2")
+        path.write_text(f"`{QUOTE}` (`RUN-16`). Also see `SEQ-4`.")
+        self.ids()
+        self.citations()
+
+    def test_speech_gap_stops_at_punctuation_and_new_introducers(self):
+        path = self.root / "control.md"
+        for separator in (".", "!", "?", ";"):
+            with self.subTest(separator=separator):
+                path.write_text(f"`SEQ-4` says something{separator} `{QUOTE}` (`RUN-16`).")
+                self.ids()
+                self.citations()
+        for intro in (" says the rule is", ":", "'s"):
+            with self.subTest(intro=intro):
+                path.write_text(f"`SEQ-4` says to consult `RUN-16`{intro} `{QUOTE}`.")
+                self.ids()
+                self.citations()
+        path.write_text(f"`RUN-16` says, in short, `{QUOTE}` and `fabricated words`.")
+        self.citations(1, "CITATION: control.md:1", "RUN-16", "fabricated words")
+
     def test_modal_with_negation_is_not_a_quoted_rule(self):
         self.append("The Manager `MUST NOT` use seventeen sessions (`RUN-16`).")
         self.ids(1, "RESTATEMENT:", "RUN-16", "seventeen sessions")
@@ -141,37 +189,54 @@ class CitationControls(unittest.TestCase):
                      "whether to commit:")
         self.ids(1, "RESTATEMENT: 01-run-lifecycle.md:", "OVR-3", "MUST NOT commit")
 
-    def test_unmatched_backtick_cannot_absorb_later_paragraph(self):
-        path = self.root / "control.md"
-        path.write_text(f"`\n\n`RUN-16`: `{QUOTE}`.")
-        self.ids()
-        self.citations()
-        copy = "A Run inside a Sequence MUST NOT start on a dirty tree"
-        path.write_text(f"`\n\n{copy} (`SEQ-4`).")
-        self.ids(1, "RESTATEMENT: control.md:3", "SEQ-4", copy)
-        self.citations()  # No phantom quotation from the stray delimiter.
-        path.write_text(f"`\n\n`RUN-16`: `{FALSE_QUOTE}`.")
-        self.citations(1, "CITATION: control.md:3", "RUN-16", FALSE_QUOTE)
+    def test_unmatched_backtick_cannot_absorb_later_block(self):
+        for separator, first, second in (("\n\n", "", ""),
+                                          ("\n", "- ", "- "),
+                                          ("\n", "* ", "* "),
+                                          ("\n", "+ ", "+ "),
+                                          ("\n", "1. ", "2. "),
+                                          ("\n", "| ", "| "),
+                                          ("\n", "**OVR-5** ", "**OVR-6** ")):
+            with self.subTest(first=first):
+                prefix = first + "`" + separator + second
+                line = separator.count("\n") + 1
+                path = self.root / "control.md"
+                path.write_text(f"{prefix}`RUN-16`: `{QUOTE}`.")
+                self.ids()
+                self.citations()
+                copy = "A Run inside a Sequence MUST NOT start on a dirty tree"
+                path.write_text(f"{prefix}{copy} (`SEQ-4`).")
+                self.ids(1, f"RESTATEMENT: control.md:{line}", "SEQ-4", copy)
+                self.citations()  # No phantom quotation from the stray delimiter.
+                path.write_text(f"{prefix}`RUN-16`: `{FALSE_QUOTE}`.")
+                self.citations(1, f"CITATION: control.md:{line}", "RUN-16", FALSE_QUOTE)
 
     def test_unrelated_blocks_cannot_supply_attribution(self):
         # A quote without a citation in its own block cannot borrow the previous
         # block's owner; malformed spans cannot bridge it either.
         for before, after in (("`RUN-16`: words.", f"`{QUOTE}`."),
+                              ("`SEQ-4` says the rule is", f"`{QUOTE}` (`RUN-16`)."),
                               ("`RUN-16`: `", f"{QUOTE}.")):
             for separator, first, second in (("\n\n", "", ""),
                                               ("\n", "- ", "- "),
+                                              ("\n", "* ", "* "),
+                                              ("\n", "+ ", "+ "),
                                               ("\n", "1. ", "2. "),
                                               ("\n", "| ", "| "),
                                               ("\n", "**OVR-5** ", "**OVR-6** ")):
                 with self.subTest(separator=separator, first=first, before=before):
                     path = self.root / "control.md"
                     path.write_text(first + before + separator + second + after)
-                    self.assertEqual(list(attributions(list(units(path.read_text()))[-1])), [])
+                    owners = [owner for owner, _ in
+                              attributions(list(units(path.read_text()))[-1])]
+                    self.assertEqual(owners, ["RUN-16"] if "(`RUN-16`)" in after else [])
                     self.citations()
 
     def test_unrelated_quote_cannot_cover_rule_in_another_block(self):
         for separator, first, second in (("\n\n", "", ""),
                                           ("\n", "- ", "- "),
+                                          ("\n", "* ", "* "),
+                                          ("\n", "+ ", "+ "),
                                           ("\n", "**OVR-5** ", "**OVR-6** ")):
             with self.subTest(first=first):
                 (self.root / "control.md").write_text(
