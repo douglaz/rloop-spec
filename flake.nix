@@ -29,13 +29,16 @@
         };
       });
 
-      # `nix flake check` runs the same gates CI does, the Lean build included.
+      # `nix flake check` runs tools/check-all.sh, the Lean build included, inside the
+      # build sandbox; CI runs it as well, since nothing else exercises the sandbox.
       checks = forAll (pkgs: {
         # runCommandCC, not runCommand: lake compiles the gate executable's C output.
+        # patchShebangs: the sandbox has no /usr/bin/env, so the build copy's scripts get
+        # store-path shebangs; a script a gate copies and execs carries the patched one.
         gates = pkgs.runCommandCC "rloop-spec-gates"
           { nativeBuildInputs = [ pkgs.python3 pkgs.bash pkgs.lean4 ]; } ''
           export HOME="$TMPDIR"
-          cp -r ${self} src && chmod -R u+w src && cd src
+          cp -r ${self} src && chmod -R u+w src && cd src && patchShebangs .
           bash tools/check-all.sh
           touch $out
         '';
