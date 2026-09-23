@@ -405,10 +405,11 @@ Three times a claude Seat started a long check in its shell tool's background an
 to await it. Headless, nothing resumes it.
 
 - Run `20260923T022252.771492072Z-505649`, Round 1, the Implementer: its whole output was
-  ``Still running `u2`. I'll be re-invoked when it finishes.`` Its work went unreported and a
-  regression it would have caught to the Panel.
-- The same Run, Round 2, the `fable` Reviewer: a one-line Feedback File beginning `Waiting on the
-  background runs.` A Seat spent, no review.
+  ``Still running `u2`. I'll be re-invoked when it finishes.`` Its work was left uncommitted and
+  unreported, and a regression it would have caught went to the Panel instead.
+- The same Run, Round 2, the `fable` Reviewer: its whole Feedback File was
+  `Waiting on the background runs. There is nothing else independent to fetch;
+  every remaining item depends on those results.` A Seat spent, no review.
 - Run `20260923T042304.628017728Z-505649`, Round 1, the Implementer: `Both suite runs are still
   going; I'll pick up when they report.`, its work complete and uncommitted, although its brief
   carried the milder `Do not end your turn while a check is still running in the background; wait
