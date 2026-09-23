@@ -93,7 +93,9 @@ and `AGT-4`'s second lists and the default produces their first;
 `conformance/fixtures/prompts/` rendered by `PRM-6` with the values the suite knows: the Run
 Directory's paths, the base hash, the Round, `--max-rounds`, the caller's instruction (given and
 absent), the dirty-at-start list (a tree with one modified and one untracked path, and a clean
-tree), and the four Feedback File paths in order. Each rendered prompt ends with `PRM-5`'s
+tree), the unavailable list, empty in each of these Runs since no Probe before the pick here
+reports anything exhausted (`CNF-32` asserts it populated, and empty in a Run of its own), and the
+four Feedback File paths in order. Each rendered prompt ends with `PRM-5`'s
 sentence. (`PRM-1`, `PRM-2`, `PRM-3`, `PRM-4`, `PRM-5`, `PRM-6`, `RUN-3`, `DIR-10`)
 
 **CNF-13** `{{BASE}}` is the full hash of `HEAD` at start, and with `--base <ref>` the full hash of
@@ -285,6 +287,19 @@ non-zero after the `Fable` line; writes those words other than at the start of a
 `--probe-timeout 1`. *This is what shows fail-open reaches the pick: the pick being called is the
 assertion, since a refused Run and an agent that failed both end without a Finished File.*
 (`RUN-21`, `RUN-22`)
+
+**CNF-32** The pick's prompt argument equals `PRM-1`'s fixture rendered as in `CNF-12`, with
+`{{UNAVAILABLE}}` as the Probe before the pick leaves it, compared byte for byte in three Runs of
+this item's own. With the default models and that Probe reporting `Opus` at 100%, the Run starts
+and `{{UNAVAILABLE}}` is the one line `opus`. With both Seats' models off `RUN-21`'s table and
+`Fable` and `Opus` both at 100%, it is `fable`, a newline and `opus`, in that order and nothing
+else. With the default models and a Probe reporting nothing exhausted, it is the empty string:
+the prompt is the fixture with the placeholder replaced by nothing. *The empty form is asserted
+here, and not left to `CNF-12`, because each form alone passes a wrong Implementation: one that
+renders the list whatever the Probe said passes the populated Runs, and one that never renders it
+passes the empty one. The Seats are chosen so that no Run is refused (`RUN-22`): on the default
+models a `Fable` report refuses the Run before any pick prompt exists, so the two-Seat Run puts
+both Seats off the table.* (`PRM-1`, `PRM-6`, `RUN-21`, `RUN-20`, `RUN-22`)
 
 ## Not testable black-box
 

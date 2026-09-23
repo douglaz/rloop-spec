@@ -20,7 +20,7 @@ Do this now:
 3. Claim the task in the tracker the way the repository's conventions say (for example `br update <id> --status in_progress`), if it has a tracker.
 4. Settle what the brief depends on, before writing it:
    - If the task turns on a point the repository's specifications or instructions leave ambiguous or contradictory — two readings that lead to different behaviour — do not choose a reading. That clarification is the specification owner's to make: stop here and write {{FINISHED_FILE}} with `STATUS: blocked`, and below it the document, the passage, the readings, and the clarification you recommend.
-   - If the task needs an implementation decision the specifications leave to the implementer — a choice of how, not of what — do not make it alone. Put the question and the options first to fable and astra, skipping any model that did not answer earlier in this Run and using its eligible counterpart instead. Their commands, run in this repository, are exactly:
+   - If the task needs an implementation decision the specifications leave to the implementer — a choice of how, not of what — do not make it alone. Put the question and the options first to fable and astra, skipping any model that did not answer earlier in this Run or that this prompt lists below as unable to answer now, and using its eligible counterpart instead. Their commands, run in this repository, are exactly:
      claude -p "<your question>" --model claude-fable-5-1 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
      codex exec -s read-only -m gpt-6-astra -c model_reasoning_effort=high "<your question>"
      Two distinct models must answer; one answer does not settle it. An answer is a call that finishes within its bound, exits zero and takes a position on the question. A timeout, non-zero exit, empty output, output that is only an error, a refusal, or prose that takes no position is not an answer; judge whether hedged prose takes a position. Replace a model that did not answer by its counterpart, fable↔opus or astra↔sol, not by the next name on the roster, and do not call a model that did not answer again in this Run. Continue with eligible models until two answer or none remain within the budget. Prefer one claude answer and one codex answer; if neither model of one vendor answers, two same-vendor answers suffice, but say the Consultation was single-vendor wherever you record it — the brief, or {{FINISHED_FILE}} when you block before writing one. If two answering advisers agree, choose with them. If they disagree, put the same question to the remaining eligible advisers. The other pair's commands are exactly:
@@ -37,8 +37,15 @@ Below the first line write your report for whoever started this Run.
 These paths were already modified or untracked before this Run started; they belong to the caller, not to you or the Implementer:
 {{DIRTY_AT_START}}
 
+These advisers cannot answer now — their models were out of quota when rloop checked, just before this pick — so count each as a model that did not answer and do not call it:
+{{UNAVAILABLE}}
+
 Do not create, modify or delete anything under {{RUN_DIR}} except the file this prompt tells you to write.
 ```
+
+*`{{UNAVAILABLE}}` names the advisers the Probe before the pick found out of quota (`PRM-6`), so
+that a Consultation at the pick spends no call on one; what the Manager does with them is
+`RUN-20`'s.*
 
 ## The Manager's judgment
 
@@ -47,7 +54,7 @@ Do not create, modify or delete anything under {{RUN_DIR}} except the file this 
 ```prompt
 Round {{ROUND}} of at most {{MAX_ROUNDS}} is over. An Implementer worked from {{TASK_FILE}}; its output is in {{IMPLEMENTER_LOG}} (a last line `IMPLEMENTER FAILED (exit N)` means it crashed or timed out). The Panel's Reviewers then read the repository's changes since commit {{BASE}} against the brief; their feedback is in:
 {{FEEDBACK_FILES}}
-A file holding `REVIEWER FAILED` is a Reviewer that crashed or timed out; one holding `REVIEWER NOT RUN` is a Reviewer that was never called, because its model could not answer. Files named `rejected-*` in {{RUN_DIR}}, if any, were written over your files by another agent and set aside; read them as evidence about that agent.
+A file holding `REVIEWER FAILED` is a Reviewer that crashed or timed out; one holding `REVIEWER NOT RUN` is a Reviewer that was never called, because its model could not answer. That model cannot answer as an adviser either: if this Round needs a Consultation, count it as a model that did not answer and use its counterpart instead of calling it. Files named `rejected-*` in {{RUN_DIR}}, if any, were written over your files by another agent and set aside; read them as evidence about that agent.
 
 Review the implementation yourself, then read the feedback. Feedback is advice, not orders: send back only what makes the implementation fail the brief as written, or is a genuine defect. Reject findings that add scope, over-engineer, or ask for machinery the brief does not need. File what is worth keeping for later as an issue in the repository's tracker, following its conventions.
 
@@ -130,6 +137,7 @@ value and no other change: no trimming, no re-wrapping, no conditional text. A p
 | `{{IMPLEMENTER_LOG}}` | absolute path of `implementer-<r>.out` |
 | `{{FEEDBACK_FILES}}` | absolute paths of the Round's four Feedback Files, one per line, in the order `fable`, `opus`, `astra`, `sol`, no trailing newline |
 | `{{DIRTY_AT_START}}` | the dirty-at-start list (`RUN-3`): `git status --porcelain`'s lines verbatim, one per line, no trailing newline; the empty string when the tree was clean |
+| `{{UNAVAILABLE}}` | the Reviewer Seats `probe-pick.md` records `unavailable` (`RUN-21`), each as its Seat name alone — `fable` or `opus` — one per line, in that record's order, no trailing newline; the empty string when it records none |
 
 *A list rendered one per line into a line of its own keeps the block readable whether it has zero
 or forty entries, and an empty list leaves an empty line, which a model reads as "none".*

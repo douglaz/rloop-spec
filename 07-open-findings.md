@@ -286,6 +286,15 @@ settled the question. Amended `PRM-1` and `PRM-2` to carry the policy at pick an
 regenerated their fixtures, and replaced the Consultation glossary entry with a citation to its
 owner. The adviser command lines are unchanged.
 
+2026-09-23: amended `RUN-20` so that an adviser whose model the Probe found out of quota counts as
+one that did not answer without being called, `PRM-1` to list the Probe's `unavailable` Reviewer
+Seats in a new `{{UNAVAILABLE}}` render (`PRM-6`, asserted by `CNF-32`), and `PRM-2` to read the
+same fact off the Round's `REVIEWER NOT RUN` Feedback Files. On 2026-09-22 a Consultation called
+`fable` while `claude-fable-5-1` was at 100% of its weekly limit and lost 600 seconds to a call
+that wrote nothing, though `probe-pick.md` had recorded `fable:unavailable` seconds before: the
+waste `F11` calls rloop-spec#3, moved from the Panel to the Consultation. rloop still runs no
+Consultation; it states the fact in the prompt, as `{{DIRTY_AT_START}}` states the caller's paths.
+
 **Still open:** under `--manager codex` the shell-tool bound is unverified. The codex Manager's
 hanging-adviser case remains open even with a per-call bound written into the prompts: a live
 `CNF-22` observation nobody has made. It must show the Manager bounding hanging calls, using

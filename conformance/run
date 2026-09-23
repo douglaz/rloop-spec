@@ -141,7 +141,7 @@ render() { # render <template file> ; placeholders from variables P_*
   t="${t//\{\{FINISHED_FILE\}\}/$P_FINISHED_FILE}"; t="${t//\{\{RUN_DIR\}\}/$P_RUN_DIR}"
   t="${t//\{\{BASE\}\}/$P_BASE}"; t="${t//\{\{ROUND\}\}/$P_ROUND}"; t="${t//\{\{MAX_ROUNDS\}\}/$P_MAX_ROUNDS}"
   t="${t//\{\{IMPLEMENTER_LOG\}\}/$P_IMPLEMENTER_LOG}"; t="${t//\{\{FEEDBACK_FILES\}\}/$P_FEEDBACK_FILES}"
-  t="${t//\{\{DIRTY_AT_START\}\}/$P_DIRTY_AT_START}"
+  t="${t//\{\{DIRTY_AT_START\}\}/$P_DIRTY_AT_START}"; t="${t//\{\{UNAVAILABLE\}\}/$P_UNAVAILABLE}"
   printf '%s' "$t"
 }
 expected_argv() { # expected_argv <argv fixture> <prompt text> <session> <model> -> NUL-joined; one model per fixture
@@ -172,6 +172,7 @@ $repo/run/feedback-1-astra.md
 $repo/run/feedback-1-sol.md"
 P_DIRTY_AT_START=" M README
 ?? untracked.txt"
+P_UNAVAILABLE=""
 ok=1; detail=""; prompt_ok=1; prompt_detail=""
 check_call() { # check_call <recorded glob> <argv fixture> <prompt fixture> <session> <model> <label>
   local recf prompt arg seen=0; recf=$(ls $1 2>/dev/null | head -1)
@@ -197,7 +198,7 @@ base_hash=$(cd "$repo" && git rev-parse HEAD)
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" --implementer codex --manager-model claude-opus-5)
 sid=$(cat "$repo/run/session" 2>/dev/null)
 P_INSTRUCTION=""; P_TASK_FILE="$repo/run/task.md"; P_FINISHED_FILE="$repo/run/finished.md"; P_RUN_DIR="$repo/run"; P_BASE="$base_hash"
-P_MAX_ROUNDS=10; P_IMPLEMENTER_LOG="$repo/run/implementer-1.out"; P_DIRTY_AT_START=""
+P_MAX_ROUNDS=10; P_IMPLEMENTER_LOG="$repo/run/implementer-1.out"; P_DIRTY_AT_START=""; P_UNAVAILABLE=""
 P_FEEDBACK_FILES="$repo/run/feedback-1-fable.md
 $repo/run/feedback-1-opus.md
 $repo/run/feedback-1-astra.md
@@ -214,7 +215,7 @@ e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run
 e_codex=$e; repo_codex="$repo"
 sid=$(cat "$repo/run/session" 2>/dev/null)
 P_TASK_FILE="$repo/run/task.md"; P_FINISHED_FILE="$repo/run/finished.md"; P_RUN_DIR="$repo/run"; P_BASE="$base_hash"
-P_IMPLEMENTER_LOG="$repo/run/implementer-1.out"
+P_IMPLEMENTER_LOG="$repo/run/implementer-1.out"; P_UNAVAILABLE=""
 P_FEEDBACK_FILES="$repo/run/feedback-1-fable.md
 $repo/run/feedback-1-opus.md
 $repo/run/feedback-1-astra.md
@@ -227,7 +228,7 @@ argv3_ok=$ok; argv3_detail="$detail"; prompts_ok=$prompt_ok; prompts_detail="$pr
 # the flag spawns nothing here (AGT-2); its own record directory, as CNF-23 reads the third Run's
 repo="$(new_repo)"; rec4="$work/rec-argv4"
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec4" --run-dir "$repo/run" --implementer-model claude-opus-5)
-P_TASK_FILE="$repo/run/task.md"; P_RUN_DIR="$repo/run"
+P_TASK_FILE="$repo/run/task.md"; P_RUN_DIR="$repo/run"; P_UNAVAILABLE=""
 ok=1; detail=""
 check_call "$rec4/*-implementer-1.argv" "$fx/argv/AGT-5.txt" "$fx/prompts/PRM-3.txt" x claude-opus-5 "implementer (--implementer-model claude-opus-5)"
 if [ "$argv_ok" = 1 ] && [ "$argv2_ok" = 1 ] && [ "$argv3_ok" = 1 ] && [ "$ok" = 1 ]; then verdict CNF-11 ok "every role's argv is its fixture with the placeholders filled, under both presets of the Manager and the Implementer, and a model given to each"; else verdict CNF-11 fail "$argv_detail $argv2_detail $argv3_detail $detail"; fi
@@ -633,6 +634,27 @@ for shape in fail loose under silent unlisted aggregate garbage slow; do
   record_is "$repo/run/probe-pick.md" "$shape, default models" unknown unknown unknown unknown unknown unknown
 done
 if [ "$ok" = 1 ]; then verdict CNF-31 ok "Seats off the table, or a probe before the pick that reads unknown, start the Run"; else verdict CNF-31 fail "$detail"; fi
+
+# --- CNF-32: the unavailable list in the pick prompt ----------------------------------------------------
+# One Seat on the default models (a `Fable` report would refuse them, RUN-22), both Reviewers with
+# the two Seats' models off the table, and none: either form alone passes a wrong Implementation.
+# Each Run must start (CNF-31's started()); check_call's argv verdict is CNF-11's, so it is dropped.
+ok=1; detail=""; prompt_ok=1; prompt_detail=""
+for shape in opus both clear; do
+  repo="$(new_repo)"; rec="$work/rec-unavailable-$shape"; seats=(); model=claude-fable-5-1
+  case $shape in
+    opus) P_UNAVAILABLE="opus" ;;
+    both) P_UNAVAILABLE="fable
+opus"; seats=("${off[@]}"); model="$off_table_model" ;;
+    clear) P_UNAVAILABLE="" ;;
+  esac
+  e=$(RLOOP_FAKE_PICK=ok:done RLOOP_FAKE_PROBE_PICK="$shape" run_rloop "$repo" "$rec" --run-dir "$repo/run" ${seats[@]+"${seats[@]}"})
+  started "$shape"; started_ok=$ok; started_detail="$detail"
+  P_INSTRUCTION=""; P_TASK_FILE="$repo/run/task.md"; P_FINISHED_FILE="$repo/run/finished.md"; P_RUN_DIR="$repo/run"; P_DIRTY_AT_START=""
+  check_call "$rec/*-manager-0.argv" "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$(cat "$repo/run/session" 2>/dev/null)" "$model" "$shape"
+  ok=$started_ok; detail="$started_detail"
+done
+if [ "$ok" = 1 ] && [ "$prompt_ok" = 1 ]; then verdict CNF-32 ok "the pick prompt lists the Reviewer Seats the Probe before the pick read unavailable: opus; fable and opus; none"; else verdict CNF-32 fail "$detail $prompt_detail"; fi
 
 verdict CNF-22 ok "(live; by hand once per release — see 06-conformance.md)"
 

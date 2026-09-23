@@ -100,8 +100,9 @@ For whoever runs an Implementation:
   names the passage and recommends a clarification (`RUN-19`). Clarify the specification, then
   run again.
   Implementation choices the specifications leave open it settles by consulting advisers
-  (`RUN-20`), and a choice they leave unsettled blocks for you too: the report names the models
-  that went quiet and says whether the ones that answered agreed.
+  (`RUN-20`) — the pick prompt names any whose models the Probe found out of quota, so the Manager
+  does not call them — and a choice they leave unsettled blocks for you too: the report names the
+  models that went quiet and says whether the ones that answered agreed.
 - **A Sequence:** check out the branch the work should land on, then `rloop --auto`. It runs
   until the Manager finds nothing left (exit 0), a task blocks (1), or something fails (2)
   (`SEQ-6`). The Manager commits each accepted task before the next starts; rloop never commits,

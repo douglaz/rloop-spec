@@ -279,6 +279,18 @@ SHOULD prefer one claude answer and one codex answer; when neither model of one 
 two answers from the other vendor are enough, and the record below MUST say the Consultation was
 single-vendor.
 
+An adviser whose model the relevant Probe record reads `unavailable`, under the Reviewer Seat of
+the same name, MUST be treated as an adviser that did not answer, without being called, and
+replaced by its counterpart as above; it counts as a model that did not answer for the rest of the
+Run. The relevant record is `probe-pick.md` for a Consultation at the pick, and Round `r`'s
+`probe-<r>.md`, as that Round's Feedback Files show it, for one at Round `r`'s judge.
+
+*This is the Consultation's parallel to `RUN-15`'s `rloop MUST write its Feedback File in its place`
+for a Reviewer that was never called. The verdicts are `RUN-21`'s; the pick prompt lists them
+(`PRM-1`) and the judge prompt reads them off the Feedback Files (`PRM-2`), because a weekly limit
+resets at a fixed time and an Implementer may run for hours, so by the judge the pick's reading is
+the stale one. A Round's record only adds to the models excluded; it never restores one.*
+
 The Manager MUST bound each adviser call through its shell tool and budget the whole
 Consultation to leave enough of its turn to write whichever file the outcome calls for — the
 Task File when the Consultation settles the choice, the Finished File when it blocks. Before
@@ -298,7 +310,8 @@ reclassify the question or require a Clarification.
 The Manager MUST record every model called and what each did — answered, did not answer (with
 the reason), or refused — alongside the question and the answers: in the Task File with the
 choice it settled, or in the Finished File with its recommendation when the Consultation blocked
-before a brief was written. The bounds and timing record
+before a brief was written. An adviser skipped for its Probe verdict is recorded as one that did
+not answer, with that verdict as the reason. The bounds and timing record
 belongs with that account. A choice the brief does not need to settle is the Implementer's.
 
 *This is a Consultation, not a Panel: rloop does not run it, the Manager does, in its own
