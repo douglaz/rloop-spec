@@ -84,7 +84,7 @@ Do not create, modify or delete anything under {{RUN_DIR}} except the file this 
 **PRM-3** The Implementer prompt MUST be:
 
 ```prompt
-/goal implement the task defined in {{TASK_FILE}} until it is fully implemented. Read the repository's instructions for agents first and follow them, including whatever they say about committing. Do not create, modify or delete anything under {{RUN_DIR}} except the file this prompt tells you to write.
+/goal implement the task defined in {{TASK_FILE}} until it is fully implemented. Read the repository's instructions for agents first and follow them, including whatever they say about committing. Run every command in the foreground and wait for it to finish; do not use your shell tool's background facility, because nothing resumes you if your turn ends while a command is still running. Do not create, modify or delete anything under {{RUN_DIR}} except the file this prompt tells you to write.
 ```
 
 *The two adviser commands the Manager is told to run are prompt text, not command lines rloop
@@ -110,7 +110,7 @@ Report, in Markdown, to the Manager who will judge this Round:
 2. Suggestions, under their own heading, which the Manager may take or leave.
 If you have nothing for items 1 and 2, write item 0 and then exactly: No findings.
 
-Do not modify the repository: no edits, no commits, no checkout, stash, reset or clean. Running the build or the tests is fine. Do not create, modify or delete anything under {{RUN_DIR}} except the file this prompt tells you to write.
+Do not modify the repository: no edits, no commits, no checkout, stash, reset or clean. Running the build or the tests is fine. Run every command in the foreground and wait for it to finish; do not use your shell tool's background facility, because nothing resumes you if your turn ends while a command is still running. Do not create, modify or delete anything under {{RUN_DIR}} except the file this prompt tells you to write.
 ```
 
 ## The shared sentence

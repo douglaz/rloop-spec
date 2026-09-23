@@ -399,3 +399,31 @@ work passed every gate and would have merged. The prompt fix is why it did not.
 *What it does not settle.* Two models, one repository, one task shape. `00-overview.md` says the
 prompts are `checked for equality, never for quality`; this is one observation, not a property.
 
+## F16 — Headless agents end their turn on a background check (open 2026-09-23)
+
+Three times a claude Seat started a long check in its shell tool's background and ended its turn
+to await it. Headless, nothing resumes it.
+
+- Run `20260923T022252.771492072Z-505649`, Round 1, the Implementer: its whole output was
+  ``Still running `u2`. I'll be re-invoked when it finishes.`` Its work went unreported and a
+  regression it would have caught to the Panel.
+- The same Run, Round 2, the `fable` Reviewer: a one-line Feedback File beginning `Waiting on the
+  background runs.` A Seat spent, no review.
+- Run `20260923T042304.628017728Z-505649`, Round 1, the Implementer: `Both suite runs are still
+  going; I'll pick up when they report.`, its work complete and uncommitted, although its brief
+  carried the milder `Do not end your turn while a check is still running in the background; wait
+  for it and report its result.` The Round 2 brief said `Run every command in the foreground and
+  wait for it.` and forbade the background outright, with the reason; the Implementer complied.
+
+Amended `PRM-3` and `PRM-4` with one identical sentence before the closing one, and regenerated
+`PRM-3.txt` and `PRM-4.txt` by the fixtures tool (rl-agents-end-turn-on-background-check-twn).
+`PRM-3`: `Run every command in the foreground and wait for it to finish; do not use your shell
+tool's background facility, because nothing resumes you if your turn ends while a command is
+still running.` A Consultation chose the prohibition over the milder sentence and over leaving it
+to each brief: the failure is the harness's, not any task's.
+
+*What does not follow.* One observation of the prohibition complying, in a brief, under
+`--implementer claude`; nothing yet shows the sentence working as prompt text, nor anything under
+`--implementer codex` or from a codex Reviewer. `00-overview.md` says the prompts are `checked for
+equality, never for quality`. **Open** until a Run on an Implementation carrying the amended
+prompts shows an Implementer and a claude Reviewer running a long check to completion.
