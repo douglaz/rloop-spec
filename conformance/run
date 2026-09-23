@@ -35,7 +35,7 @@ off=(--manager-model "$off_table_model" --implementer-model "$off_table_model")
 record_is() {
   local f="$1" label="$2"; shift 2
   printf 'manager:%s\nimplementer:%s\nfable:%s\nopus:%s\nastra:%s\nsol:%s\n' "$@" | cmp -s - "$f" \
-    || { ok=0; detail="$detail [$label: $(basename "$f") is not ${*// /,}: '$(tr '\n' ' ' < "$f" 2>/dev/null)']"; }
+    || { ok=0; detail="$detail [$label: $(basename "$f") is not ${*// /,}: '$(tr '\n' ' ' 2>/dev/null < "$f")']"; }
 }
 scenarios_file="$spec/conformance/scenarios.tsv"
 
