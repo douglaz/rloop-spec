@@ -296,7 +296,8 @@ Consultation. The verdict was in the vendor's report, and on disk in the same Ru
 later as `probe-1.md`'s `fable:unavailable`, but nothing carried it to the Manager at the pick: no
 Probe ran before the pick then. `RUN-21` now runs one there and it writes `probe-pick.md`, which
 nothing in the prompt read until this amendment. rloop still runs no Consultation; it states the
-fact in the prompt, as `{{DIRTY_AT_START}}` states the caller's paths.
+fact in the prompt, as `{{DIRTY_AT_START}}` states the caller's paths. Amended the record sentence
+of `PRM-1` and of `PRM-2` so that a skipped adviser is recorded with its Probe verdict as the reason.
 
 **Still open:** under `--manager codex` the shell-tool bound is unverified. The codex Manager's
 hanging-adviser case remains open even with a per-call bound written into the prompts: a live
