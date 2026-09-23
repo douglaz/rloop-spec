@@ -56,6 +56,13 @@ jobs:
           sed -i '2s/\t0\t/\t2\t/; 2s/\t2\tpick/\t0\tpick/' conformance/scenarios.tsv
           if python3 tools/check_scenarios.py; then echo "::error::scenarios gate passed a drifted file"; exit 1; fi
 
+      - name: Prove the panel-trace gate can fail
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"; cp -r . "$tmp/repo"; cd "$tmp/repo"
+          sed -i 's/ || (\$1 == "reviewer" && \$i == "start")//' conformance/scenario-lib.sh
+          if conformance/test-panel-trace; then echo "::error::panel-trace gate passed an end-only comparator"; exit 1; fi
+
       - name: Prove the formal gate refuses sorry
         run: |
           set -euo pipefail

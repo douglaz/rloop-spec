@@ -1,13 +1,22 @@
 #!/usr/bin/env bash
-# Reproduce Panel membership checks with only the Conformance Suite's dependencies:
-#   conformance/test-panel-trace ../rloop-bash/result/bin/rloop
-# The argument must be the rloop-bash script with its two literal Reviewer loops and its probe
-# reading (RUN-21). Mutants are made only in scratch space; neither the executable nor its checkout is modified. The normal
-# Conformance Suite remains implementation-independent. No expected scenario is edited here.
+# Regression checks for the suite's Panel-membership comparator, observed_trace in
+# scenario-lib.sh, with only the Conformance Suite's dependencies. Always invoked directly:
+#   spec/conformance/test-panel-trace ./result/bin/rloop    in the CI of rloop-bash
+#   conformance/test-panel-trace                            as tools/check-all.sh runs it
+# Without an argument only the hand-written traces are checked, and one NOT RUN line names the
+# checks that need an executable: the fake-agent timeout, the positive scenario replays and the
+# mutants. The mutants are pinned to rloop-bash's source, its two literal Reviewer loops in
+# do_round and its probe reading (RUN-21), and to no other Implementation's, so the argument must
+# be the rloop-bash script. Mutants are made only in scratch space; neither the executable nor its
+# checkout is modified. The normal Conformance Suite remains implementation-independent. No
+# expected scenario is edited here.
 set -u
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-original="${1:?usage: conformance/test-panel-trace <rloop-bash executable>}"
-original="$(cd "$(dirname "$original")" && pwd)/$(basename "$original")"
+original=
+if [ "$#" -ge 1 ]; then
+  original="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
+  [ -f "$original" ] && [ -x "$original" ] || { echo "not executable: $1" >&2; exit 2; }
+fi
 work="$(mktemp -d "${TMPDIR:-/tmp}/rloop-panel-trace.XXXXXX")"
 trap 'rm -rf "$work"' EXIT
 source "$here/scenario-lib.sh"
@@ -92,6 +101,12 @@ assert_equal "$(observed_trace "$rec")" \
   "pick,impl1:ok,panel1:some:$members,judge1,impl2:ok,panel2:all:sol,judge2" \
   'timeout outcomes and membership stay within their Round'
 echo 'PASS: mixed success/timeout and subsequent Round isolation'
+# Everything below needs an executable; without one, say so in a line no CI log hides.
+if [ -z "$original" ]; then
+  echo 'NOT RUN: no executable given, so the fake-agent timeout, the positive scenario' \
+    'replays and the rloop-bash mutants did not run'
+  exit 0
+fi
 
 # Exercise real fake-agent timeouts outside the generated scenario alphabet. All Reviewers
 # write starts before sleeping; timeout terminates them without normal end records.
@@ -113,7 +128,8 @@ select_scenario() {
   awk -F '\t' -v rounds="$1" 'NR==1 || ($4==rounds && $5=="-" && $6=="-" && $7=="-" && !found++)' \
     "$here/scenarios.tsv" > "$work/one.tsv"
   assert_equal "$(wc -l < "$work/one.tsv" | tr -d ' ')" 2 'one selected scenario'
-  IFS=$'\t' read -r id cap pick rounds interference probe seats exp_exit exp_trace < <(tail -1 "$work/one.tsv")
+  IFS=$'\t' read -r id cap pick rounds interference probe seats exp_exit exp_trace \
+    < <(tail -1 "$work/one.tsv")
 }
 positive() {
   exe="$original"
@@ -132,8 +148,8 @@ done
 # still finish normally. The failing verdict must have the correct exit and differ ONLY in
 # that Round's observed membership. This calls precisely run's scenario-comparison path.
 # Both loops are in do_round; the probe's verdict loop, outside it, is left alone.
-assert_equal "$(sed -n '/^do_round() {/,/^}/p' "$original" | grep -c '^  for rv in fable opus astra sol; do$')" 2 \
-  'rloop-bash mutation sites'
+assert_equal "$(sed -n '/^do_round() {/,/^}/p' "$original" \
+  | grep -c '^  for rv in fable opus astra sol; do$')" 2 'rloop-bash mutation sites'
 for skipped_round in 1 2; do
   sed "/^do_round() {/,/^}/{
 /^  for rv in fable opus astra sol; do$/a\\
@@ -153,7 +169,8 @@ for skipped_round in 1 2; do
   assert_equal "$(cat "$work/diagnostic")" \
     "        $id: expected exit $exp_exit trace $exp_trace; got exit $exp_exit trace $observed" \
     "$id isolated membership mismatch"
-  echo "PASS: $id negative control rejected (1 of 1 scenarios differ); skipped sol in Round $skipped_round"
+  echo "PASS: $id negative control rejected (1 of 1 scenarios differ);" \
+    "skipped sol in Round $skipped_round"
 done
 
 # The probe scripts (RUN-21, RUN-15): every generated line carrying one probe column passes
