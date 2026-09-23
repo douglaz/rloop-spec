@@ -67,15 +67,32 @@ observed_trace() { # observed_trace <record dir>
   local IFS=,; echo "${out[*]}"
 }
 
+# --- the Seats (RUN-21, RUN-22) ---------------------------------------------------------------------
+# A model RUN-21's table does not name: a Seat holding it reads `unknown` whatever the probe says,
+# so a Run can be refused, or its judge withheld, only where a script seats a model on the table.
+off_table_model=claude-sonnet-5
+seat_model() { # seat_model <fable|opus|anything else> -> that Reviewer's model (AGT-7, AGT-8), or the off-table one
+  case $1 in fable) echo claude-fable-5-1 ;; opus) echo claude-opus-5 ;; *) echo "$off_table_model" ;; esac
+}
+
 # --- CNF-3: the scenarios ---------------------------------------------------------------------------
 run_scenarios() { # run_scenarios <scenarios file> -> prints "<failures> <total>"
-  local file="$1" total=0 bad=0 id max pick rounds interf probe exp_exit exp_trace repo rec got_exit got_trace
-  while IFS=$'\t' read -r id max pick rounds interf probe exp_exit exp_trace; do
+  local file="$1" total=0 bad=0 id max pick rounds interf probe seats exp_exit exp_trace repo rec got_exit got_trace
+  local kv manager_seat implementer_seat pick_probe
+  while IFS=$'\t' read -r id max pick rounds interf probe seats exp_exit exp_trace; do
     [ "$id" = id ] && continue
     total=$((total + 1))
+    manager_seat=''; implementer_seat=''; pick_probe=clear
+    for kv in ${seats//;/ }; do
+      case $kv in
+        manager=*) manager_seat=${kv#*=} ;; implementer=*) implementer_seat=${kv#*=} ;; pick=*) pick_probe=${kv#*=} ;;
+      esac
+    done
     repo="$(new_repo)"; rec="$work/rec-$id"
     got_exit=$(RLOOP_FAKE_PICK="$pick" RLOOP_FAKE_ROUNDS="${rounds/#-/}" RLOOP_FAKE_INTERFERENCE="$interf" \
-      RLOOP_FAKE_PROBE="${probe/#-/}" run_rloop "$repo" "$rec" --run-dir "$repo/run" --max-rounds "$max")
+      RLOOP_FAKE_PROBE="${probe/#-/}" RLOOP_FAKE_PROBE_PICK="$pick_probe" run_rloop "$repo" "$rec" \
+      --run-dir "$repo/run" --max-rounds "$max" \
+      --manager-model "$(seat_model "$manager_seat")" --implementer-model "$(seat_model "$implementer_seat")")
     got_trace="$(observed_trace "$rec")"
     if [ "$got_exit" != "$exp_exit" ] || [ "$got_trace" != "$exp_trace" ]; then
       bad=$((bad + 1))

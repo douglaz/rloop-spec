@@ -52,6 +52,11 @@ not that requirement's — it is this model's trace encoding, which `conformance
 reproduces with `LC_ALL=C sort`. -/
 def Reviewer.all : List Reviewer := [.astra, .fable, .opus, .sol]
 
+/-- The two Seats outside the Panel (`CONTEXT.md`), the ones `RUN-22` refuses a Run for: removing a
+member leaves a Panel, and removing either of these leaves no Run (`ADR-0008`). -/
+inductive Seat | manager | implementer
+  deriving DecidableEq, Repr
+
 /-- What a non-Manager may have done to the Manager's files (`ADR-0003`). -/
 inductive Interference
   | none
@@ -66,14 +71,18 @@ inductive Point | afterImplementer | afterPanel
 
 /-- The guards a dated decision added, each a parameter so its absence has a witness
 (`ADR-0002`): the no-decision comparison (`RUN-12`), the round cap (`RUN-13`), the zero-survivor
-abort (`RUN-15`), that abort counting a Reviewer never called as down (`RUN-15`), and the
-Checkpoint (`DIR-6`). A theorem takes `Guards.all`; a witness turns one off. -/
+abort (`RUN-15`), that abort counting a Reviewer never called as down (`RUN-15`), the
+Checkpoint (`DIR-6`), the refusal at the pick of a Run whose Manager's or Implementer's Seat
+cannot answer, and the judge call not made for a Manager's Seat that cannot (`RUN-22`). A theorem
+takes `Guards.all`; a witness turns one off. -/
 structure Guards where
   noDecision : Bool := true
   cap : Bool := true
   panelAbort : Bool := true
   notRunDown : Bool := true
   checkpoint : Bool := true
+  pickRefusal : Bool := true
+  judgeRefusal : Bool := true
   deriving DecidableEq, Repr
 
 def Guards.all : Guards := {}
@@ -118,8 +127,11 @@ inductive Spawn
 
 /-- The agents' behaviour, as a total function of the Round so that no Round is ever "off the end
 of the script". `available k r` is false exactly when `RUN-21` recorded `r` `unavailable` before
-Round `k`'s Panel; `unknown` means call it, so it is `true`, and so is every Reviewer by default.
-`panel k` is the class of the Reviewers that were called. -/
+Round `k`'s Panel, or before the pick when `k` is `0`; `unknown` means call it, so it is `true`,
+and so is every Reviewer by default. `panel k` is the class of the Reviewers that were called.
+`seat s` is where Seat `s`'s model stands in `RUN-21`'s table: `none` when the table does not name
+it, the default, and otherwise the Reviewer whose model it is, since the table's two rows are the
+models of `fable` and `opus` (`AGT-7`, `AGT-8`). -/
 structure Behaviour where
   pick : ManagerResult
   implementer : Nat → Bool
@@ -127,6 +139,16 @@ structure Behaviour where
   judge : Nat → ManagerResult
   interference : Nat → Point → Interference
   available : Nat → Reviewer → Bool := fun _ _ => true
+  seat : Seat → Option Reviewer := fun _ => none
+
+/-- The verdict `RUN-21` records for Seat `s` from the probe before Round `k` (`0`: before the
+pick), `true` for `unknown`. A Seat whose model is off the table is `unknown` whatever the probe
+wrote; one on it reads what the Reviewer holding that model reads. One rule, then, for every Seat:
+a verdict belongs to a model's family, not to a role. -/
+def Behaviour.seatAvailable (b : Behaviour) (k : Nat) (s : Seat) : Bool :=
+  match b.seat s with
+  | none => true
+  | some r => b.available k r
 
 /-- A Behaviour with the interference removed: what the Checkpoint is supposed to make every Run
 equivalent to. -/
@@ -176,16 +198,20 @@ def rounds (g : Guards) (b : Behaviour) (maxRounds : Nat) :
     if g.panelAbort && allDown g p called then (.e2, trace.reverse)
     else
       let d := applyInterference g d (b.interference round .afterPanel)
+      if g.judgeRefusal && !b.seatAvailable round .manager then (.e2, trace.reverse)
+      else
       let r := b.judge round
       let trace := .judge round :: trace
       match decide g .judge d.snapshot d.task round maxRounds d.leftover r with
       | .exit e => (e, trace.reverse)
       | .next => rounds g b maxRounds fuel (round + 1) (afterManager d r) trace
 
-/-- One Run: the pick, then the Rounds. The fuel is one more than the cap so that a Run with the cap
-guard off is distinguishable from one that hit it: `RUN-13`'s witness runs `maxRounds + 1`
-Implementers. -/
+/-- One Run: the probe before the pick, which may refuse it with nothing spawned, then the pick,
+then the Rounds. The fuel is one more than the cap so that a Run with the cap guard off is
+distinguishable from one that hit it: `RUN-13`'s witness runs `maxRounds + 1` Implementers. -/
 def run (g : Guards) (b : Behaviour) (maxRounds : Nat) : Exit × List Spawn :=
+  if g.pickRefusal && !(b.seatAvailable 0 .manager && b.seatAvailable 0 .implementer) then (.e2, [])
+  else
   let d0 : Disk := { task := none, snapshot := none, leftover := none }
   match decide g .pick none none 0 maxRounds none b.pick with
   | .exit e => (e, [.pick])

@@ -23,10 +23,20 @@ verdict() { # verdict <CNF id> <ok|fail> <detail>
   if [ "$2" = ok ]; then pass=$((pass + 1)); printf '  PASS  %s  %s\n' "$1" "$3"
   else fail=$((fail + 1)); failed_items+=("$1"); printf '  FAIL  %s  %s\n' "$1" "$3"; fi
 }
-export -n RLOOP_FAKE_PICK RLOOP_FAKE_ROUNDS RLOOP_FAKE_INTERFERENCE RLOOP_FAKE_RUNS RLOOP_FAKE_THREAD_ID RLOOP_FAKE_NO_THREAD_ID 2>/dev/null || true
+export -n RLOOP_FAKE_PICK RLOOP_FAKE_ROUNDS RLOOP_FAKE_INTERFERENCE RLOOP_FAKE_RUNS RLOOP_FAKE_THREAD_ID RLOOP_FAKE_NO_THREAD_ID RLOOP_FAKE_PROBE_PICK 2>/dev/null || true
 
 source "$here/scenario-lib.sh"
 spawn_count() { ls "$1"/*.argv 2>/dev/null | wc -l | tr -d ' '; }
+# Both Seats on a model RUN-21's table does not name, so that no verdict of theirs stops the Run.
+off=(--manager-model "$off_table_model" --implementer-model "$off_table_model")
+# record_is <record file> <label> <verdict of each Seat, in RUN-21's order>: byte for byte, every line
+# ending with a newline, the last included; command substitution could see neither a missing
+# newline nor an extra blank line.
+record_is() {
+  local f="$1" label="$2"; shift 2
+  printf 'manager:%s\nimplementer:%s\nfable:%s\nopus:%s\nastra:%s\nsol:%s\n' "$@" | cmp -s - "$f" \
+    || { ok=0; detail="$detail [$label: $(basename "$f") is not ${*// /,}: '$(tr '\n' ' ' < "$f" 2>/dev/null)']"; }
+}
 scenarios_file="$spec/conformance/scenarios.tsv"
 
 echo "rloop conformance suite against $exe"
@@ -36,7 +46,7 @@ if [ "$bad" = 0 ]; then verdict CNF-3 ok "$total scenarios replayed"; else verdi
 
 if [ "$self_check" = 1 ]; then
   flipped="$work/flipped.tsv"
-  awk -F'\t' 'BEGIN{OFS="\t"} NR==2{$7=($7=="0")?"2":"0"} {print}' "$scenarios_file" > "$flipped"
+  awk -F'\t' 'BEGIN{OFS="\t"} NR==2{$8=($8=="0")?"2":"0"} {print}' "$scenarios_file" > "$flipped"
   read -r bad2 _ <<< "$(run_scenarios "$flipped" | tail -1)"
   if [ "$bad2" -ge 1 ]; then verdict CNF-4 ok "a flipped expectation made the suite red"; else verdict CNF-4 fail "the suite stayed green over a flipped expectation"; fi
 else
@@ -91,7 +101,7 @@ else verdict CNF-8 fail "exit $e, run dir '$rd', gitignore '$(cat "$repo/.rloop/
 # --- CNF-9: the layout --------------------------------------------------------------------------------
 repo="$(new_repo)"; rec="$work/rec-layout"
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run")
-expected_names="feedback-1-astra.md feedback-1-fable.md feedback-1-opus.md feedback-1-sol.md feedback-2-astra.md feedback-2-fable.md feedback-2-opus.md feedback-2-sol.md finished.md implementer-1.err implementer-1.out implementer-2.err implementer-2.out manager-judge-1.err manager-judge-1.out manager-judge-2.err manager-judge-2.out manager-pick.err manager-pick.out probe-1.err probe-1.md probe-1.out probe-2.err probe-2.md probe-2.out reviewer-1-astra.err reviewer-1-fable.err reviewer-1-opus.err reviewer-1-sol.err reviewer-2-astra.err reviewer-2-fable.err reviewer-2-opus.err reviewer-2-sol.err session task-1.md task-2.md task.md"
+expected_names="feedback-1-astra.md feedback-1-fable.md feedback-1-opus.md feedback-1-sol.md feedback-2-astra.md feedback-2-fable.md feedback-2-opus.md feedback-2-sol.md finished.md implementer-1.err implementer-1.out implementer-2.err implementer-2.out manager-judge-1.err manager-judge-1.out manager-judge-2.err manager-judge-2.out manager-pick.err manager-pick.out probe-1.err probe-1.md probe-1.out probe-2.err probe-2.md probe-2.out probe-pick.err probe-pick.md probe-pick.out reviewer-1-astra.err reviewer-1-fable.err reviewer-1-opus.err reviewer-1-sol.err reviewer-2-astra.err reviewer-2-fable.err reviewer-2-opus.err reviewer-2-sol.err session task-1.md task-2.md task.md"
 got_names=$(ls "$repo/run" | sort | tr '\n' ' ' | sed 's/ $//')
 ok=1; detail=""
 [ "$e" = 0 ] || { ok=0; detail="exit $e"; }
@@ -377,7 +387,7 @@ e=$(RLOOP_FAKE_PICK=ok:done RLOOP_FAKE_DIRTY_AT_DONE=1 run_rloop "$repo" "$rec" 
 [ "$e" = 0 ] && [ -s "$rec/stderr" ] || { ok=0; detail="$detail [lone dirty done: exit $e]"; }
 if [ "$ok" = 1 ]; then verdict CNF-21 ok "a dirty tree stops a Sequence before the next pick; a lone Run only warns"; else verdict CNF-21 fail "$detail"; fi
 
-# --- CNF-24: the probe runs once a Round, between the Implementer and the Panel -----------------------
+# --- CNF-24: the probe runs once before the pick, and once a Round between the Implementer and the Panel
 ok=1; detail=""
 repo="$(new_repo)"; rec="$work/rec-probe"
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run")
@@ -387,6 +397,25 @@ e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=rewrite|i
 # `-1 -lt <anything>` and a missing spawn would otherwise pass an ordering test.
 seq_of() { local f; f=$(ls "$rec"/*-"$1".argv 2>/dev/null | head -1); if [ -z "$f" ]; then echo -1; return; fi; f=$(basename "$f"); echo "${f%%-*}"; }
 present() { [ "$2" != -1 ] || { ok=0; detail="$detail [$1 never spawned]"; return 1; }; }
+# AGT-12 and AGT-13, which CNF-24 cites: the probe's environment, working directory and closed stdin.
+check_probe_env() { # check_probe_env <record tag> <RLOOP_ROUND> <label>
+  local ef; ef=$(ls "$rec"/*-"$1".env 2>/dev/null | head -1)
+  if [ -z "$ef" ]; then ok=0; detail="$detail [$3: no probe env recorded]"; return; fi
+  grep -qx "ROLE=probe" "$ef"   || { ok=0; detail="$detail [$3: probe ROLE]"; }
+  grep -qx "ROUND=$2" "$ef"     || { ok=0; detail="$detail [$3: probe ROUND]"; }
+  grep -qx "STDIN=eof" "$ef"    || { ok=0; detail="$detail [$3: probe stdin not closed]"; }
+  grep -qx "CWD=$(cd "$repo" && pwd -P)" "$ef" || { ok=0; detail="$detail [$3: probe cwd]"; }
+}
+# byte for byte, not merely present: the fake's `clear` shape writes exactly this line
+clear_bytes() { printf 'Current week (all models): 67%% used · resets Sep 24, 3pm (UTC)\n'; }
+n=$(ls "$rec"/*-probe-0.argv 2>/dev/null | wc -l)
+if [ "$n" = 1 ]; then
+  p=$(seq_of probe-0); m=$(seq_of manager-0)
+  present "the pick" "$m" && { [ "$p" -lt "$m" ] || { ok=0; detail="$detail [the pick's probe not before the pick]"; }; }
+  check_probe_env probe-0 0 "the pick"
+else ok=0; detail="$detail [the pick: $n probe calls]"; fi
+[ -f "$repo/run/probe-pick.err" ] || { ok=0; detail="$detail [the pick: probe-pick.err missing]"; }
+clear_bytes | cmp -s - "$repo/run/probe-pick.out" || { ok=0; detail="$detail [the pick: probe-pick.out is not the probe's bytes]"; }
 for r in 1 2; do
   n=$(ls "$rec"/*-probe-"$r".argv 2>/dev/null | wc -l)
   [ "$n" = 1 ] || { ok=0; detail="$detail [round $r: $n probe calls]"; continue; }
@@ -398,30 +427,21 @@ for r in 1 2; do
     present "round $r $rv" "$v" &&
       { [ "$p" -lt "$v" ] || { ok=0; detail="$detail [round $r: probe not before $rv]"; }; }
   done
-  # AGT-13, which CNF-24 cites: the probe's environment, working directory and closed stdin.
-  ef=$(ls "$rec"/*-probe-"$r".env 2>/dev/null | head -1)
-  if [ -z "$ef" ]; then ok=0; detail="$detail [round $r: no probe env recorded]"; else
-    grep -qx "ROLE=probe" "$ef"   || { ok=0; detail="$detail [round $r: probe ROLE]"; }
-    grep -qx "ROUND=$r" "$ef"     || { ok=0; detail="$detail [round $r: probe ROUND]"; }
-    grep -qx "STDIN=eof" "$ef"    || { ok=0; detail="$detail [round $r: probe stdin not closed]"; }
-    grep -qx "CWD=$(cd "$repo" && pwd -P)" "$ef" || { ok=0; detail="$detail [round $r: probe cwd]"; }
-  fi
-  # byte for byte, not merely present: the fake's `clear` shape writes exactly this line
+  check_probe_env "probe-$r" "$r" "round $r"
   [ -f "$repo/run/probe-$r.err" ] || { ok=0; detail="$detail [round $r: probe-$r.err missing]"; }
-  printf 'Current week (all models): 67%% used · resets Sep 24, 3pm (UTC)\n' | cmp -s - "$repo/run/probe-$r.out" \
-    || { ok=0; detail="$detail [round $r: probe-$r.out is not the probe's bytes]"; }
+  clear_bytes | cmp -s - "$repo/run/probe-$r.out" || { ok=0; detail="$detail [round $r: probe-$r.out is not the probe's bytes]"; }
 done
-ls "$rec"/*-probe-0.argv >/dev/null 2>&1 && { ok=0; detail="$detail [the pick ran a probe]"; }
-tr '\0' '\n' < "$(ls "$rec"/*-probe-1.argv | head -1)" | cmp -s - "$here/fixtures/argv/AGT-18.txt" || { ok=0; detail="$detail [probe argv is not AGT-18's fixture]"; }
-if [ "$ok" = 1 ]; then verdict CNF-24 ok "one probe a Round, after the Implementer and before every Reviewer, argv as AGT-18"; else verdict CNF-24 fail "$detail"; fi
+ls "$repo/run"/probe-0.* >/dev/null 2>&1 && { ok=0; detail="$detail [a probe-0.* file: the pick's record is probe-pick.*]"; }
+for tag in probe-0 probe-1 probe-2; do
+  tr '\0' '\n' < "$(ls "$rec"/*-$tag.argv 2>/dev/null | head -1)" | cmp -s - "$here/fixtures/argv/AGT-18.txt" || { ok=0; detail="$detail [$tag argv is not AGT-18's fixture]"; }
+done
+if [ "$ok" = 1 ]; then verdict CNF-24 ok "one probe before the pick and one a Round, after the Implementer and before every Reviewer, argv as AGT-18"; else verdict CNF-24 fail "$detail"; fi
 
 # --- CNF-25: the recorded verdicts --------------------------------------------------------------------
 ok=1; detail=""
 repo="$(new_repo)"; rec="$work/rec-probe-verdict"
-e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=fable RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run")
-want=$'fable:unavailable\nopus:unknown\nastra:unknown\nsol:unknown'
-got=$(cat "$repo/run/probe-1.md" 2>/dev/null || echo "<missing>")
-[ "$got" = "$want" ] || { ok=0; detail="$detail [fable row: probe-1.md is '$got']"; }
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=fable RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${off[@]}")
+record_is "$repo/run/probe-1.md" "fable row" unknown unknown unavailable unknown unknown unknown
 # The verdict alone is not enough: an Implementation could write it and then abort, or act on it
 # early. RUN-15 removes exactly the Reviewer read `unavailable` and no other, so the Run must
 # finish and every other Reviewer must have been called.
@@ -441,16 +461,20 @@ check_run_whole() { # check_run_whole <label> <the unavailable reviewer>
 check_run_whole "fable row" fable
 # The other row of the table, so a rule that hardcodes `fable` cannot pass.
 repo="$(new_repo)"; rec="$work/rec-probe-verdict-opus"
-e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=opus RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run")
-want=$'fable:unknown\nopus:unavailable\nastra:unknown\nsol:unknown'
-got=$(cat "$repo/run/probe-1.md" 2>/dev/null || echo "<missing>")
-[ "$got" = "$want" ] || { ok=0; detail="$detail [opus row: probe-1.md is '$got']"; }
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=opus RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${off[@]}")
+record_is "$repo/run/probe-1.md" "opus row" unknown unknown unknown unavailable unknown unknown
 check_run_whole "opus row" opus
-if [ "$ok" = 1 ]; then verdict CNF-25 ok "either family at 100% reads unavailable, alone; every other Reviewer reads unknown"; else verdict CNF-25 fail "$detail"; fi
+# The Implementer's Seat on `fable`'s model: its verdict is read from its own model, not copied from
+# a Reviewer's line, and a Round's verdict on it is recorded and acted on by nothing (RUN-22).
+repo="$(new_repo)"; rec="$work/rec-probe-verdict-seat"
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=fable RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager-model "$off_table_model" --implementer-model claude-fable-5-1)
+record_is "$repo/run/probe-1.md" "Implementer's Seat on the table" unknown unavailable unavailable unknown unknown unknown
+ls "$rec"/*-manager-1.argv >/dev/null 2>&1 || { ok=0; detail="$detail [Implementer's Seat on the table: judge not called]"; }
+check_run_whole "Implementer's Seat on the table" fable
+if [ "$ok" = 1 ]; then verdict CNF-25 ok "six lines, one per Seat; either family at 100% reads unavailable, alone, and a Seat reads its own model"; else verdict CNF-25 fail "$detail"; fi
 
 # --- CNF-26: fail open ---------------------------------------------------------------------------------
 ok=1; detail=""
-all_unknown=$'fable:unknown\nopus:unknown\nastra:unknown\nsol:unknown'
 for shape in clear aggregate fail silent garbage under loose slow; do
   repo="$(new_repo)"; rec="$work/rec-probe-$shape"
   # `slow` is the bound being hit: the probe sleeps past a --probe-timeout of one second. It is
@@ -460,29 +484,27 @@ for shape in clear aggregate fail silent garbage under loose slow; do
   # give the same verdict either way and test nothing.
   written="$shape"; sleep_probe=0; bound=()
   if [ "$shape" = slow ]; then written=fable; sleep_probe=3; bound=(--probe-timeout 1); fi
-  e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE="$written" RLOOP_FAKE_SLEEP_PROBE="$sleep_probe" RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" ${bound[@]+"${bound[@]}"})
+  e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE="$written" RLOOP_FAKE_SLEEP_PROBE="$sleep_probe" RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${off[@]}" ${bound[@]+"${bound[@]}"})
   [ "$e" = 0 ] || { ok=0; detail="$detail [$shape: exit $e]"; }
   [ -f "$repo/run/finished.md" ] || { ok=0; detail="$detail [$shape: no Finished File]"; }
   ls "$rec"/*-manager-1.argv >/dev/null 2>&1 || { ok=0; detail="$detail [$shape: judge not called]"; }
-  got=$(cat "$repo/run/probe-1.md" 2>/dev/null || echo "<missing>")
-  [ "$got" = "$all_unknown" ] || { ok=0; detail="$detail [$shape: probe-1.md is '$got']"; }
+  record_is "$repo/run/probe-1.md" "$shape" unknown unknown unknown unknown unknown unknown
   for rv in fable opus astra sol; do
     ls "$rec"/*-reviewer-1-"$rv".argv >/dev/null 2>&1 || { ok=0; detail="$detail [$shape: $rv not spawned]"; }
   done
 done
-if [ "$ok" = 1 ]; then verdict CNF-26 ok "aggregate exhaustion or a failed, silent, unparseable, under-100% or timed-out probe leaves every Reviewer unknown and the Panel whole"; else verdict CNF-26 fail "$detail"; fi
+if [ "$ok" = 1 ]; then verdict CNF-26 ok "aggregate exhaustion or a failed, silent, unparseable, under-100% or timed-out probe leaves every Seat unknown and the Panel whole"; else verdict CNF-26 fail "$detail"; fi
 
 # --- CNF-27: an unavailable Reviewer is recorded in place, never called -------------------------------
 ok=1; detail=""
 for shape in fable both; do
   repo="$(new_repo)"; rec="$work/rec-omitted-$shape"
   # panel=all keeps the called Reviewers successful even when fable is omitted.
-  e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE="$shape" RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run")
+  e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE="$shape" RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${off[@]}")
   [ "$e" = 0 ] || { ok=0; detail="$detail [$shape: exit $e]"; }
   [ -f "$repo/run/finished.md" ] || { ok=0; detail="$detail [$shape: no Finished File]"; }
   opus_verdict=unknown; [ "$shape" = both ] && opus_verdict=unavailable
-  printf 'fable:unavailable\nopus:%s\nastra:unknown\nsol:unknown\n' "$opus_verdict" | cmp -s - "$repo/run/probe-1.md" \
-    || { ok=0; detail="$detail [$shape: incorrect probe-1.md verdicts or order]"; }
+  record_is "$repo/run/probe-1.md" "$shape" unknown unknown unavailable "$opus_verdict" unknown unknown
   jf=$(ls "$rec"/*-manager-1.argv 2>/dev/null | head -1)
   [ -n "$jf" ] || { ok=0; detail="$detail [$shape: judge not called]"; }
   for rv in fable opus astra sol; do
@@ -504,11 +526,106 @@ done
 # Mixed down states: one Reviewer never called and the other three failing is still "every
 # Reviewer of a Panel is down", so RUN-15 aborts. Nothing else exercises the two kinds together.
 repo="$(new_repo)"; rec="$work/rec-omitted-abort"
-e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=fable RLOOP_FAKE_ROUNDS="impl=ok;panel=none;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run")
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=fable RLOOP_FAKE_ROUNDS="impl=ok;panel=none;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${off[@]}")
 [ "$e" = 2 ] || { ok=0; detail="$detail [one unavailable plus three failed: exit $e, want 2]"; }
 ls "$rec"/*-manager-1.argv >/dev/null 2>&1 && { ok=0; detail="$detail [judge ran with no survivor]"; }
 [ -f "$repo/run/finished.md" ] && { ok=0; detail="$detail [Finished File written with no survivor]"; }
 if [ "$ok" = 1 ]; then verdict CNF-27 ok "one or both families unavailable: omitted Reviewers recorded in place and all feedback reaches the judge; all down aborts"; else verdict CNF-27 fail "$detail"; fi
+
+# --- CNF-28, CNF-29: a Seat that cannot answer refuses the Run at the pick -------------------------------
+# The pick is scripted to fail, so an Implementation that ignores the refusal and calls it exits 2
+# as well: the spawn record, not the status, is what these items assert.
+agents_spawned() { ls "$rec" 2>/dev/null | grep -cE '^[0-9]+-(manager|implementer|reviewer)-.*\.argv$'; }
+refused() { # refused <label>: the Run in $repo, recorded in $rec, was refused at the pick
+  local n
+  [ "$e" = 2 ] || { ok=0; detail="$detail [$1: exit $e]"; }
+  n=$(agents_spawned); [ "$n" = 0 ] || { ok=0; detail="$detail [$1: $n agent calls recorded]"; }
+  [ "$(ls "$rec"/*-probe-0.argv 2>/dev/null | wc -l)" = 1 ] || { ok=0; detail="$detail [$1: the probe before the pick did not run once]"; }
+  [ -s "$rec/stdout" ] && { ok=0; detail="$detail [$1: standard output is not empty]"; }
+  [ "$(ls "$repo/run" 2>/dev/null | LC_ALL=C sort | tr '\n' ' ')" = "probe-pick.err probe-pick.md probe-pick.out " ] \
+    || { ok=0; detail="$detail [$1: the Run Directory holds $(ls "$repo/run" 2>/dev/null | tr '\n' ' ')]"; }
+}
+names() { # names <label> <text...>: standard error carries each text
+  local label="$1" t; shift
+  for t in "$@"; do grep -qF -- "$t" "$rec/stderr" || { ok=0; detail="$detail [$label: standard error does not name '$t']"; }; done
+}
+fable_line='Current week (Fable): 100% used · resets Sep 24, 3pm (UTC)'
+opus_line='Current week (Opus): 100% used · resets Sep 24, 3pm (UTC)'
+ok=1; detail=""
+repo="$(new_repo)"; rec="$work/rec-refuse-manager"
+e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=fable run_rloop "$repo" "$rec" --run-dir "$repo/run")
+refused "default models"
+names "default models" manager implementer claude-fable-5-1 "$fable_line"
+record_is "$repo/run/probe-pick.md" "default models" unavailable unavailable unavailable unknown unknown unknown
+# The table's other row, so a rule that hardcodes `fable` for the Manager's Seat cannot pass.
+repo="$(new_repo)"; rec="$work/rec-refuse-manager-opus"
+e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=opus run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager-model claude-opus-5 --implementer-model "$off_table_model")
+refused "claude-opus-5"
+names "claude-opus-5" manager claude-opus-5 "$opus_line"
+record_is "$repo/run/probe-pick.md" "claude-opus-5" unavailable unknown unknown unavailable unknown unknown
+if [ "$ok" = 1 ]; then verdict CNF-28 ok "a Manager's Seat recorded unavailable before the pick: exit 2, no agent spawned, only probe-pick.*, the Seat, model and line named"; else verdict CNF-28 fail "$detail"; fi
+
+ok=1; detail=""
+repo="$(new_repo)"; rec="$work/rec-refuse-implementer"
+e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=fable run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager-model "$off_table_model")
+refused "Implementer's Seat"
+names "Implementer's Seat" implementer claude-fable-5-1 "$fable_line"
+record_is "$repo/run/probe-pick.md" "Implementer's Seat" unknown unavailable unavailable unknown unknown unknown
+if [ "$ok" = 1 ]; then verdict CNF-29 ok "an Implementer's Seat recorded unavailable before the pick: exit 2, no agent spawned, the Seat, model and line named"; else verdict CNF-29 fail "$detail"; fi
+
+# --- CNF-30: no judge call for a Manager's Seat recorded unavailable ------------------------------------
+# The withheld judge is scripted to fail, so calling it would exit 2 as well: the missing judge,
+# not the status, is what this item asserts.
+ok=1; detail=""
+repo="$(new_repo)"; rec="$work/rec-judge-guard"
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE="clear|fable" RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=fail" run_rloop "$repo" "$rec" --run-dir "$repo/run" --implementer-model "$off_table_model")
+[ "$e" = 2 ] || { ok=0; detail="$detail [Round 2: exit $e]"; }
+[ -f "$repo/run/manager-judge-1.out" ] || { ok=0; detail="$detail [Round 2: no manager-judge-1.out]"; }
+[ -e "$repo/run/manager-judge-2.out" ] && { ok=0; detail="$detail [Round 2: manager-judge-2.out exists]"; }
+ls "$rec"/*-manager-2.argv >/dev/null 2>&1 && { ok=0; detail="$detail [Round 2: its judge was called]"; }
+ls "$rec"/*-implementer-2.argv >/dev/null 2>&1 || { ok=0; detail="$detail [Round 2: no Implementer]"; }
+for rv in opus astra sol; do
+  ls "$rec"/*-reviewer-2-$rv.argv >/dev/null 2>&1 || { ok=0; detail="$detail [Round 2: $rv not called]"; }
+done
+ls "$rec"/*-reviewer-2-fable.argv >/dev/null 2>&1 && { ok=0; detail="$detail [Round 2: fable called]"; }
+printf 'REVIEWER NOT RUN (unavailable)\n' | cmp -s - "$repo/run/feedback-2-fable.md" || { ok=0; detail="$detail [Round 2: feedback-2-fable.md is not the not-run line]"; }
+[ -e "$repo/run/finished.md" ] && { ok=0; detail="$detail [Round 2: a Finished File]"; }
+[ -s "$rec/stdout" ] && { ok=0; detail="$detail [Round 2: standard output is not empty]"; }
+names "Round 2" manager claude-fable-5-1
+record_is "$repo/run/probe-2.md" "Round 2" unavailable unknown unavailable unknown unknown unknown
+repo="$(new_repo)"; rec="$work/rec-judge-guard-1"
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=fable RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=fail" run_rloop "$repo" "$rec" --run-dir "$repo/run" --implementer-model "$off_table_model")
+[ "$e" = 2 ] || { ok=0; detail="$detail [Round 1: exit $e]"; }
+[ -e "$repo/run/manager-judge-1.out" ] && { ok=0; detail="$detail [Round 1: manager-judge-1.out exists]"; }
+ls "$rec"/*-manager-1.argv >/dev/null 2>&1 && { ok=0; detail="$detail [Round 1: its judge was called]"; }
+names "Round 1" manager claude-fable-5-1
+if [ "$ok" = 1 ]; then verdict CNF-30 ok "a Manager's Seat recorded unavailable in Round 1 or 2: the Panel runs, no judge is called, exit 2"; else verdict CNF-30 fail "$detail"; fi
+
+# --- CNF-31: fail open reaches the pick --------------------------------------------------------------------
+started() { # started <label>: the Run was not refused; the pick was called and the Run ended 0
+  [ "$e" = 0 ] || { ok=0; detail="$detail [$1: exit $e]"; }
+  ls "$rec"/*-manager-0.argv >/dev/null 2>&1 || { ok=0; detail="$detail [$1: the pick was not called]"; }
+  [ -f "$repo/run/finished.md" ] || { ok=0; detail="$detail [$1: no Finished File]"; }
+}
+ok=1; detail=""
+for shape in fable both; do
+  repo="$(new_repo)"; rec="$work/rec-open-seats-$shape"
+  e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE_PICK="$shape" RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${off[@]}")
+  started "$shape, Seats off the table"
+  opus_verdict=unknown; [ "$shape" = both ] && opus_verdict=unavailable
+  record_is "$repo/run/probe-pick.md" "$shape, Seats off the table" unknown unknown unavailable "$opus_verdict" unknown unknown
+done
+for shape in fail loose under silent unlisted aggregate garbage slow; do
+  repo="$(new_repo)"; rec="$work/rec-open-pick-$shape"
+  # `slow` reports `Fable` at 100% after sleeping past a one-second bound, as in CNF-26: only an
+  # Implementation that honours the bound reads it `unknown`.
+  written="$shape"; sleep_probe=0; bound=()
+  if [ "$shape" = slow ]; then written=fable; sleep_probe=3; bound=(--probe-timeout 1); fi
+  e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE_PICK="$written" RLOOP_FAKE_SLEEP_PROBE="$sleep_probe" RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" ${bound[@]+"${bound[@]}"})
+  started "$shape, default models"
+  record_is "$repo/run/probe-pick.md" "$shape, default models" unknown unknown unknown unknown unknown unknown
+done
+if [ "$ok" = 1 ]; then verdict CNF-31 ok "Seats off the table, or a probe before the pick that reads unknown, start the Run"; else verdict CNF-31 fail "$detail"; fi
 
 verdict CNF-22 ok "(live; by hand once per release — see 06-conformance.md)"
 

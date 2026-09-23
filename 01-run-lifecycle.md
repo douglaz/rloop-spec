@@ -63,14 +63,19 @@ conversation is a bad brief, and `PRM-2` tells the Manager so.*
 finish, and rloop MUST wait for every one of them before the Checkpoint that follows. Each called
 Reviewer's standard output is its Feedback File (`DIR-4`).
 
-**RUN-21** Immediately before each Round's Panel, rloop MUST run the availability probe
-(`AGT-18`) once, bounded by `--probe-timeout` (`AGT-1`), and MUST record for every Reviewer of the Panel exactly
-one verdict — `unavailable` or `unknown` — in `probe-<r>.md` (`DIR-4`), one `<reviewer>:<verdict>`
-line per Reviewer in the order `fable`, `opus`, `astra`, `sol`.
+**RUN-21** rloop MUST run the availability probe (`AGT-18`) at two call sites: once before the
+pick — after the Run Directory exists (`RUN-4`) and before the pick's Manager call — and once
+immediately before each Round's Panel, each call bounded by `--probe-timeout` (`AGT-1`). After
+each call it MUST record for every Seat exactly one verdict — `unavailable` or `unknown` — in
+`probe-pick.md` before the pick and in `probe-<r>.md` in Round `r` (`DIR-4`), one
+`<seat>:<verdict>` line per Seat in the order `manager`, `implementer`, `fable`, `opus`, `astra`,
+`sol`. Every line of either record ends with a newline, the last one included. The Manager's
+Seat's model is `<manager model>` (`AGT-3`), the Implementer's is `<implementer model>` (`AGT-5`,
+`AGT-6`), and each Reviewer's is the one its command line fixes (`AGT-11`).
 
-A Reviewer is **`unavailable`** only when the probe exited zero within its bound and some line of
+A Seat is **`unavailable`** only when the probe exited zero within its bound and some line of
 its standard output **begins** with `Current week (<family>): 100% used` — anchored at the start
-of the line, with whatever follows ignored — where `<family>` is the Reviewer's model's family by
+of the line, with whatever follows ignored — where `<family>` is the Seat's model's family by
 this table and nothing else:
 
 | model | family |
@@ -79,25 +84,51 @@ this table and nothing else:
 | `claude-opus-5` | `Opus` |
 
 Every other case is **`unknown`**: the probe exited non-zero, hit its bound, wrote nothing, wrote
-output with no such line, named a percentage below 100, or the Reviewer's model is not in that
-table — which is every codex Reviewer, since that vendor publishes no quota at all. An absent
-family line is `unknown`, never `unavailable`: the probe lists only families it has something to
-report.
+output with no such line, named a percentage below 100, or the Seat's model is not in that table.
+The last holds whatever the probe wrote: a Reviewer is `unknown` whenever the Reviewer's model is
+not in that table — which is every codex Reviewer, since that vendor publishes no quota at all —
+and so are the Manager's and the Implementer's Seats for any `--manager-model` or
+`--implementer-model` value the table does not name. An absent family line is `unknown`, never
+`unavailable`: the probe lists only families it has something to report.
 
 The match is anchored because the probe's output is a model's turn, not a machine format: an
 unanchored search would let a refusal or an explanation that merely repeats those words remove a
-Reviewer, and that is the one direction fail-open does not protect. The aggregate
+Reviewer or refuse a Run, and that is the one direction fail-open does not protect. The aggregate
 `Current week (all models)` line is deliberately **not** read: no family is named in it, nobody
 has observed what the probe prints when a whole account is exhausted, and a rule written against
 an unobserved format is a guess. That case therefore reads `unknown` and saves nothing, which is
 the honest outcome until someone sees it.
 
 *Fail open is the whole design. A verdict is evidence about one moment, the format belongs to a
-vendor and will drift, and a wrong `unavailable` silently shrinks the Panel — so only a positive,
-unambiguous reading counts, and everything else means "spawn it". This is also what keeps a typo
-loud: a misspelled model name fails fast and non-zero, while an exhausted one hangs and writes
-nothing, and the two are not confusable.* What a Panel does with an `unavailable` Reviewer is
-`RUN-15`'s.
+vendor and will drift, and a wrong `unavailable` silently shrinks the Panel or refuses a Run that
+would have worked — so only a positive, unambiguous reading counts, and everything else means
+"spawn it". This is also what keeps a typo loud: a misspelled model name fails fast and non-zero,
+while an exhausted one hangs and writes nothing, and the two are not confusable.* What a Panel
+does with an `unavailable` Reviewer is `RUN-15`'s; what a Run does with an `unavailable` Manager's
+or Implementer's Seat is `RUN-22`'s.
+
+**RUN-22** When `probe-pick.md` records the Manager's Seat `unavailable`, or the Implementer's Seat
+`unavailable`, rloop MUST exit 2 without spawning any agent, and MUST write to standard error a
+message naming the Seat — both, when both are — its model, and the reset the probe reported, which
+it names by quoting the probe's matching line verbatim. The message SHOULD name the flag that
+chooses another model, `--manager-model` or `--implementer-model` (`AGT-1`). *The line is carried,
+not parsed: `RUN-21` reads nothing past `100% used`, and `AGT-17` records that the reset's format
+already drifted once.*
+
+rloop MUST NOT make Round `r`'s judge call when `probe-<r>.md` records the Manager's Seat
+`unavailable`; it MUST exit 2, with the message above for the Manager's Seat. The Round's Panel and
+both Checkpoints still run as `RUN-7` orders — the rule removes only the judge call, and the
+Feedback Files are what a human reads about the Round — and the exit takes the judge's place.
+This precedes `RUN-11` rather than adding a row to it: that requirement decides `After every
+Manager call`, and a call that was never made is not one. `Rloop.decide` and the table it renders
+do not change. A Round's verdict on the Implementer's Seat is recorded and nothing acts on it.
+
+*Why a Seat that cannot answer is refused and never filled by another model, and why the Reviewers
+are left to `RUN-15`, is `ADR-0008`'s.* `Rloop.seat_out_refused` proves that a Run so recorded
+before the pick spawns nothing and `Rloop.pick_refusal_off_picks` is each Seat's pick spawned
+without the rule; `Rloop.judged_only_when_manager_answers` proves every judge call is for a Round
+whose probe read the Manager's Seat `unknown`, and `Rloop.manager_out_skips_judge` and
+`Rloop.judge_refusal_off_judges` are the pair for a Manager that runs out in Round 2.
 
 ## What the Manager leaves behind
 
@@ -193,10 +224,13 @@ continue.
 
 A Reviewer that `RUN-21` recorded `unavailable` MUST NOT be called at all. It stays a Reviewer of
 the Panel, and rloop MUST write its Feedback File in its place holding exactly
-`REVIEWER NOT RUN (unavailable)` and nothing else. *A call that never happened has no exit status,
+`REVIEWER NOT RUN (unavailable)` followed by a newline, and nothing else — no other content; the
+terminating newline is part of the line. *A call that never happened has no exit status,
 so `REVIEWER FAILED (exit <status>)` cannot describe it, and `PRM-2` gives the Manager that line's
 meaning as `a Reviewer that crashed or timed out`. Two different things the Manager weighs
-differently need two different lines.*
+differently need two different lines. Whether `and nothing else` excluded the newline was asked
+by `rl-vcq`; the owner settled on 2026-09-22 that it does not, which is what rloop-bash already
+wrote — 31 bytes.*
 
 Both count as down. When **every** Reviewer of a Panel is down — failed, or not run — rloop MUST
 exit 2 without calling the judge. *One Reviewer down is a degraded Panel the Manager can weigh;

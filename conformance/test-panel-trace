@@ -110,10 +110,10 @@ rm -rf "$repo" "$rec"
 
 # Select existing generated scenarios, leaving every field (including expectations) intact.
 select_scenario() {
-  awk -F '\t' -v rounds="$1" 'NR==1 || ($4==rounds && $5=="-" && $6=="-" && !found++)' \
+  awk -F '\t' -v rounds="$1" 'NR==1 || ($4==rounds && $5=="-" && $6=="-" && $7=="-" && !found++)' \
     "$here/scenarios.tsv" > "$work/one.tsv"
   assert_equal "$(wc -l < "$work/one.tsv" | tr -d ' ')" 2 'one selected scenario'
-  IFS=$'\t' read -r id cap pick rounds interference probe exp_exit exp_trace < <(tail -1 "$work/one.tsv")
+  IFS=$'\t' read -r id cap pick rounds interference probe seats exp_exit exp_trace < <(tail -1 "$work/one.tsv")
 }
 positive() {
   exe="$original"

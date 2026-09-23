@@ -62,7 +62,7 @@ class CitationControls(unittest.TestCase):
         return self.gate("check_citations.py", status, *reasons)
 
     def test_current_definitions_and_quotes(self):
-        self.ids(0, "RESTATEMENT: 01-run-lifecycle.md:214", tier="ADVISORY")
+        self.ids(0, "RESTATEMENT: 01-run-lifecycle.md:248", tier="ADVISORY")
         self.citations(0, "CITATION: docs/adr/0006-", tier="ADVISORY")
 
     def test_copy_quote_and_one_word_mutation_compose(self):
@@ -709,8 +709,8 @@ class CitationControls(unittest.TestCase):
     def test_restored_run16_history_has_no_quote_owner(self):
         document = "01-run-lifecycle.md"
         self.assertIn('this read "the\npick MUST start', (self.root / document).read_text())
-        self.ids(0, f"RESTATEMENT: {document}:214", "pick MUST start", tier="ADVISORY")
-        self.assertNotIn(f"CITATION: {document}:214", self.citations())
+        self.ids(0, f"RESTATEMENT: {document}:248", "pick MUST start", tier="ADVISORY")
+        self.assertNotIn(f"CITATION: {document}:248", self.citations())
 
     def test_aggregate_advisories_and_blockers(self):
         # Copy the actual runner, formal model and generated assets, including

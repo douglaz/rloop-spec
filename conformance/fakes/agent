@@ -19,6 +19,9 @@
 #                            under = 99; garbage = no usage line; silent = nothing;
 #                            fail = the fable line but exit 3; loose = the words mid-line;
 #                            unlisted = families outside RUN-21's table at 100, codex-like ones too
+#   RLOOP_FAKE_PROBE_PICK    what the probe before the pick (RLOOP_ROUND=0) writes: one shape from
+#                            RLOOP_FAKE_PROBE's list (default: clear). RLOOP_FAKE_PROBE scripts the
+#                            Rounds' probes alone, so scripting the pick changes none of them
 #   RLOOP_FAKE_IGNORE_TERM   1 = trap and ignore SIGTERM
 #   RLOOP_FAKE_GRANDCHILD    1 = spawn a background sleeper and record its pid
 #   RLOOP_FAKE_DIRTY_AT_DONE 1 = the Manager leaves an untracked file in the tree when it writes done
@@ -153,9 +156,13 @@ case "$role" in
     # RUN-21 reads one shape and calls everything else unknown; RLOOP_FAKE_PROBE picks which
     # shape this Round's probe writes, so the suite can drive every fail-open path, and a Round's
     # own shape lets one Round report exhaustion and a later one capacity.
-    shapes="${RLOOP_FAKE_PROBE:-clear}"
-    shape=$(echo "$shapes" | tr '|' '\n' | sed -n "${round}p")
-    [ -n "$shape" ] || shape="${shapes##*|}"
+    if [ "$round" = 0 ]; then
+      shape="${RLOOP_FAKE_PROBE_PICK:-clear}"
+    else
+      shapes="${RLOOP_FAKE_PROBE:-clear}"
+      shape=$(echo "$shapes" | tr '|' '\n' | sed -n "${round}p")
+      [ -n "$shape" ] || shape="${shapes##*|}"
+    fi
     case "$shape" in
       clear)   printf 'Current week (all models): 67%% used · resets Sep 24, 3pm (UTC)\n' ;;
       aggregate) printf 'Current week (all models): 100%% used\n' ;;

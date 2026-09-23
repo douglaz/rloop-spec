@@ -110,6 +110,14 @@ For whoever runs an Implementation:
   commits sit behind a clean tree and the next invocation's base would take them in unreviewed
   (`ADR-0004`, `F3`). Read the Finished File: it says what is committed and what is in the tree.
   Reconcile before starting again.
+- **A Run refuses to start on a model that is out of quota.** Before the pick rloop reads the
+  vendor's usage report, and when the Manager's model or the Implementer's reports its week at
+  100% the Run exits 2 with nothing spawned; the message on standard error names the model and
+  quotes the report's line, reset time included (`RUN-22`). Pass `--manager-model` or
+  `--implementer-model` to choose another: rloop never switches models on its own (`ADR-0008`). A
+  Sequence ends there with 2, as it does on any Run that exits 2 (`SEQ-6`). A Manager whose week
+  runs out mid-Run is caught the same way before its next judge call, after that Round's Panel has
+  written its feedback.
 - **After a Run that exited 2 there is no Finished File**, because the Manager never wrote one:
   the round cap was reached, a Manager call failed or made no decision, no Reviewer of a Panel
   survived, or rloop was interrupted. The evidence is the Run Directory, which is kept whatever

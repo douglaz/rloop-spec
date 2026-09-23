@@ -31,8 +31,33 @@
   },
   {
     "owner": "RUN-21",
-    "sha256": "fda2e44b98a8be6c810313c7fb60453f23b69044334a5499674a4c9c2785c3ee",
-    "reason": "Owns Probe timing and recording; AGT-18, AGT-1 and DIR-4 identify the command, option and file."
+    "sha256": "9d473872c8e3c1dcd030296d039ad5cb0083ec5dfa9fd3986e00f2eb29255ccc",
+    "reason": "Owns Probe timing at both call sites; AGT-18 identifies the command, RUN-4 the Run Directory it follows and AGT-1 the option bounding it."
+  },
+  {
+    "owner": "RUN-21",
+    "sha256": "9188c97133e714ef6ef1495a700be3917d67800814c2df61bc9f9200ed3dd6c2",
+    "reason": "Owns the per-Seat record and its order; DIR-4 identifies the files it is written to."
+  },
+  {
+    "owner": "RUN-22",
+    "sha256": "2605e3b434784cf1db64c439f58b2c428443126950b0ebd15af2a4e0a4491383",
+    "reason": "Owns the refusal at the pick and its message; RUN-21 supplies the record, AGT-1 the flags the message names and AGT-17 why the line is quoted."
+  },
+  {
+    "owner": "RUN-22",
+    "sha256": "350e8ada815a2086cf49f76e524b3f1b47e113200729819de78a064a8cc89a61",
+    "reason": "Owns the message's pointer to another model; AGT-1 identifies the flags."
+  },
+  {
+    "owner": "RUN-22",
+    "sha256": "72c94f2c458c694de739cfbd1c6c8d24587cf9bc8ddb12992599b6aeae2d69a6",
+    "reason": "Owns withholding the judge call; RUN-7 identifies the Round whose order otherwise stands and RUN-11 the decision it precedes."
+  },
+  {
+    "owner": "RUN-22",
+    "sha256": "b5c40206976b09256c1adf0ac33b0d542064fab39cef51e5d0e9a92aa1313a7c",
+    "reason": "Owns the exit that takes the withheld judge call's place; RUN-7 and RUN-11 identify the Round and the decision it leaves unchanged."
   },
   {
     "owner": "RUN-13",
@@ -161,8 +186,8 @@
   },
   {
     "owner": "RUN-15",
-    "sha256": "d747f92cb52ca837e7d08f653004eac0ee20c8f1ee7f58677825edcd2563b4e2",
-    "reason": "Owns the exact unavailable-Reviewer Feedback File content; RUN-21 supplies availability and PRM-2 interprets a different failure line."
+    "sha256": "3280b54a14823f201f8f03d4bcaec5e443088c169874a718d0e530e92a298a13",
+    "reason": "Owns the exact unavailable-Reviewer Feedback File content, its terminating newline included; RUN-21 supplies availability and PRM-2 interprets a different failure line."
   },
   {
     "owner": "RUN-19",
@@ -205,6 +230,11 @@
     "reason": "Owns preserving output bytes; RUN-16/RUN-21 identify permitted readers and RUN-14/RUN-15 identify output consumers/producers."
   },
   {
+    "owner": "DIR-4",
+    "sha256": "b035fefb59940735bd63cb6ecb6b54498f2e02783a372ddecd3859cd1cf9472a",
+    "reason": "Owns what a refused Run leaves in the Run Directory; RUN-22 identifies the refusal and RUN-16 the writer of the absent session file."
+  },
+  {
     "owner": "DIR-5",
     "sha256": "c30c734fff8bcbba261cd68e2b14fc6efab05c747c15f7507692d3fe744cf754",
     "reason": "Owns Task File snapshots; RUN-12 names the later comparison consuming them."
@@ -231,8 +261,8 @@
   },
   {
     "owner": "CNF-3",
-    "sha256": "b15eb7298029913d0f39d60713b1b1f6912ea1d142e5a3959307018b163e5c40",
-    "reason": "Owns executable scenario replay and assertions by the suite; the cited requirements identify the behaviors being tested."
+    "sha256": "84758a93f4eb64ab2bec8b65403dd7514236ee8692d258a54511b178482618a8",
+    "reason": "Owns executable scenario replay and assertions by the suite, the Seat models it passes included; the cited requirements identify the behaviors being tested."
   },
   {
     "owner": "CNF-4",

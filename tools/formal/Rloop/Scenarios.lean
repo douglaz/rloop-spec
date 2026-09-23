@@ -4,8 +4,8 @@ import Rloop.Loop
 Every scripted Behaviour over a small alphabet, run through the model with `Guards.all`, emitted
 as one line each: the script the fakes replay, and the exit code and spawn trace the executable
 must reproduce. The enumeration extends a script only while the model's Run continues, so no line
-scripts a Round the Run does not reach. Among the lines with neither interference nor a probe
-script, each is a distinct executed trace and none carries choices nothing reads.
+scripts a Round the Run does not reach. Among the lines with no interference, no probe script and
+no Seat on the table, each is a distinct executed trace and none carries choices nothing reads.
 
 Two blocks are appended, each from a narrower alphabet, and in each a choice may deliberately
 change nothing. Interference is added to the one-Round scripts only, at one point each
@@ -16,16 +16,25 @@ calls, and every other shape — the fail-open paths — takes out nobody, so th
 exit and trace of a line with no probe script, which is what the suite then checks: that the
 executable's Panel stays whole.
 
+A third block, the Seats' (`RUN-22`), is a list of scripts chosen one by one rather than an
+alphabet crossed with the rest (`F4`), each run through the model like every other line. On a Run
+refused at the pick the `pick` choice is one nothing reads, since the pick is never called; that
+is the line's point.
+
 The line format, tab-separated:
 
-    id  max_rounds  pick  rounds  interference  probe  exit  trace
+    id  max_rounds  pick  rounds  interference  probe  seats  exit  trace
 
 `pick` is one of `ok:task ok:done ok:blocked ok:idle ok:other ok:nothing fail`; `rounds` is
 `impl=<ok|fail>;panel=<all|some|none>;judge=<rewrite|same|done|blocked|idle|other|fail>` per
 Round joined by `|` (`-` when no Round runs); `interference` is `-` or
 `<round>:<afterImplementer|afterPanel>:<editTask|writeFinished|both>`; `probe` is `-` (the fakes'
 default, a probe reporting nothing exhausted) or the fakes' probe shape per Round joined by `|`;
-`trace` is the spawns joined by `,`: `pick`, `impl<r>:<ok|fail>`,
+`seats` is `-` or, joined by `;`, `manager=<fable|opus>` and `implementer=<fable|opus>` for a
+Seat whose model is the one that Reviewer holds, which `RUN-21`'s table names, and `pick=<shape>`
+for what the probe before the pick prints — a Seat not named holds a model the table does not
+name, and `-` is both so with a probe before the pick reporting nothing exhausted;
+`trace` is the spawns joined by `,`, empty for a Run that spawned nothing: `pick`, `impl<r>:<ok|fail>`,
 `panel<r>:<all|some|none>:<members>`, `judge<r>`. `members` joins the names of the Reviewers
 called with `+` in canonical name order, including failed Reviewers; a Reviewer `RUN-21` recorded
 `unavailable` is not called and is not a member. -/
@@ -67,6 +76,24 @@ def probeReads : String → Reviewer → Bool
   | "both" => fun r => r != .fable && r != .opus
   | _ => fun _ => true
 
+def Reviewer.name : Reviewer → String
+  | .astra => "astra" | .fable => "fable" | .opus => "opus" | .sol => "sol"
+
+/-- Where a line seats the Manager and the Implementer (`RUN-22`): the Reviewer whose model each
+Seat holds, `none` for a model `RUN-21`'s table does not name, and the shape the probe before the
+pick prints. The default is every other line's: both Seats off the table and a probe reporting
+nothing exhausted, so no Seat's verdict can stop the Run. -/
+structure Seats where
+  manager : Option Reviewer := none
+  implementer : Option Reviewer := none
+  pick : String := "clear"
+
+def Seats.name (s : Seats) : String :=
+  if s.manager.isNone && s.implementer.isNone && s.pick == "clear" then "-" else
+  String.intercalate ";"
+    ((s.manager.map (s!"manager={Reviewer.name ·}")).toList
+      ++ (s.implementer.map (s!"implementer={Reviewer.name ·}")).toList ++ [s!"pick={s.pick}"])
+
 /-- One Round's scripted choices. -/
 structure RoundChoice where
   impl : String × Bool
@@ -79,7 +106,8 @@ def RoundChoice.name (c : RoundChoice) : String :=
 /-- The Behaviour a script denotes: Round `k` reads the `k`-th choice; beyond the script (never
 reached, since the enumeration stops where the Run stops) the agents fail. -/
 def behaviour (pick : String × (Nat → ManagerResult)) (rounds : List RoundChoice)
-    (interf : Option (Nat × Point × Interference)) (probes : List String) : Behaviour :=
+    (interf : Option (Nat × Point × Interference)) (probes : List String) (seats : Seats := {}) :
+    Behaviour :=
   { pick := pick.2 0
     implementer := fun k => rounds[k - 1]?.map (·.impl.2) |>.getD false
     panel := fun k => rounds[k - 1]?.map (·.panel.2) |>.getD .none
@@ -88,10 +116,8 @@ def behaviour (pick : String × (Nat → ManagerResult)) (rounds : List RoundCho
     interference := fun k p => match interf with
       | some (r, q, i) => if r == k && q == p then i else .none
       | none => .none
-    available := fun k => probeReads (probes[k - 1]?.getD "-") }
-
-def Reviewer.name : Reviewer → String
-  | .astra => "astra" | .fable => "fable" | .opus => "opus" | .sol => "sol"
+    available := fun k => probeReads (if k == 0 then seats.pick else probes[k - 1]?.getD "-")
+    seat := fun | .manager => seats.manager | .implementer => seats.implementer }
 
 /-- Encode membership as a set, regardless of list order or repetition. -/
 def membershipName (members : List Reviewer) : String :=
@@ -109,6 +135,7 @@ structure Scenario where
   rounds : List RoundChoice
   interference : String
   probes : List String
+  seats : Seats := {}
   exit : Exit
   trace : List Spawn
 
@@ -119,7 +146,7 @@ def Scenario.line (i : Nat) (s : Scenario) : String :=
   let rounds := if s.rounds.isEmpty then "-" else String.intercalate "|" (s.rounds.map (·.name))
   String.intercalate "\t"
     [ s!"S{i}", toString s.maxRounds, s.pick, rounds, s.interference,
-      if s.probes.isEmpty then "-" else String.intercalate "|" s.probes, exitName s.exit,
+      if s.probes.isEmpty then "-" else String.intercalate "|" s.probes, s.seats.name, exitName s.exit,
       String.intercalate "," (s.trace.map Spawn.name) ]
 
 /-- Does the Run with this script reach Round `n + 1`? It does exactly when its trace holds an
@@ -183,8 +210,41 @@ def probeScripts : List (Nat × List String) :=
   [ (1, ["fable"]), (1, ["opus"]), (1, ["both"]), (1, ["fail"]), (1, ["loose"]), (1, ["unlisted"]),
     (2, ["fable", "clear"]) ]
 
+/-- A Manager choice by name, and a Round whose Implementer and Panel succeed, judged by name. -/
+def managerChoice (n : String) : String × (Nat → ManagerResult) :=
+  managerChoices.find? (·.1 == n) |>.getD ("fail", fun _ => { ok := false, writesFinished := none, writesTask := none })
+def roundJudged (judge : String) : RoundChoice :=
+  { impl := ("ok", true), panel := ("all", .all), judge := managerChoice judge }
+
+/-- The Seat scripts, `(cap, pick, judges, probes, seats)`: each Seat refused at the pick, and the
+Manager's on the table's other row so that one row cannot pass for the table; the Manager's on
+`opus`'s model, which a report of `Fable` leaves alone; the judge refused in Round 1, and in Round 2
+after a Round the probe read clear; the Implementer's Seat recorded `unavailable` in both Rounds
+and the Run finishing regardless (`ADR-0008`'s rejected arm; `RUN-14`); and both Seats on the table
+under probes that fail open — the matching line from a probe that exits non-zero, the words not at
+the start of a line, and a report of nothing exhausted. -/
+def seatScripts : List (Nat × String × List String × List String × Seats) :=
+  [ (1, "done", [], [], { manager := some .fable, pick := "fable" }),
+    (1, "done", [], [], { implementer := some .fable, pick := "fable" }),
+    (1, "done", [], [], { manager := some .opus, pick := "opus" }),
+    (1, "done", [], [], { manager := some .opus, pick := "fable" }),
+    (1, "task", ["done"], ["fable"], { manager := some .fable }),
+    (2, "task", ["task", "done"], ["clear", "fable"], { manager := some .fable }),
+    (2, "task", ["task", "done"], ["fable", "fable"], { implementer := some .fable }),
+    (1, "task", ["done"], ["fail"], { manager := some .fable, implementer := some .fable, pick := "fail" }),
+    (1, "task", ["done"], ["loose"], { manager := some .fable, implementer := some .fable, pick := "loose" }),
+    (1, "task", ["done"], [], { manager := some .fable, implementer := some .fable }) ]
+
+def seatLines : List Scenario :=
+  seatScripts.map fun (cap, pick, judges, probes, seats) =>
+    let rounds := judges.map roundJudged
+    let (e, tr) := run Guards.all (behaviour (managerChoice pick) rounds none probes seats) cap
+    { maxRounds := cap, pick := pickName pick, rounds := rounds, interference := "-",
+      probes := probes, seats := seats, exit := e, trace := tr }
+
 /-- The scenarios: caps 1 and 2 without interference, then cap 1 with each single interference,
-then each probe script, kept to the lines that reach every Round it scripts a probe for. -/
+then each probe script, kept to the lines that reach every Round it scripts a probe for, then the
+Seat scripts. -/
 def all : List Scenario :=
   scriptsFor {} 1 none "-" ++ scriptsFor {} 2 none "-"
   ++ ([Point.afterImplementer, Point.afterPanel].flatMap fun p =>
@@ -192,6 +252,7 @@ def all : List Scenario :=
         (scriptsFor narrow 1 (some (1, p, i)) s!"1:{pointName p}:{n}").filter (·.rounds.length > 0))
   ++ (probeScripts.flatMap fun (cap, probes) =>
       (scriptsFor narrowProbe cap none "-" probes).filter (·.rounds.length ≥ probes.length))
+  ++ seatLines
 
 /-- The negative control (`ADR-0002`): for each guard, the number of scenario lines whose expected
 exit or trace the model without that guard would get wrong. A guard nobody's line depends on is a
@@ -202,12 +263,14 @@ def controls : List (String × Nat) :=
       ("cap", { Guards.all with cap := false }),
       ("panelAbort", { Guards.all with panelAbort := false }),
       ("notRunDown", { Guards.all with notRunDown := false }),
-      ("checkpoint", { Guards.all with checkpoint := false }) ]
+      ("checkpoint", { Guards.all with checkpoint := false }),
+      ("pickRefusal", { Guards.all with pickRefusal := false }),
+      ("judgeRefusal", { Guards.all with judgeRefusal := false }) ]
   without.map fun (name, g) =>
     (name, (all.filter fun s =>
       let interf := parseInterference s.interference
       let pick := managerChoices.find? (fun (n, _) => pickName n == s.pick) |>.getD ("fail", fun _ => { ok := false, writesFinished := none, writesTask := none })
-      run g (behaviour pick s.rounds interf s.probes) s.maxRounds != (s.exit, s.trace)).length)
+      run g (behaviour pick s.rounds interf s.probes s.seats) s.maxRounds != (s.exit, s.trace)).length)
 where
   parseInterference (n : String) : Option (Nat × Point × Interference) :=
     if n == "-" then none else
@@ -218,7 +281,7 @@ where
     | _ => none
 
 def tsv : List String :=
-  "id\tmax_rounds\tpick\trounds\tinterference\tprobe\texit\ttrace" ::
+  "id\tmax_rounds\tpick\trounds\tinterference\tprobe\tseats\texit\ttrace" ::
     (all.zipIdx.map fun (s, i) => s.line (i + 1))
 
 end Rloop.Scenarios

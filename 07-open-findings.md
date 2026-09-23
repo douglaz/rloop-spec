@@ -122,7 +122,8 @@ rloop will not have. Open by decision; the Finished File's report is the mitigat
 ## F4 — The scenario alphabet is a choice (open)
 
 `Rloop.Scenarios` enumerates seven Manager outcomes, two Implementer outcomes, three Panel
-classes, one interference point per script, a block of probe scripts, and caps 1 and 2. Fable's
+classes, one interference point per script, a block of probe scripts, a block of Seat scripts,
+and caps 1 and 2. Fable's
 review of `ADR-0002` argued depth 2 suffices because the decision is memoryless apart from the
 Round counter; astra's asked for cap 3 and the default of 10 as explicit lines. Cap 10 is
 `CNF-3`'s job only through `--max-rounds`; a cap-3 enumeration was not added. Revisit if an
@@ -134,6 +135,16 @@ a cross product would add lines that differ only in one trace token's members wh
 same decision path, which is the growth `ADR-0002` reduced the Panel to classes to avoid. The cost
 is stated: the 206 lines leave the probe unscripted, so an Implementation whose availability
 reading leaks into a Round the block does not script is caught only by the block.
+
+The Seat scripts (`RUN-22`) took it from 227 to 237, and the growth is additive: every one of the
+227 lines kept its exit and trace byte for byte and gained only the `seats` column, as `-`. The
+ten are chosen one by one rather than drawn from an alphabet — each Seat refused at the pick, and
+the Manager's on the table's other row as well; the Manager's Seat left alone by the other family;
+the judge withheld in Round 1 and in Round 2; the Implementer's Seat read `unavailable` by a Round
+and the Run finishing; three probes that fail open with both Seats on the table — because crossing Seats
+with the rest would repeat every line that no verdict of theirs can stop. The cost has the same
+shape: the 227 lines seat no model on the table, so an Implementation whose Seat reading leaks
+into a Run they script is caught only by the block and by `CNF-25` to `CNF-31`.
 
 ## F5 — The first Implementation's findings (closed 2026-09-18)
 
