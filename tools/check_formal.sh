@@ -29,8 +29,9 @@ for f in Rloop/*.lean; do
   fi
 done
 
-# emit OUT CMD...: CMD's stdout to OUT via a rename, its line count in $lines, CMD's status.
-emit() { "${@:2}" > "$1.$$.tmp"; local rc=$?; lines=$(wc -l < "$1.$$.tmp"); mv -f "$1.$$.tmp" "$1"; return "$rc"; }
+# emit OUT CMD...: CMD's stdout to OUT via a rename, its line count in $lines, CMD's status, or 1 if
+# the rename failed.
+emit() { "${@:2}" > "$1.$$.tmp"; local rc=$?; lines=$(wc -l < "$1.$$.tmp"); mv -f "$1.$$.tmp" "$1" || return 1; return "$rc"; }
 
 lake build || exit 1
 emit .lake/index.jsonl lake exe gate
