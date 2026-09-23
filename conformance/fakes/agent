@@ -11,9 +11,10 @@
 #   RLOOP_FAKE_RUNS          for a Sequence: pick outcomes per Run, comma-separated (done,done,idle);
 #                            each Run's Rounds are then RLOOP_FAKE_ROUNDS
 #   RLOOP_FAKE_SLEEP_<ROLE>  seconds to sleep before acting (ROLE = MANAGER|IMPLEMENTER|REVIEWER|PROBE)
-#   RLOOP_FAKE_PROBE         what the availability probe writes (default: clear), one shape for
-#                            every Round or one per Round joined by | (a Round past the last
-#                            writes the last): clear = aggregate at 67, no family named;
+#   RLOOP_FAKE_PROBE         what the availability probe writes (default: clear), one shape per
+#                            Round joined by | (a Round past the last named shape writes clear,
+#                            as when unset, since Scenarios.lean's behaviour reads `-` there):
+#                            clear = aggregate at 67, no family named;
 #                            aggregate = aggregate at 100, no family named; fable / opus = that
 #                            family at 100; both = Fable and Opus each at 100, on separate lines;
 #                            under = 99; garbage = no usage line; silent = nothing;
@@ -161,7 +162,7 @@ case "$role" in
     else
       shapes="${RLOOP_FAKE_PROBE:-clear}"
       shape=$(echo "$shapes" | tr '|' '\n' | sed -n "${round}p")
-      [ -n "$shape" ] || shape="${shapes##*|}"
+      [ -n "$shape" ] || shape=clear
     fi
     case "$shape" in
       clear)   printf 'Current week (all models): 67%% used · resets Sep 24, 3pm (UTC)\n' ;;

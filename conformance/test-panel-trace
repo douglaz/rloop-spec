@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 # Regression checks for the suite's Panel-membership comparator, observed_trace in
-# scenario-lib.sh, with only the Conformance Suite's dependencies. Always invoked directly:
+# scenario-lib.sh, and for the fake's probe past a script's last shape, with only the Conformance
+# Suite's dependencies. Always invoked directly:
 #   spec/conformance/test-panel-trace ./result/bin/rloop    in the CI of rloop-bash
 #   conformance/test-panel-trace                            as tools/check-all.sh runs it
-# Without an argument only the hand-written traces are checked, and one NOT RUN line names the
-# checks that need an executable: the fake-agent timeout, the positive scenario replays and the
-# mutants. The mutants are pinned to rloop-bash's source, its two literal Reviewer loops in
-# do_round and its probe reading (RUN-21), and to no other Implementation's, so the argument must
-# be the rloop-bash script. Mutants are made only in scratch space; neither the executable nor its
-# checkout is modified. The normal Conformance Suite remains implementation-independent. No
-# expected scenario is edited here.
+# Without an argument only the hand-written traces and the fake's probe are checked, and one NOT
+# RUN line names the checks that need an executable: the fake-agent timeout, the positive scenario
+# replays and the mutants. The mutants are pinned to rloop-bash's source, its two literal Reviewer
+# loops in do_round and its probe reading (RUN-21), and to no other Implementation's, so the
+# argument must be the rloop-bash script. Mutants are made only in scratch space; neither the
+# executable nor its checkout is modified. The normal Conformance Suite remains
+# implementation-independent. No expected scenario is edited here.
 set -u
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 original=
@@ -101,6 +102,20 @@ assert_equal "$(observed_trace "$rec")" \
   "pick,impl1:ok,panel1:some:$members,judge1,impl2:ok,panel2:all:sol,judge2" \
   'timeout outcomes and membership stay within their Round'
 echo 'PASS: mixed success/timeout and subsequent Round isolation'
+
+# Past a probe script's last shape the fake writes clear, which is what the model reads there
+# (`-` in Scenarios.lean's behaviour); Round 1 must differ, or the check proves nothing. Byte for
+# byte: command substitution could see neither a missing newline nor an extra blank line.
+mkdir -p "$work/probe"
+probe_writes() { RLOOP_ROLE=probe RLOOP_RUN=1 RLOOP_ROUND="$1" RLOOP_FAKE_PROBE="$2" \
+  RLOOP_FAKE_RECORD="$work/probe" "$fakes/claude" </dev/null 2>/dev/null; }
+probe_writes 1 clear > "$work/probe/clear"
+probe_writes 1 fable > "$work/probe/fable-1"
+probe_writes 2 fable > "$work/probe/fable-2"
+cmp -s "$work/probe/fable-1" "$work/probe/clear" && die 'Round 1 of fable writes clear'
+cmp -s "$work/probe/fable-2" "$work/probe/clear" \
+  || die 'Round 2 of a fable-only probe script: not the bytes of clear'
+echo "PASS: a Round past the probe script's last shape gets clear"
 # Everything below needs an executable; without one, say so in a line no CI log hides.
 if [ -z "$original" ]; then
   echo 'NOT RUN: no executable given, so the fake-agent timeout, the positive scenario' \
