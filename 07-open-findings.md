@@ -289,11 +289,14 @@ owner. The adviser command lines are unchanged.
 2026-09-23: amended `RUN-20` so that an adviser whose model the Probe found out of quota counts as
 one that did not answer without being called, `PRM-1` to list the Probe's `unavailable` Reviewer
 Seats in a new `{{UNAVAILABLE}}` render (`PRM-6`, asserted by `CNF-32`), and `PRM-2` to read the
-same fact off the Round's `REVIEWER NOT RUN` Feedback Files. On 2026-09-22 a Consultation called
-`fable` while `claude-fable-5-1` was at 100% of its weekly limit and lost 600 seconds to a call
-that wrote nothing, though `probe-pick.md` had recorded `fable:unavailable` seconds before: the
-waste `F11` calls rloop-spec#3, moved from the Panel to the Consultation. rloop still runs no
-Consultation; it states the fact in the prompt, as `{{DIRTY_AT_START}}` states the caller's paths.
+same fact off the Round's `REVIEWER NOT RUN` Feedback Files. On 2026-09-22 a Consultation at the
+pick called `fable` while `claude-fable-5-1` was at 100% of its weekly limit and lost 600 seconds
+to a call that wrote nothing: the waste `F11` calls rloop-spec#3, moved from the Panel to the
+Consultation. The verdict was in the vendor's report, and on disk in the same Run seventeen minutes
+later as `probe-1.md`'s `fable:unavailable`, but nothing carried it to the Manager at the pick: no
+Probe ran before the pick then. `RUN-21` now runs one there and it writes `probe-pick.md`, which
+nothing in the prompt read until this amendment. rloop still runs no Consultation; it states the
+fact in the prompt, as `{{DIRTY_AT_START}}` states the caller's paths.
 
 **Still open:** under `--manager codex` the shell-tool bound is unverified. The codex Manager's
 hanging-adviser case remains open even with a per-call bound written into the prompts: a live

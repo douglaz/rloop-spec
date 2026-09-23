@@ -636,14 +636,16 @@ done
 if [ "$ok" = 1 ]; then verdict CNF-31 ok "Seats off the table, or a probe before the pick that reads unknown, start the Run"; else verdict CNF-31 fail "$detail"; fi
 
 # --- CNF-32: the unavailable list in the pick prompt ----------------------------------------------------
-# One Seat on the default models (a `Fable` report would refuse them, RUN-22), both Reviewers with
-# the two Seats' models off the table, and none: either form alone passes a wrong Implementation.
+# `opus` on the default models (a `Fable` report would refuse them, RUN-22), `fable` alone and both
+# Reviewers with the two Seats' models off the table, and none: either form alone passes a wrong
+# Implementation, and one Seat's Run alone passes one that hardcodes that Seat.
 # Each Run must start (CNF-31's started()); check_call's argv verdict is CNF-11's, so it is dropped.
 ok=1; detail=""; prompt_ok=1; prompt_detail=""
-for shape in opus both clear; do
+for shape in opus fable both clear; do
   repo="$(new_repo)"; rec="$work/rec-unavailable-$shape"; seats=(); model=claude-fable-5-1
   case $shape in
     opus) P_UNAVAILABLE="opus" ;;
+    fable) P_UNAVAILABLE="fable"; seats=("${off[@]}"); model="$off_table_model" ;;
     both) P_UNAVAILABLE="fable
 opus"; seats=("${off[@]}"); model="$off_table_model" ;;
     clear) P_UNAVAILABLE="" ;;
@@ -654,7 +656,7 @@ opus"; seats=("${off[@]}"); model="$off_table_model" ;;
   check_call "$rec/*-manager-0.argv" "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$(cat "$repo/run/session" 2>/dev/null)" "$model" "$shape"
   ok=$started_ok; detail="$started_detail"
 done
-if [ "$ok" = 1 ] && [ "$prompt_ok" = 1 ]; then verdict CNF-32 ok "the pick prompt lists the Reviewer Seats the Probe before the pick read unavailable: opus; fable and opus; none"; else verdict CNF-32 fail "$detail $prompt_detail"; fi
+if [ "$ok" = 1 ] && [ "$prompt_ok" = 1 ]; then verdict CNF-32 ok "the pick prompt lists the Reviewer Seats the Probe before the pick read unavailable: opus; fable; fable and opus; none"; else verdict CNF-32 fail "$detail $prompt_detail"; fi
 
 verdict CNF-22 ok "(live; by hand once per release — see 06-conformance.md)"
 
