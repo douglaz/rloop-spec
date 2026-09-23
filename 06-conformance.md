@@ -260,22 +260,32 @@ probe before the pick reporting `Current week (Fable): 100% used`, the executabl
 Manager, Implementer or Reviewer argument list recorded, standard output empty, the Run Directory
 holding the three `probe-pick.*` files alone, `probe-pick.md` reading `manager:unknown` and
 `implementer:unavailable`, and standard error naming `implementer`, `claude-fable-5-1` and the
-probe's line. The pick is scripted to fail. *Again the spawn record, not the status, is what an
-Implementation that refuses only for the Manager's Seat fails.* (`RUN-22`, `RUN-21`, `DIR-4`,
-`RUN-10`)
+probe's line. With `--implementer-model claude-opus-5` and `Current week (Opus): 100% used`
+instead, the Run is refused the same way and standard error names `claude-opus-5`. In neither Run
+does standard error name `manager`: `RUN-22`'s message names `the Seat — both, when both are`, and
+only the Implementer's is. The pick is scripted to fail. *Again the spawn record, not the status,
+is what an Implementation that refuses only for the Manager's Seat fails. The second Run is there
+because one row cannot tell a Seat read from its own model from a rule that hardcodes `fable`, and
+a per-Seat or per-site lookup can get one Seat's row right and another's wrong.* (`RUN-22`,
+`RUN-21`, `DIR-4`, `RUN-10`)
 
 **CNF-30** With the Manager's model at its default and the Implementer's off `RUN-21`'s table, the
 probes before the pick and in Round 1 reporting nothing exhausted, Round 2's reporting
 `Current week (Fable): 100% used`, and Round 1 judged `rewrite`: the executable exits 2;
-`manager-judge-1.out` exists and **`manager-judge-2.out` does not**, nor is a Round 2 judge
-argument list recorded; Round 2's Implementer ran and its Panel ran without `fable` — `opus`,
-`astra` and `sol` called, `feedback-2-fable.md` exactly the not-run line; there is no Finished
-File; and standard error names `manager`, `claude-fable-5-1` and the probe's `Fable` line, reset
-and all, since `RUN-22` exits `with the message above for the Manager's Seat`, which names the
-reset by `quoting the probe's matching line verbatim`. With Round 1's probe reporting `Fable`
-instead, the Run exits 2 with no `manager-judge-1.out`, and standard error names the same three.
+`manager-judge-1.out` exists and **`manager-judge-2.out` does not**, nor is a Round 2 judge argument
+list recorded; Round 2's Implementer ran and its Panel ran without `fable` — `opus`, `astra` and
+`sol` called, `feedback-2-fable.md` exactly the not-run line; `probe-2.md` reads
+`manager:unavailable` and `fable:unavailable`, every other Seat `unknown`; there is no Finished File
+and standard output is empty; and standard error names `manager`, `claude-fable-5-1` and the probe's
+`Fable` line, reset and all, since `RUN-22` exits `with the message above for the Manager's Seat`,
+which names the reset by `quoting the probe's matching line verbatim`. With Round 1's probe
+reporting `Fable` instead, the Run exits 2 with no `manager-judge-1.out`, and standard error names
+the same three. With `--manager-model claude-opus-5` and `Current week (Opus): 100% used` instead,
+both Runs go the same way with `opus` in `fable`'s place, and standard error names `claude-opus-5`.
 The withheld judge is scripted to fail. *The missing judge is the assertion: a Run whose judge was
-called and failed also exits 2.* (`RUN-22`, `RUN-21`, `RUN-7`, `RUN-10`, `DIR-4`)
+called and failed also exits 2. The second pair of Runs is there because one row cannot tell a Seat
+read from its own model from a rule that hardcodes `fable`, and a per-Seat or per-site lookup can
+get one Seat's row right and another's wrong.* (`RUN-22`, `RUN-21`, `RUN-7`, `RUN-10`, `DIR-4`)
 
 **CNF-31** With both Seats' models off `RUN-21`'s table and the probe before the pick reporting
 `Current week (Fable): 100% used`, or `Fable` and `Opus` both at 100%, the Run starts — the pick

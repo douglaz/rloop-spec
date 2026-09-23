@@ -548,14 +548,18 @@ refused() { # refused <label>: the Run in $repo, recorded in $rec, was refused a
   [ "$(ls "$repo/run" 2>/dev/null | LC_ALL=C sort | tr '\n' ' ')" = "probe-pick.err probe-pick.md probe-pick.out " ] \
     || { ok=0; detail="$detail [$1: the Run Directory holds $(ls "$repo/run" 2>/dev/null | tr '\n' ' ')]"; }
 }
+seat_words() { sed -E 's/-*(manager|implementer)-model//g' "$rec/stderr"; } # each flag's name carries a Seat's word
 names() { # names <label> <text...>: standard error carries each text; a Seat's word must stand apart from the flag names
   local label="$1" t; shift
   for t in "$@"; do
     case $t in
-      manager|implementer) sed -E 's/-*(manager|implementer)-model//g' "$rec/stderr" | grep -qwF -- "$t" ;;
+      manager|implementer) seat_words | grep -qwF -- "$t" ;;
       *) grep -qF -- "$t" "$rec/stderr" ;;
     esac || { ok=0; detail="$detail [$label: standard error does not name '$t']"; }
   done
+}
+not_named() { # not_named <label> <seat>: standard error does not name the Seat (RUN-22: `both, when both are`)
+  seat_words | grep -qwF -- "$2" && { ok=0; detail="$detail [$1: standard error names '$2']"; }
 }
 fable_line='Current week (Fable): 100% used · resets Sep 24, 3pm (UTC)'
 opus_line='Current week (Opus): 100% used · resets Sep 24, 3pm (UTC)'
@@ -578,36 +582,53 @@ repo="$(new_repo)"; rec="$work/rec-refuse-implementer"
 e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=fable run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager-model "$off_table_model")
 refused "Implementer's Seat"
 names "Implementer's Seat" implementer claude-fable-5-1 "$fable_line"
+not_named "Implementer's Seat" manager
 record_is "$repo/run/probe-pick.md" "Implementer's Seat" unknown unavailable unavailable unknown unknown unknown
-if [ "$ok" = 1 ]; then verdict CNF-29 ok "an Implementer's Seat recorded unavailable before the pick: exit 2, no agent spawned, the Seat, model and line named"; else verdict CNF-29 fail "$detail"; fi
+# The table's other row, so a rule that hardcodes `fable` for the Implementer's Seat cannot pass.
+repo="$(new_repo)"; rec="$work/rec-refuse-implementer-opus"
+e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=opus run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager-model "$off_table_model" --implementer-model claude-opus-5)
+refused "Implementer's Seat on claude-opus-5"
+names "Implementer's Seat on claude-opus-5" implementer claude-opus-5 "$opus_line"
+not_named "Implementer's Seat on claude-opus-5" manager
+record_is "$repo/run/probe-pick.md" "Implementer's Seat on claude-opus-5" unknown unavailable unknown unavailable unknown unknown
+if [ "$ok" = 1 ]; then verdict CNF-29 ok "an Implementer's Seat recorded unavailable before the pick, on either row: exit 2, no agent spawned, the Seat, model and line named, the Manager's Seat not"; else verdict CNF-29 fail "$detail"; fi
 
 # --- CNF-30: no judge call for a Manager's Seat recorded unavailable ------------------------------------
 # The withheld judge is scripted to fail, so calling it would exit 2 as well: the missing judge,
 # not the status, is what this item asserts.
 ok=1; detail=""
-repo="$(new_repo)"; rec="$work/rec-judge-guard"
-e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE="clear|fable" RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=fail" run_rloop "$repo" "$rec" --run-dir "$repo/run" --implementer-model "$off_table_model")
-[ "$e" = 2 ] || { ok=0; detail="$detail [Round 2: exit $e]"; }
-[ -f "$repo/run/manager-judge-1.out" ] || { ok=0; detail="$detail [Round 2: no manager-judge-1.out]"; }
-[ -e "$repo/run/manager-judge-2.out" ] && { ok=0; detail="$detail [Round 2: manager-judge-2.out exists]"; }
-ls "$rec"/*-manager-2.argv >/dev/null 2>&1 && { ok=0; detail="$detail [Round 2: its judge was called]"; }
-ls "$rec"/*-implementer-2.argv >/dev/null 2>&1 || { ok=0; detail="$detail [Round 2: no Implementer]"; }
-for rv in opus astra sol; do
-  ls "$rec"/*-reviewer-2-$rv.argv >/dev/null 2>&1 || { ok=0; detail="$detail [Round 2: $rv not called]"; }
+for row in fable opus; do # the Manager's Seat on each row of RUN-21's table, so a Round's reading cannot hardcode `fable`
+  case $row in
+    fable) model=claude-fable-5-1; line=$fable_line; seats=(--implementer-model "$off_table_model")
+      verdicts=(unavailable unknown unavailable unknown unknown unknown) ;;
+    opus) model=claude-opus-5; line=$opus_line; seats=(--manager-model claude-opus-5 --implementer-model "$off_table_model")
+      verdicts=(unavailable unknown unknown unavailable unknown unknown) ;;
+  esac
+  repo="$(new_repo)"; rec="$work/rec-judge-guard-$row"
+  e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE="clear|$row" RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=fail" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${seats[@]}")
+  [ "$e" = 2 ] || { ok=0; detail="$detail [Round 2, $model: exit $e]"; }
+  [ -f "$repo/run/manager-judge-1.out" ] || { ok=0; detail="$detail [Round 2, $model: no manager-judge-1.out]"; }
+  [ -e "$repo/run/manager-judge-2.out" ] && { ok=0; detail="$detail [Round 2, $model: manager-judge-2.out exists]"; }
+  ls "$rec"/*-manager-2.argv >/dev/null 2>&1 && { ok=0; detail="$detail [Round 2, $model: its judge was called]"; }
+  ls "$rec"/*-implementer-2.argv >/dev/null 2>&1 || { ok=0; detail="$detail [Round 2, $model: no Implementer]"; }
+  for rv in fable opus astra sol; do
+    [ "$rv" = "$row" ] && continue
+    ls "$rec"/*-reviewer-2-$rv.argv >/dev/null 2>&1 || { ok=0; detail="$detail [Round 2, $model: $rv not called]"; }
+  done
+  ls "$rec"/*-reviewer-2-$row.argv >/dev/null 2>&1 && { ok=0; detail="$detail [Round 2, $model: $row called]"; }
+  printf 'REVIEWER NOT RUN (unavailable)\n' | cmp -s - "$repo/run/feedback-2-$row.md" || { ok=0; detail="$detail [Round 2, $model: feedback-2-$row.md is not the not-run line]"; }
+  [ -e "$repo/run/finished.md" ] && { ok=0; detail="$detail [Round 2, $model: a Finished File]"; }
+  [ -s "$rec/stdout" ] && { ok=0; detail="$detail [Round 2, $model: standard output is not empty]"; }
+  names "Round 2, $model" manager "$model" "$line"
+  record_is "$repo/run/probe-2.md" "Round 2, $model" "${verdicts[@]}"
+  repo="$(new_repo)"; rec="$work/rec-judge-guard-1-$row"
+  e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=$row RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=fail" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${seats[@]}")
+  [ "$e" = 2 ] || { ok=0; detail="$detail [Round 1, $model: exit $e]"; }
+  [ -e "$repo/run/manager-judge-1.out" ] && { ok=0; detail="$detail [Round 1, $model: manager-judge-1.out exists]"; }
+  ls "$rec"/*-manager-1.argv >/dev/null 2>&1 && { ok=0; detail="$detail [Round 1, $model: its judge was called]"; }
+  names "Round 1, $model" manager "$model" "$line"
 done
-ls "$rec"/*-reviewer-2-fable.argv >/dev/null 2>&1 && { ok=0; detail="$detail [Round 2: fable called]"; }
-printf 'REVIEWER NOT RUN (unavailable)\n' | cmp -s - "$repo/run/feedback-2-fable.md" || { ok=0; detail="$detail [Round 2: feedback-2-fable.md is not the not-run line]"; }
-[ -e "$repo/run/finished.md" ] && { ok=0; detail="$detail [Round 2: a Finished File]"; }
-[ -s "$rec/stdout" ] && { ok=0; detail="$detail [Round 2: standard output is not empty]"; }
-names "Round 2" manager claude-fable-5-1 "$fable_line"
-record_is "$repo/run/probe-2.md" "Round 2" unavailable unknown unavailable unknown unknown unknown
-repo="$(new_repo)"; rec="$work/rec-judge-guard-1"
-e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=fable RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=fail" run_rloop "$repo" "$rec" --run-dir "$repo/run" --implementer-model "$off_table_model")
-[ "$e" = 2 ] || { ok=0; detail="$detail [Round 1: exit $e]"; }
-[ -e "$repo/run/manager-judge-1.out" ] && { ok=0; detail="$detail [Round 1: manager-judge-1.out exists]"; }
-ls "$rec"/*-manager-1.argv >/dev/null 2>&1 && { ok=0; detail="$detail [Round 1: its judge was called]"; }
-names "Round 1" manager claude-fable-5-1 "$fable_line"
-if [ "$ok" = 1 ]; then verdict CNF-30 ok "a Manager's Seat recorded unavailable in Round 1 or 2: the Panel runs, no judge is called, exit 2"; else verdict CNF-30 fail "$detail"; fi
+if [ "$ok" = 1 ]; then verdict CNF-30 ok "a Manager's Seat recorded unavailable in Round 1 or 2, on either row: the Panel runs, no judge is called, exit 2"; else verdict CNF-30 fail "$detail"; fi
 
 # --- CNF-31: fail open reaches the pick --------------------------------------------------------------------
 started() { # started <label>: the Run was not refused; the pick was called and the Run ended 0
