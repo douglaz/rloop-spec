@@ -552,7 +552,7 @@ names() { # names <label> <text...>: standard error carries each text; a Seat's 
   local label="$1" t; shift
   for t in "$@"; do
     case $t in
-      manager|implementer) sed -e 's/--manager-model//g' -e 's/--implementer-model//g' "$rec/stderr" | grep -qwF -- "$t" ;;
+      manager|implementer) sed -E 's/-*(manager|implementer)-model//g' "$rec/stderr" | grep -qwF -- "$t" ;;
       *) grep -qF -- "$t" "$rec/stderr" ;;
     esac || { ok=0; detail="$detail [$label: standard error does not name '$t']"; }
   done

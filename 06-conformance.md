@@ -246,13 +246,14 @@ both `manager` and `implementer`, since both Seats are `unavailable` and `RUN-22
 claude-opus-5`, the Implementer's model off the table and `Current week (Opus): 100% used`
 instead, the Run is refused the same way and standard error names `claude-opus-5`. The pick is
 scripted to fail. Here and in `CNF-29` and `CNF-30`, standard error names a Seat when the Seat's
-word stands whole in what is left of it once every `--manager-model` and `--implementer-model` is
-deleted. *The spawn record is the assertion: a Run that spawned a Manager which then failed also
-exits 2, so the status alone passes an Implementation that ignores the refusal. The second Run is
-there because one row cannot tell a Seat read from its own model from a rule that hardcodes
-`fable`. The flag names go first because `RUN-22`'s message `SHOULD name the flag that chooses
-another model` and each flag's name carries a Seat's word, so a message naming the flag and no
-Seat would otherwise pass.* (`RUN-22`, `RUN-21`, `DIR-4`, `RUN-10`)
+word stands whole in what is left of standard error once every `manager-model` and
+`implementer-model` is deleted together with any dashes before it. *The spawn record is the
+assertion: a Run that spawned a Manager which then failed also exits 2, so the status alone passes
+an Implementation that ignores the refusal. The second Run is there because one row cannot tell a
+Seat read from its own model from a rule that hardcodes `fable`. The flag names go first because
+`RUN-22`'s message `SHOULD name the flag that chooses another model` and each flag's name carries a
+Seat's word, so a message naming the flag and no Seat would otherwise pass.* (`RUN-22`, `RUN-21`,
+`DIR-4`, `RUN-10`)
 
 **CNF-29** With the Manager's model off `RUN-21`'s table, the Implementer's at its default and the
 probe before the pick reporting `Current week (Fable): 100% used`, the executable exits 2 with no
