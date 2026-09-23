@@ -53,7 +53,8 @@ both; what rloop does with what it finds is `RUN-11`.
    `PRM-4`), started concurrently and all waited for, and a Feedback File written in place for
    each one that was (`RUN-15`);
 5. the Checkpoint again;
-6. one Manager call — the **judge**, unless withheld (`RUN-22`) — resuming the pick's session (`AGT-4`, `PRM-2`);
+6. one Manager call — the **judge**, unless withheld (`RUN-22`) — resuming the pick's session
+   (`AGT-4`, `PRM-2`);
 7. the decision (`RUN-11`).
 
 *Fresh Implementers are the design: a brief that only makes sense with the previous Round's
