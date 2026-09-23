@@ -69,3 +69,11 @@ jobs:
           tmp="$(mktemp -d)"; cp -r . "$tmp/repo"; cd "$tmp/repo"
           sed -i 's/^theorem cap_off_overruns :$/theorem cap_off_overruns : True ∧/; s/implementers (run { Guards.all with cap := false } restless 1).2 = 2 := by decide/implementers (run { Guards.all with cap := false } restless 1).2 = 2 := ⟨trivial, sorry⟩/' tools/formal/Rloop/Properties.lean
           if nix develop --command bash tools/check_formal.sh; then echo "::error::formal gate passed a sorry"; exit 1; fi
+
+      # The same gates again, inside the Nix build sandbox (flake.nix `checks.gates`), which has
+      # no /usr/bin/env and nothing on PATH but the derivation's inputs. The steps above run in a
+      # `nix develop` shell on an Ubuntu runner and cannot show that the derivation builds; only
+      # this step can, and without it the derivation went red unnoticed. It costs one more Lean
+      # build plus the gates, on the toolchain `nix develop` already fetched.
+      - name: Run all gates in the Nix build sandbox
+        run: nix flake check
