@@ -21,8 +21,8 @@
   },
   {
     "owner": "RUN-5",
-    "sha256": "15f9dc120c132592ff6513f9e9c4965a856caeda3d652752abcef5227425c28a",
-    "reason": "Owns the initial call; AGT-3 and PRM-1 identify its command and prompt."
+    "sha256": "229dd7b4201e2de758783e716a4894770ce654c3560dc92b425af6014b8a1e92",
+    "reason": "Owns the initial call; AGT-3 and PRM-1 identify its command and prompt, RUN-22 the rule that withholds it."
   },
   {
     "owner": "RUN-6",

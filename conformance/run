@@ -433,7 +433,9 @@ for r in 1 2; do
 done
 ls "$repo/run"/probe-0.* >/dev/null 2>&1 && { ok=0; detail="$detail [a probe-0.* file: the pick's record is probe-pick.*]"; }
 for tag in probe-0 probe-1 probe-2; do
-  tr '\0' '\n' < "$(ls "$rec"/*-$tag.argv 2>/dev/null | head -1)" | cmp -s - "$here/fixtures/argv/AGT-18.txt" || { ok=0; detail="$detail [$tag argv is not AGT-18's fixture]"; }
+  f=$(ls "$rec"/*-$tag.argv 2>/dev/null | head -1)
+  [ -n "$f" ] || { ok=0; detail="$detail [$tag never spawned]"; continue; }
+  tr '\0' '\n' < "$f" | cmp -s - "$here/fixtures/argv/AGT-18.txt" || { ok=0; detail="$detail [$tag argv is not AGT-18's fixture]"; }
 done
 if [ "$ok" = 1 ]; then verdict CNF-24 ok "one probe before the pick and one a Round, after the Implementer and before every Reviewer, argv as AGT-18"; else verdict CNF-24 fail "$detail"; fi
 
@@ -545,9 +547,14 @@ refused() { # refused <label>: the Run in $repo, recorded in $rec, was refused a
   [ "$(ls "$repo/run" 2>/dev/null | LC_ALL=C sort | tr '\n' ' ')" = "probe-pick.err probe-pick.md probe-pick.out " ] \
     || { ok=0; detail="$detail [$1: the Run Directory holds $(ls "$repo/run" 2>/dev/null | tr '\n' ' ')]"; }
 }
-names() { # names <label> <text...>: standard error carries each text
+names() { # names <label> <text...>: standard error carries each text; a Seat's word must stand apart from the flag names
   local label="$1" t; shift
-  for t in "$@"; do grep -qF -- "$t" "$rec/stderr" || { ok=0; detail="$detail [$label: standard error does not name '$t']"; }; done
+  for t in "$@"; do
+    case $t in
+      manager|implementer) sed -e 's/--manager-model//g' -e 's/--implementer-model//g' "$rec/stderr" | grep -qwF -- "$t" ;;
+      *) grep -qF -- "$t" "$rec/stderr" ;;
+    esac || { ok=0; detail="$detail [$label: standard error does not name '$t']"; }
+  done
 }
 fable_line='Current week (Fable): 100% used · resets Sep 24, 3pm (UTC)'
 opus_line='Current week (Opus): 100% used · resets Sep 24, 3pm (UTC)'
@@ -591,14 +598,14 @@ ls "$rec"/*-reviewer-2-fable.argv >/dev/null 2>&1 && { ok=0; detail="$detail [Ro
 printf 'REVIEWER NOT RUN (unavailable)\n' | cmp -s - "$repo/run/feedback-2-fable.md" || { ok=0; detail="$detail [Round 2: feedback-2-fable.md is not the not-run line]"; }
 [ -e "$repo/run/finished.md" ] && { ok=0; detail="$detail [Round 2: a Finished File]"; }
 [ -s "$rec/stdout" ] && { ok=0; detail="$detail [Round 2: standard output is not empty]"; }
-names "Round 2" manager claude-fable-5-1
+names "Round 2" manager claude-fable-5-1 "$fable_line"
 record_is "$repo/run/probe-2.md" "Round 2" unavailable unknown unavailable unknown unknown unknown
 repo="$(new_repo)"; rec="$work/rec-judge-guard-1"
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=fable RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=fail" run_rloop "$repo" "$rec" --run-dir "$repo/run" --implementer-model "$off_table_model")
 [ "$e" = 2 ] || { ok=0; detail="$detail [Round 1: exit $e]"; }
 [ -e "$repo/run/manager-judge-1.out" ] && { ok=0; detail="$detail [Round 1: manager-judge-1.out exists]"; }
 ls "$rec"/*-manager-1.argv >/dev/null 2>&1 && { ok=0; detail="$detail [Round 1: its judge was called]"; }
-names "Round 1" manager claude-fable-5-1
+names "Round 1" manager claude-fable-5-1 "$fable_line"
 if [ "$ok" = 1 ]; then verdict CNF-30 ok "a Manager's Seat recorded unavailable in Round 1 or 2: the Panel runs, no judge is called, exit 2"; else verdict CNF-30 fail "$detail"; fi
 
 # --- CNF-31: fail open reaches the pick --------------------------------------------------------------------

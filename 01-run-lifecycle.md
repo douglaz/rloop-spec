@@ -33,10 +33,10 @@ create any other file outside it, save the `.rloop/.gitignore` `DIR-2` names.
 
 ## The pick
 
-**RUN-5** The Run MUST begin with exactly one Manager call — the **pick** — using `AGT-3`'s command
-line and `PRM-1`'s prompt, with the caller's instruction, if any, rendered into it. The Manager is
-expected to leave behind a Task File, or a Finished File, or both; what rloop does with what it
-finds is `RUN-11`.
+**RUN-5** The Run MUST begin with exactly one Manager call — the **pick**, unless withheld
+(`RUN-22`) — using `AGT-3`'s command line and `PRM-1`'s prompt, with the caller's instruction, if
+any, rendered into it. The Manager is expected to leave behind a Task File, or a Finished File, or
+both; what rloop does with what it finds is `RUN-11`.
 
 **RUN-6** After the pick, when the verdict is *next Round*, rloop MUST copy the Task File to
 `task-1.md` (`DIR-5`) and start Round 1.
@@ -53,7 +53,7 @@ finds is `RUN-11`.
    `PRM-4`), started concurrently and all waited for, and a Feedback File written in place for
    each one that was (`RUN-15`);
 5. the Checkpoint again;
-6. one Manager call — the **judge** — resuming the pick's session (`AGT-4`, `PRM-2`);
+6. one Manager call — the **judge**, unless withheld (`RUN-22`) — resuming the pick's session (`AGT-4`, `PRM-2`);
 7. the decision (`RUN-11`).
 
 *Fresh Implementers are the design: a brief that only makes sense with the previous Round's

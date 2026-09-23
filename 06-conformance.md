@@ -243,10 +243,14 @@ both `manager` and `implementer`, since both Seats are `unavailable` and `RUN-22
 `fable:unavailable`, then `unknown` for `opus`, `astra` and `sol`. With `--manager-model
 claude-opus-5`, the Implementer's model off the table and `Current week (Opus): 100% used`
 instead, the Run is refused the same way and standard error names `claude-opus-5`. The pick is
-scripted to fail. *The spawn record is the assertion: a Run that spawned a Manager which then
-failed also exits 2, so the status alone passes an Implementation that ignores the refusal. The
-second Run is there because one row cannot tell a Seat read from its own model from a rule that
-hardcodes `fable`.* (`RUN-22`, `RUN-21`, `DIR-4`, `RUN-10`)
+scripted to fail. Here and in `CNF-29` and `CNF-30`, standard error names a Seat when the Seat's
+word stands whole in what is left of it once every `--manager-model` and `--implementer-model` is
+deleted. *The spawn record is the assertion: a Run that spawned a Manager which then failed also
+exits 2, so the status alone passes an Implementation that ignores the refusal. The second Run is
+there because one row cannot tell a Seat read from its own model from a rule that hardcodes
+`fable`. The flag names go first because `RUN-22`'s message `SHOULD name the flag that chooses
+another model` and each flag's name carries a Seat's word, so a message naming the flag and no
+Seat would otherwise pass.* (`RUN-22`, `RUN-21`, `DIR-4`, `RUN-10`)
 
 **CNF-29** With the Manager's model off `RUN-21`'s table, the Implementer's at its default and the
 probe before the pick reporting `Current week (Fable): 100% used`, the executable exits 2 with no
@@ -263,10 +267,12 @@ probes before the pick and in Round 1 reporting nothing exhausted, Round 2's rep
 `manager-judge-1.out` exists and **`manager-judge-2.out` does not**, nor is a Round 2 judge
 argument list recorded; Round 2's Implementer ran and its Panel ran without `fable` — `opus`,
 `astra` and `sol` called, `feedback-2-fable.md` exactly the not-run line; there is no Finished
-File; and standard error names `manager` and `claude-fable-5-1`. With Round 1's probe reporting
-`Fable` instead, the Run exits 2 with no `manager-judge-1.out`. The withheld judge is scripted to
-fail. *The missing judge is the assertion: a Run whose judge was called and failed also exits
-2.* (`RUN-22`, `RUN-21`, `RUN-7`, `RUN-10`, `DIR-4`)
+File; and standard error names `manager`, `claude-fable-5-1` and the probe's `Fable` line, reset
+and all, since `RUN-22` exits `with the message above for the Manager's Seat`, which names the
+reset by `quoting the probe's matching line verbatim`. With Round 1's probe reporting `Fable`
+instead, the Run exits 2 with no `manager-judge-1.out`, and standard error names the same three.
+The withheld judge is scripted to fail. *The missing judge is the assertion: a Run whose judge was
+called and failed also exits 2.* (`RUN-22`, `RUN-21`, `RUN-7`, `RUN-10`, `DIR-4`)
 
 **CNF-31** With both Seats' models off `RUN-21`'s table and the probe before the pick reporting
 `Current week (Fable): 100% used`, or `Fable` and `Opus` both at 100%, the Run starts — the pick

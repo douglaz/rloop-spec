@@ -141,10 +141,10 @@ The Seat scripts (`RUN-22`) took it from 227 to 237, and the growth is additive:
 ten are chosen one by one rather than drawn from an alphabet — each Seat refused at the pick, and
 the Manager's on the table's other row as well; the Manager's Seat left alone by the other family;
 the judge withheld in Round 1 and in Round 2; the Implementer's Seat read `unavailable` by a Round
-and the Run finishing; three probes that fail open with both Seats on the table — because crossing Seats
-with the rest would repeat every line that no verdict of theirs can stop. The cost has the same
-shape: the 227 lines seat no model on the table, so an Implementation whose Seat reading leaks
-into a Run they script is caught only by the block and by `CNF-25` to `CNF-31`.
+and the Run finishing; both Seats on the table under two probes that fail open and one clear one —
+because crossing Seats with the rest would repeat every line that no verdict of theirs can stop.
+The cost has the same shape: the 227 lines seat no model on the table, so an Implementation whose
+Seat reading leaks into a Run they script is caught only by the block and by `CNF-25` to `CNF-31`.
 
 ## F5 — The first Implementation's findings (closed 2026-09-18)
 

@@ -221,8 +221,8 @@ Manager's on the table's other row so that one row cannot pass for the table; th
 `opus`'s model, which a report of `Fable` leaves alone; the judge refused in Round 1, and in Round 2
 after a Round the probe read clear; the Implementer's Seat recorded `unavailable` in both Rounds
 and the Run finishing regardless (`ADR-0008`'s rejected arm; `RUN-14`); and both Seats on the table
-under probes that fail open — the matching line from a probe that exits non-zero, the words not at
-the start of a line, and a report of nothing exhausted. -/
+under two probes that fail open — the matching line from a probe that exits non-zero and the words
+not at the start of a line — and one clear one, a report of nothing exhausted. -/
 def seatScripts : List (Nat × String × List String × List String × Seats) :=
   [ (1, "done", [], [], { manager := some .fable, pick := "fable" }),
     (1, "done", [], [], { implementer := some .fable, pick := "fable" }),
