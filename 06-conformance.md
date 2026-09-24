@@ -50,10 +50,10 @@ is a green check that asserts nothing.* (`RUN-11`)
 ## Starting and stopping
 
 **CNF-5** Each of these invocations exits 2, spawns nothing, and writes to standard error: an
-unknown option; `--max-rounds 0`; `--max-rounds x`; `--reviewer-timeout -1`; two `INSTRUCTION`
-arguments; `--auto --base HEAD`; `--auto --run-dir d`; `--manager gpt-6-astra`, a value outside
-the preset's set and the mistake a caller makes who means `--manager codex --manager-model
-gpt-6-astra`. `--version` and `--help` exit 0 and spawn nothing. (`AGT-1`, `AGT-2`, `SEQ-3`)
+unknown option; `--max-rounds 0`; `--max-rounds x`; `--reviewer-timeout -1`; `--reviewer-timeout 0`;
+`--probe-timeout 0`; `--kill-after 0`; two `INSTRUCTION` arguments; `--auto --base HEAD`;
+`--auto --run-dir d`; `--manager gpt-6-astra`, a value outside the preset's set and the mistake a
+caller makes who means `--manager codex --manager-model gpt-6-astra`. `--version` and `--help` exit 0 and spawn nothing. (`AGT-1`, `AGT-2`, `SEQ-3`)
 
 **CNF-6** Outside a git working tree the executable exits 2 and spawns nothing. (`RUN-1`)
 

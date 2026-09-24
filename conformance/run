@@ -55,7 +55,7 @@ fi
 
 # --- CNF-5: usage errors -----------------------------------------------------------------------------
 repo="$(new_repo)"; ok=1; detail=""
-for args in "--bogus" "--max-rounds 0" "--max-rounds x" "--reviewer-timeout -1" "a b" "--auto --base HEAD" "--auto --run-dir $repo/d" "--manager gpt-6-astra"; do
+for args in "--bogus" "--max-rounds 0" "--max-rounds x" "--reviewer-timeout -1" "--reviewer-timeout 0" "--probe-timeout 0" "--kill-after 0" "a b" "--auto --base HEAD" "--auto --run-dir $repo/d" "--manager gpt-6-astra"; do
   rec="$work/rec-usage"; rm -rf "$rec"
   # shellcheck disable=SC2086
   e=$(run_rloop "$repo" "$rec" $args)

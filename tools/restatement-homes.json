@@ -86,7 +86,7 @@
   },
   {
     "owner": "AGT-2",
-    "sha256": "23d86caa51ec616ecec27d18c1cbf51d4ebba6b6ad93793924df4f96e12a5a52",
+    "sha256": "ad6176c7ecf4358781d8de1b77d964ba46852e7a7fc8172292786a114ca60cd8",
     "reason": "Owns usage-error handling; SEQ-3 identifies a forbidden combination, not the handling rule."
   },
   {

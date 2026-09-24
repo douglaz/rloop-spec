@@ -35,11 +35,15 @@ no environment-variable equivalents and no configuration file.
 
 **AGT-2** An unknown option, a missing or non-numeric value, a value outside the set a preset
 flag names — `--manager` and `--implementer` each take `claude` or `codex` and nothing else — a
-number below 1 for `--max-rounds` or `--max-runs` or below 0 for a timeout, more than one
+number below 1 for `--max-rounds`, `--max-runs`, a timeout or `--kill-after`, more than one
 `INSTRUCTION`, or a combination `SEQ-3` forbids MUST exit 2 with a message on standard error and
 nothing spawned. *A usage error found after the first agent call has already spent money.*
 *The preset clause is stated here from 2026-09-20 with `--manager`; it was always true of
 `--implementer`, which named its two values in `AGT-1` and nowhere said what a third does.*
+*Every duration's minimum is 1 from 2026-09-24; until then a timeout could be 0. GNU `timeout`
+documents that value as `a duration of 0 disables the associated timeout`, so a zero passed
+through left a call `AGT-14` says `MUST be bounded by its role's timeout` with no bound at all,
+and `--kill-after 0` never reached the SIGKILL.*
 
 ## The agent command lines
 
