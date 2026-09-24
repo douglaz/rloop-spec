@@ -165,7 +165,7 @@ codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6-astra -c model_re
 and Reviewer `sol` MUST be:
 
 ```text
-codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-sol -c model_reasoning_effort=xhigh <review prompt>
+codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6-sol -c model_reasoning_effort=xhigh <review prompt>
 ```
 
 *`codex review --base` cannot take a prompt (codex 0.153.4 refuses the combination), and the
@@ -178,6 +178,13 @@ for the claude Reviewers; what keeps a codex Reviewer from writing is `PRM-4`'s 
 since codex has no deny list, which is within `DIR-9`'s threat model. The `-c` value is passed
 without quotes: codex parses it as TOML and, failing that,
 takes the raw string, and `xhigh` was echoed back as `reasoning effort: xhigh` on 0.153.4.*
+
+*Reviewer `sol` ran on the `gpt-5.6` model of that name until 2026-09-24, when the owner moved the
+id behind the name to `gpt-6-sol`; the roster name, the effort and everything else about the
+roster stay as they were. The model is available on this account and answers through codex-cli
+0.156.1: `codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6-sol -c
+model_reasoning_effort=low "Reply with exactly: ok"` returned `ok`. The `sol` adviser line of the
+Consultation in `PRM-1` and `PRM-2` moved with it; `AGT-17`'s verified versions did not.*
 
 **AGT-11** The Panel MUST be exactly the four Reviewers `AGT-7`, `AGT-8` and `AGT-10` name, with
 the Feedback File names `DIR-4` gives them. There is no flag, file or variable that changes the

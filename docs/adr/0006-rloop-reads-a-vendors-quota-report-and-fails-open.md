@@ -16,7 +16,7 @@ behaviour in an orchestration Specification".
 
 The objection is answered by what this set already is. `ADR-0001` makes it language-neutral about
 the **Implementation**; everywhere else it is deliberately harness-specific, hardcoding
-`claude-fable-5-1`, `gpt-6-astra`, `gpt-5.6-sol`, `claude-opus-5`, the `--effort` values and
+`claude-fable-5-1`, `gpt-6-astra`, `gpt-6-sol`, `claude-opus-5`, the `--effort` values and
 `AGT-7`'s deny list byte for byte, with `AGT-17` pinning the CLI versions. `AGT-17` also already
 concedes this exact risk class — *"a flag that a newer CLI rejects is found only by a live Run"* —
 so a `/usage` format that drifts is the same accepted exposure as a flag that drifts, not a new

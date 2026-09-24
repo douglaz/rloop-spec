@@ -211,7 +211,7 @@ case "$role" in
       # Exhausted families RUN-21's table does not hold, two spelled like the codex Reviewers and two
       # as their models: a Reviewer's family comes from that table or nowhere, so all stay unknown.
       unlisted) printf 'Current week (%s): 100%% used · resets Sep 24, 3pm (UTC)\n' \
-                 Sonnet Astra Sol gpt-6-astra gpt-5.6-sol ;;
+                 Sonnet Astra Sol gpt-6-astra gpt-6-sol ;;
       # A NUL byte inside the percentage: the line does not begin with RUN-21's prefix, however it
       # reads once a byte is dropped, so it must stay unknown.
       nul)     printf 'Current week (Fable): 1\0'; printf '00%% used · resets Sep 24, 3pm (UTC)\n' ;;
