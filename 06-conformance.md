@@ -126,17 +126,24 @@ line followed by `REVIEWER FAILED (exit 7)`; a Round with one such Reviewer proc
 **CNF-16** With every Reviewer fake sleeping 2 seconds, a Round's Panel completes in under 5
 seconds, and every Reviewer's recorded start precedes every Reviewer's recorded end. (`RUN-8`)
 
-**CNF-17** With `--reviewer-timeout 1` and one Reviewer fake sleeping 30 seconds, that Reviewer's
-Feedback File carries `REVIEWER FAILED`, the Round proceeds, and the fake's process and the
-grandchild it spawned are gone before the judge starts. With `--implementer-timeout 1
---kill-after 1` and an Implementer fake that ignores SIGTERM, the Implementer is gone within 5
-seconds and the Run proceeds to the Panel. With `--manager-timeout 1` and a sleeping pick, the
-Run exits 2. (`AGT-14`, `AGT-16`, `RUN-14`)
+**CNF-17** With `--reviewer-timeout 1 --kill-after 1`, one Reviewer fake sleeping 30 seconds and
+spawning a child that ignores SIGTERM, and the other three answering: the Run exits 0, the slow
+Reviewer's Feedback File carries `REVIEWER FAILED`, the other three hold the fakes' answer, the
+judge is called, and the child is gone before the judge starts — the judge's own record of the
+children still running at its start does not list it — and is not running once the executable
+has returned. With `--implementer-timeout 1 --kill-after 1` and an Implementer fake that ignores
+SIGTERM, the Implementer is gone within 5 seconds and the Run proceeds to the Panel. With
+`--manager-timeout 1 --kill-after 1`, a sleeping pick that spawns the same child: the Run exits 2
+and, when the executable has returned, neither the fake nor its child is running. (`AGT-14`,
+`AGT-15`, `AGT-16`, `RUN-14`) *The Manager row is the shape the astra Reviewer found on rloop-bash
+on 2026-09-23: an Implementation that waits for its `timeout` wrapper alone returned 2 with the
+SIGTERM-ignoring child alive, since the wrapper returns the moment the fake itself dies.*
 
-**CNF-18** SIGINT sent to the executable while an Implementer fake sleeps: the fake records
-SIGTERM, the executable exits 2 with `interrupted` on standard error, no process of the fake's
-group survives, and the Run Directory is intact. The same with SIGTERM. A second SIGINT while a
-fake ignores SIGTERM ends it at once. (`AGT-15`, `OVR-4`, `RUN-17`)
+**CNF-18** SIGINT sent to the executable while an Implementer fake sleeps, having spawned a child
+that ignores SIGTERM: the fake records SIGTERM, the executable exits 2 with `interrupted` on
+standard error, neither the fake nor its child survives, and the Run Directory is intact. The
+same with SIGTERM. A second SIGINT while a fake ignores SIGTERM ends it at once. (`AGT-15`,
+`OVR-4`, `RUN-17`)
 
 ## Git
 

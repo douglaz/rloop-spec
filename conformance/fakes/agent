@@ -12,6 +12,8 @@
 #                            each Run's Rounds are then RLOOP_FAKE_ROUNDS. Any word after ok: in
 #                            RLOOP_FAKE_PICK is valid here (task, other, ...), and fail is fail.
 #   RLOOP_FAKE_SLEEP_<ROLE>  seconds to sleep before acting (ROLE = MANAGER|IMPLEMENTER|REVIEWER|PROBE)
+#   RLOOP_FAKE_SLEEP_ONLY    a Reviewer name: RLOOP_FAKE_SLEEP_REVIEWER is honoured by that Reviewer
+#                            alone, the other three act at once (unset: every Reviewer sleeps)
 #   RLOOP_FAKE_PROBE         what the availability probe writes (default: clear), one shape per
 #                            Round joined by | (a Round past the last named shape writes clear,
 #                            as when unset, since Scenarios.lean's behaviour reads `-` there):
@@ -25,7 +27,18 @@
 #                            RLOOP_FAKE_PROBE's list (default: clear). RLOOP_FAKE_PROBE scripts the
 #                            Rounds' probes alone, so scripting the pick changes none of them
 #   RLOOP_FAKE_IGNORE_TERM   1 = trap and ignore SIGTERM
-#   RLOOP_FAKE_GRANDCHILD    1 = spawn a background sleeper and record its pid
+#   RLOOP_FAKE_GRANDCHILD    1 = every fake spawns a background sleeper and records its pid as
+#                            GRANDCHILD=<pid> in its .env record
+#   RLOOP_FAKE_GRANDCHILD_IGNORE_TERM
+#                            1 = the fake that sleeps (RLOOP_FAKE_SLEEP_<ROLE>, narrowed by
+#                            RLOOP_FAKE_SLEEP_ONLY) spawns a sleeper that ignores SIGTERM and
+#                            records it the same way; no other fake of the Run spawns one, so the
+#                            child is the timed-out call's alone. RLOOP_FAKE_SLEEP_REVIEWER=30
+#                            RLOOP_FAKE_SLEEP_ONLY=fable RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=1 is
+#                            one slow Reviewer with such a child and three that answer.
+#                            Every fake's .env record also carries GRANDCHILDREN_ALIVE=<pids>,
+#                            written before it sleeps, spawns or traces: the previously recorded
+#                            GRANDCHILD pids still running when this call started (empty when none)
 #   RLOOP_FAKE_DIRTY_AT_DONE 1 = the Manager leaves an untracked file in the tree when it writes done
 #   RLOOP_FAKE_COMMIT        1 = the Implementer commits a file during its call
 #   RLOOP_FAKE_THREAD_ID     the thread_id a codex Manager pick reports (default: …cafe)
@@ -51,15 +64,25 @@ printf '%s\0' "$(basename "$0")" "$@" > "$rec/$tag.argv"
 } > "$rec/$tag.env"
 # stdin: at EOF now, or open? A read that returns instantly with no data is EOF (AGT-12).
 if timeout 1 head -c1 </dev/stdin >/dev/null 2>&1; then echo "STDIN=eof" >> "$rec/$tag.env"; else echo "STDIN=open" >> "$rec/$tag.env"; fi
+# Which earlier calls' children are still running as this call starts: what CNF-17 reads from the
+# judge's record. Before the sleep, before this fake's own child, before the trace start line.
+alive=""
+for p in $(sed -n 's/^GRANDCHILD=//p' "$rec"/*.env 2>/dev/null); do kill -0 "$p" 2>/dev/null && alive="$alive${alive:+ }$p"; done
+echo "GRANDCHILDREN_ALIVE=$alive" >> "$rec/$tag.env"
 now() { date +%s%N; }
 
 # --- the scripted part ----------------------------------------------------------------------------
 upper_role=$(echo "$role" | tr a-z A-Z)
 sleep_var="RLOOP_FAKE_SLEEP_$upper_role"
 sleep_for="${!sleep_var:-0}"
+if [ "$role" = reviewer ] && [ -n "${RLOOP_FAKE_SLEEP_ONLY:-}" ] && [ "$reviewer" != "$RLOOP_FAKE_SLEEP_ONLY" ]; then sleep_for=0; fi
 
 if [ "${RLOOP_FAKE_IGNORE_TERM:-0}" = 1 ]; then trap '' TERM; else trap 'echo "SIGTERM" >> "$rec/$tag.env"; exit 143' TERM; fi
-if [ "${RLOOP_FAKE_GRANDCHILD:-0}" = 1 ]; then sleep 300 & echo "GRANDCHILD=$!" >> "$rec/$tag.env"; fi
+if [ "${RLOOP_FAKE_GRANDCHILD_IGNORE_TERM:-0}" = 1 ] && [ "$sleep_for" != 0 ]; then
+  # A subshell, not a bare sleep: the ignored disposition is set here and inherited by sleep, so
+  # the group's SIGTERM ends neither; only the group's SIGKILL does.
+  ( trap '' TERM; sleep 30 ) & echo "GRANDCHILD=$!" >> "$rec/$tag.env"
+elif [ "${RLOOP_FAKE_GRANDCHILD:-0}" = 1 ]; then sleep 300 & echo "GRANDCHILD=$!" >> "$rec/$tag.env"; fi
 
 pick="${RLOOP_FAKE_PICK:-ok:task}"
 if [ -n "${RLOOP_FAKE_RUNS:-}" ] && [ "$run" != unset ]; then

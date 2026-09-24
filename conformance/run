@@ -352,28 +352,49 @@ if [ "$e" = 0 ] && [ $((t1 - t0)) -lt 8 ] && [ "$last_start" -lt "$first_end" ];
 
 # --- CNF-17: timeouts and process groups -------------------------------------------------------------
 ok=1; detail=""
+# pid_in <pid> <space-separated pids>: exact match, not a substring
+pid_in() { tr ' ' '\n' <<< "$2" | grep -qx "$1"; }
+# kill_recorded <record dir>: SIGKILL every PID and GRANDCHILD a fake recorded, so a red row leaves nothing behind
+kill_recorded() { local f p; for f in "$1"/*.env; do for p in $(sed -n 's/^\(PID\|GRANDCHILD\)=//p' "$f" 2>/dev/null); do kill -9 "$p" 2>/dev/null; done; done; }
+# One Reviewer sleeps and spawns a child that ignores SIGTERM; the other three answer, so the judge
+# is called. The judge's own record says which children were alive when it started (AGT-14, AGT-16).
 repo="$(new_repo)"; rec="$work/rec-tmo"
-e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_SLEEP_REVIEWER=30 RLOOP_FAKE_GRANDCHILD=1 run_rloop "$repo" "$rec" --run-dir "$repo/run" --reviewer-timeout 1 --kill-after 1)
-grep -q 'REVIEWER FAILED' "$repo/run/feedback-1-fable.md" 2>/dev/null || { ok=0; detail="$detail [no failure note after reviewer timeout, exit $e]"; }
-for f in "$rec"/*-reviewer-1-*.env; do
-  gc=$(sed -n 's/^GRANDCHILD=//p' "$f"); [ -n "$gc" ] && kill -0 "$gc" 2>/dev/null && { ok=0; detail="$detail [grandchild $gc survived]"; kill -9 "$gc" 2>/dev/null; }
-done
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_SLEEP_REVIEWER=30 RLOOP_FAKE_SLEEP_ONLY=fable RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=1 run_rloop "$repo" "$rec" --run-dir "$repo/run" --reviewer-timeout 1 --kill-after 1)
+[ "$e" = 0 ] || { ok=0; detail="$detail [one reviewer timed out: exit $e]"; }
+grep -q 'REVIEWER FAILED' "$repo/run/feedback-1-fable.md" 2>/dev/null || { ok=0; detail="$detail [no failure note after reviewer timeout]"; }
+for r in opus astra sol; do [ "$(cat "$repo/run/feedback-1-$r.md" 2>/dev/null)" = "No findings." ] || { ok=0; detail="$detail [$r did not answer]"; }; done
+grep -q '^manager:1:start:' "$rec/trace" 2>/dev/null || { ok=0; detail="$detail [no judge after reviewer timeout]"; }
+gc=$(sed -n 's/^GRANDCHILD=//p' "$rec"/*-reviewer-1-fable.env 2>/dev/null)
+[ -n "$gc" ] || { ok=0; detail="$detail [the slow reviewer recorded no grandchild]"; }
+judge_env=$(ls "$rec"/*-manager-1.env 2>/dev/null | head -1)
+if [ -z "$judge_env" ] || ! grep -q '^GRANDCHILDREN_ALIVE=' "$judge_env"; then ok=0; detail="$detail [the judge's record has no GRANDCHILDREN_ALIVE line]"
+elif [ -n "$gc" ] && pid_in "$gc" "$(sed -n 's/^GRANDCHILDREN_ALIVE=//p' "$judge_env")"; then ok=0; detail="$detail [grandchild $gc alive when the judge started]"; fi
+[ -n "$gc" ] && kill -0 "$gc" 2>/dev/null && { ok=0; detail="$detail [grandchild $gc survived the Run]"; }
+kill_recorded "$rec"
 repo="$(new_repo)"; rec="$work/rec-tmo2"; t0=$(date +%s)
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_SLEEP_IMPLEMENTER=60 RLOOP_FAKE_IGNORE_TERM=1 run_rloop "$repo" "$rec" --run-dir "$repo/run" --implementer-timeout 1 --kill-after 1)
 t1=$(date +%s)
 [ $((t1 - t0)) -lt 10 ] && ls "$rec"/*-reviewer-1-fable.argv >/dev/null 2>&1 || { ok=0; detail="$detail [SIGTERM-ignoring implementer: ${t1}-${t0}s, exit $e]"; }
-for f in "$rec"/*.env; do ipid=$(sed -n 's/^PID=//p' "$f"); [ -n "$ipid" ] && kill -9 "$ipid" 2>/dev/null; done
+kill_recorded "$rec"
+# A sleeping pick with the same child: AGT-15's first sentence. Both pids checked the moment the
+# executable has returned; every ancestor is gone by then, so neither can be a zombie.
 repo="$(new_repo)"; rec="$work/rec-tmo3"
-e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_SLEEP_MANAGER=30 run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager-timeout 1 --kill-after 1)
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_SLEEP_MANAGER=30 RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=1 run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager-timeout 1 --kill-after 1)
 [ "$e" = 2 ] || { ok=0; detail="$detail [manager timeout exit $e]"; }
-if [ "$ok" = 1 ]; then verdict CNF-17 ok "timeouts kill the group and the Run goes on or ends as the role says"; else verdict CNF-17 fail "$detail"; fi
+for key in PID GRANDCHILD; do
+  p=$(sed -n "s/^$key=//p" "$rec"/*-manager-0.env 2>/dev/null)
+  [ -n "$p" ] || { ok=0; detail="$detail [the pick recorded no $key]"; continue; }
+  kill -0 "$p" 2>/dev/null && { ok=0; detail="$detail [pick $key $p alive after exit $e]"; }
+done
+kill_recorded "$rec"
+if [ "$ok" = 1 ]; then verdict CNF-17 ok "timeouts kill the group, the child that ignores SIGTERM included, and the Run goes on or ends as the role says"; else verdict CNF-17 fail "$detail"; fi
 
 # --- CNF-18: interruption ------------------------------------------------------------------------------
 ok=1; detail=""
 for sig in INT TERM; do
   repo="$(new_repo)"; rec="$work/rec-sig-$sig"; mkdir -p "$rec"
-  ( cd "$repo" && exec env --default-signal=INT,TERM PATH="$fakes:$PATH" RLOOP_FAKE_RECORD="$rec" RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_SLEEP_IMPLEMENTER=60 \
-      "$exe" --run-dir "$repo/run" </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
+  ( cd "$repo" && exec env --default-signal=INT,TERM PATH="$fakes:$PATH" RLOOP_FAKE_RECORD="$rec" RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_SLEEP_IMPLEMENTER=60 RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=1 \
+      "$exe" --run-dir "$repo/run" --kill-after 1 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
   rpid=$!
   for _ in $(seq 1 50); do ls "$rec"/*-implementer-1.env >/dev/null 2>&1 && break; sleep 0.2; done
   sleep 0.5; kill -"$sig" "$rpid"
@@ -382,8 +403,12 @@ for sig in INT TERM; do
   grep -q interrupted "$rec/stderr" || { ok=0; detail="$detail [$sig: no 'interrupted']"; }
   grep -q SIGTERM "$rec"/*-implementer-1.env 2>/dev/null || { ok=0; detail="$detail [$sig: fake got no SIGTERM]"; }
   [ -f "$repo/run/task-1.md" ] || { ok=0; detail="$detail [$sig: run dir not intact]"; }
-  ipid=$(sed -n 's/^PID=//p' "$rec"/*-implementer-1.env 2>/dev/null | head -1)
-  [ -n "$ipid" ] && kill -0 "$ipid" 2>/dev/null && { ok=0; detail="$detail [$sig: implementer survived]"; kill -9 "$ipid"; }
+  for key in PID GRANDCHILD; do
+    p=$(sed -n "s/^$key=//p" "$rec"/*-implementer-1.env 2>/dev/null | head -1)
+    [ -n "$p" ] || { ok=0; detail="$detail [$sig: the implementer recorded no $key]"; continue; }
+    kill -0 "$p" 2>/dev/null && { ok=0; detail="$detail [$sig: implementer $key $p survived]"; }
+  done
+  kill_recorded "$rec"
 done
 repo="$(new_repo)"; rec="$work/rec-sig2"; mkdir -p "$rec"
 ( cd "$repo" && exec env --default-signal=INT,TERM PATH="$fakes:$PATH" RLOOP_FAKE_RECORD="$rec" RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_SLEEP_IMPLEMENTER=60 RLOOP_FAKE_IGNORE_TERM=1 \
