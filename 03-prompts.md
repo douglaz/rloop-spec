@@ -122,8 +122,11 @@ why: the Checkpoint is for when a model does not listen.*
 ## Rendering
 
 **PRM-6** A prompt MUST be rendered by literal substitution of each `{{NAME}}` below with its
-value and no other change: no trimming, no re-wrapping, no conditional text. A prompt has no
-`if`; what would need one belongs to the Manager's judgment.
+value and no other change: no trimming, no re-wrapping, no conditional text. The render is one
+pass over the template: a value substituted in is never scanned again, so placeholder text inside
+a value — an instruction holding `{{TASK_FILE}}`, a Run Directory path holding `{{INSTRUCTION}}` —
+survives byte for byte, as does every other byte of the value. A prompt has no `if`; what would
+need one belongs to the Manager's judgment.
 
 | placeholder | value |
 |---|---|
@@ -141,3 +144,10 @@ value and no other change: no trimming, no re-wrapping, no conditional text. A p
 
 *A list rendered one per line into a line of its own keeps the block readable whether it has zero
 or forty entries, and an empty list leaves an empty line, which a model reads as "none".*
+
+*The one-pass sentence is stated here from 2026-09-23, after a review of rloop-bash found its
+renderer substituting the placeholders one after another, each over the whole text so far, so that
+placeholder text inside a value was replaced by a later pass: `Repair literal {{UNAVAILABLE}} and
+{{ROUND}} tokens` reached the Manager as `Repair literal  and 0 tokens`. The Conformance Suite's
+renderer cascaded the same way, so its expected prompt matched the wrong one and `CNF-12` stayed
+green.*
