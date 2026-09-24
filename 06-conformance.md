@@ -100,8 +100,11 @@ Directory's paths, the base hash, the Round, `--max-rounds`, the caller's instru
 absent), the dirty-at-start list (a tree with one modified and one untracked path, and a clean
 tree), the unavailable list, empty in each of these Runs since no Probe before the pick here
 reports anything exhausted (`CNF-32` asserts it populated, and empty in a Run of its own), and the
-four Feedback File paths in order. Each rendered prompt ends with `PRM-5`'s
-sentence. (`PRM-1`, `PRM-2`, `PRM-3`, `PRM-4`, `PRM-5`, `PRM-6`, `RUN-3`, `DIR-10`)
+four Feedback File paths in order. One further Run gives an instruction holding placeholder names
+(`{{TASK_FILE}}`, `{{UNAVAILABLE}}`, `{{ROUND}}`) together with a backslash, `&` and `%s`, and a
+`--run-dir` path holding `{{INSTRUCTION}}`; its pick, Implementer and judge prompts equal their
+fixtures with each value's bytes unchanged, as `PRM-6` renders them. Each rendered prompt ends with
+`PRM-5`'s sentence. (`PRM-1`, `PRM-2`, `PRM-3`, `PRM-4`, `PRM-5`, `PRM-6`, `RUN-3`, `DIR-10`)
 
 **CNF-13** `{{BASE}}` is the full hash of `HEAD` at start, and with `--base <ref>` the full hash of
 that ref; a commit the fake Implementer makes during Round 1 does not change the base rendered
