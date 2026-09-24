@@ -9,7 +9,8 @@
 #   RLOOP_FAKE_ROUNDS        impl=<ok|fail>;panel=<all|some|none>;judge=<...>  joined by |, one per Round
 #   RLOOP_FAKE_INTERFERENCE  - | <round>:<afterImplementer|afterPanel>:<editTask|writeFinished|both>
 #   RLOOP_FAKE_RUNS          for a Sequence: pick outcomes per Run, comma-separated (done,done,idle);
-#                            each Run's Rounds are then RLOOP_FAKE_ROUNDS
+#                            each Run's Rounds are then RLOOP_FAKE_ROUNDS. Any word after ok: in
+#                            RLOOP_FAKE_PICK is valid here (task, other, ...), and fail is fail.
 #   RLOOP_FAKE_SLEEP_<ROLE>  seconds to sleep before acting (ROLE = MANAGER|IMPLEMENTER|REVIEWER|PROBE)
 #   RLOOP_FAKE_PROBE         what the availability probe writes (default: clear), one shape per
 #                            Round joined by | (a Round past the last named shape writes clear,

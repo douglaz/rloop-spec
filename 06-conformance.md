@@ -110,7 +110,9 @@ into Round 2's prompts. (`RUN-2`)
 ## Output
 
 **CNF-14** For a Run ending 0, 1 or 3, standard output is byte-identical to `finished.md` and
-nothing else; for a Run ending 2, standard output is empty and standard error is not. (`RUN-10`)
+nothing else; for a Run ending 2, standard output is empty and standard error is not, whether no
+Finished File was written (a pick that fails) or one is on disk (a pick whose first line is not a
+status; a judge that wrote `STATUS: idle` after a Round). (`RUN-10`)
 
 **CNF-15** A Reviewer fake that exits 7 after writing a line leaves its Feedback File holding that
 line followed by `REVIEWER FAILED (exit 7)`; a Round with one such Reviewer proceeds to the judge.
@@ -147,8 +149,11 @@ three Run Directories; standard output is `== run 1 ==`, the first Finished File
 …, and nothing else; the three picks carry three distinct session ids; and the instruction is
 rendered into all three pick prompts. Scripted done, blocked, idle: exit 1 after two Runs.
 Scripted done forever with `--max-runs 3`: exit 2 after three Runs. Scripted done, done, then a
-pick that fails: exit 2, and standard output holds exactly two `== run` blocks. (`SEQ-1`, `SEQ-2`,
-`SEQ-5`, `SEQ-6`, `SEQ-7`)
+pick that fails: exit 2, and standard output holds exactly two `== run` blocks. Scripted done, then
+a Run that ends 2 with a Finished File on disk (a pick whose first line is not a status; a judge
+that wrote `STATUS: idle` after a Round): exit 2, two Run Directories, and standard output is
+byte-identical to `== run 1 ==`, the first Finished File, and nothing else. (`SEQ-1`, `SEQ-2`,
+`SEQ-5`, `SEQ-6`, `SEQ-7`, `RUN-10`)
 
 **CNF-21** With `--auto` and a Run 1 Manager fake that writes `STATUS: done` and leaves an
 untracked file in the tree: exit 2 before Run 2's pick, with no second pick spawned. A lone Run

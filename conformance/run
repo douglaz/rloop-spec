@@ -298,7 +298,15 @@ done
 repo="$(new_repo)"; rec="$work/rec-out-2"
 e=$(RLOOP_FAKE_PICK=fail run_rloop "$repo" "$rec" --run-dir "$repo/run")
 [ "$e" = 2 ] && [ ! -s "$rec/stdout" ] && [ -s "$rec/stderr" ] || { ok=0; detail="$detail [exit-2 stdout/stderr]"; }
-if [ "$ok" = 1 ]; then verdict CNF-14 ok "stdout is the Finished File on 0/1/3, empty on 2"; else verdict CNF-14 fail "$detail"; fi
+# Exit 2 with a Finished File on disk (RUN-11): a pick whose first line is not a status, and a
+# judge that wrote STATUS: idle after a Round. Neither reaches standard output.
+repo="$(new_repo)"; rec="$work/rec-out-2-other"
+e=$(RLOOP_FAKE_PICK=ok:other run_rloop "$repo" "$rec" --run-dir "$repo/run")
+[ "$e" = 2 ] && [ ! -s "$rec/stdout" ] && [ -s "$rec/stderr" ] && [ -f "$repo/run/finished.md" ] || { ok=0; detail="$detail [ok:other: exit $e, stdout/stderr/finished.md]"; }
+repo="$(new_repo)"; rec="$work/rec-out-2-idle-judge"
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=idle" run_rloop "$repo" "$rec" --run-dir "$repo/run")
+[ "$e" = 2 ] && [ ! -s "$rec/stdout" ] && [ -s "$rec/stderr" ] && [ -f "$repo/run/finished.md" ] || { ok=0; detail="$detail [judge=idle: exit $e, stdout/stderr/finished.md]"; }
+if [ "$ok" = 1 ]; then verdict CNF-14 ok "stdout is the Finished File on 0/1/3, empty on 2 with or without a Finished File"; else verdict CNF-14 fail "$detail"; fi
 
 # --- CNF-15: reviewer failure note --------------------------------------------------------------------
 repo="$(new_repo)"; rec="$work/rec-revfail"
@@ -403,7 +411,20 @@ e=$(RLOOP_FAKE_RUNS="done,done,done,done,done" run_rloop "$repo" "$rec" --auto -
 repo="$(new_repo)"; rec="$work/rec-seq4"
 e=$(RLOOP_FAKE_RUNS="done,done,fail" run_rloop "$repo" "$rec" --auto)
 [ "$e" = 2 ] && [ "$(grep -c '^== run' "$rec/stdout")" = 2 ] || { ok=0; detail="$detail [done,done,fail: exit $e, $(grep -c '^== run' "$rec/stdout") run headers on stdout]"; }
-if [ "$ok" = 1 ]; then verdict CNF-20 ok "Sequence: idle ends 0, blocked ends 1, cap ends 2; fresh sessions; stdout per Run"; else verdict CNF-20 fail "$detail"; fi
+# Run 2 ends 2 with a Finished File on disk (RUN-11): SEQ-7 keeps it off standard output, which
+# must be byte-identical to Run 1's block alone. Two shapes: a pick whose first line is not a
+# status, and a judge that wrote STATUS: idle after a Round.
+for shape in "done,other:" "done,task:impl=ok;panel=all;judge=idle"; do
+  runs="${shape%%:*}"; rounds="${shape#*:}"
+  repo="$(new_repo)"; rec="$work/rec-seq-2-${runs#done,}"
+  e=$(RLOOP_FAKE_RUNS="$runs" RLOOP_FAKE_ROUNDS="$rounds" run_rloop "$repo" "$rec" --auto)
+  dirs=$(ls -d "$repo"/.rloop/runs/*/ 2>/dev/null | sort)
+  run1="$(echo "$dirs" | sed -n 1p)"; run2="$(echo "$dirs" | sed -n 2p)"
+  [ "$e" = 2 ] && [ "$(echo "$dirs" | wc -l)" = 2 ] && [ -f "$run2/finished.md" ] || { ok=0; detail="$detail [$runs: exit $e, $(echo "$dirs" | wc -l) dirs, Run 2 finished.md $([ -f "$run2/finished.md" ] && echo present || echo absent)]"; }
+  { echo "== run 1 =="; cat "$run1/finished.md"; } > "$rec/expected-stdout"
+  cmp -s "$rec/stdout" "$rec/expected-stdout" && [ -s "$rec/stderr" ] || { ok=0; detail="$detail [$runs: stdout is not Run 1's block alone, or stderr empty]"; }
+done
+if [ "$ok" = 1 ]; then verdict CNF-20 ok "Sequence: idle ends 0, blocked ends 1, cap ends 2; fresh sessions; stdout per Run, none for a Run that ended 2"; else verdict CNF-20 fail "$detail"; fi
 
 # --- CNF-21: the clean-tree check ---------------------------------------------------------------------
 ok=1; detail=""
