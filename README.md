@@ -120,15 +120,18 @@ For whoever runs an Implementation:
   Sequence ends there with 2, as it does on any Run that exits 2 (`SEQ-6`). A Manager whose week
   runs out mid-Run is caught the same way before its next judge call, after that Round's Panel has
   written its feedback.
-- **After a Run that exited 2 there is no Finished File**, because the Manager never wrote one:
-  the round cap was reached, a Manager call failed or made no decision, no Reviewer of a Panel
-  survived, or rloop was interrupted. The evidence is the Run Directory, which is kept whatever
-  the exit (`RUN-17`): `task-<r>.md` is the brief each Round ran against, `feedback-<r>-*.md` is
-  what the Panel said about the last Round's work, and `implementer-<r>.out` ends with the
-  Implementer's own account, including anything it declared out of scope. Judge the uncommitted
-  work by that feedback and by the repository's own gates, then commit or discard it yourself.
-  Two things the Run will not have tidied: a task the Manager claimed in the tracker at the pick
-  is **still claimed**, and a follow-up it promised to file when closing the Run was never filed.
+- **After a Run that exited 2 there is usually no Finished File**, because the Manager never
+  wrote one: the round cap was reached, a Manager call failed or made no decision, no Reviewer of
+  a Panel survived, or rloop was interrupted. A Run that exited 2 may still hold one, though
+  (`RUN-11`): a file whose first line is not a status, or one a Manager call wrote and then
+  failed. `RUN-10` keeps it off standard output either way, so the place to look is the Run
+  Directory, which is kept whatever the exit (`RUN-17`): `task-<r>.md` is the brief each Round
+  ran against, `feedback-<r>-*.md` is what the Panel said about the last Round's work, and
+  `implementer-<r>.out` ends with the Implementer's own account, including anything it declared
+  out of scope. Judge the uncommitted work by that feedback and by the repository's own gates,
+  then commit or discard it yourself. Two things the Run will not have tidied: a task the Manager
+  claimed in the tracker at the pick is **still claimed**, and a follow-up it promised to file
+  when closing the Run was never filed.
   *An operator did exactly this reconstruction on 2026-09-19 (`F10`) and kept the work: all four
   Reviewers had reported no findings and every gate passed.*
 - **A Run is long.** A Round takes 15–30 minutes and a Run may take an hour. Run rloop in the
