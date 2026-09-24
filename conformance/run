@@ -55,19 +55,46 @@ fi
 
 # --- CNF-5: usage errors -----------------------------------------------------------------------------
 repo="$(new_repo)"; ok=1; detail=""
-for args in "--bogus" "--max-rounds 0" "--max-rounds x" "--reviewer-timeout -1" "--reviewer-timeout 0" "--probe-timeout 0" "--kill-after 0" "a b" "--auto --base HEAD" "--auto --run-dir $repo/d" "--manager gpt-6-astra"; do
-  rec="$work/rec-usage"; rm -rf "$rec"
-  # shellcheck disable=SC2086
-  e=$(run_rloop "$repo" "$rec" $args)
-  if [ "$e" != 2 ] || [ "$(spawn_count "$rec")" != 0 ] || [ ! -s "$rec/stderr" ]; then ok=0; detail="$detail [$args -> exit $e, $(spawn_count "$rec") spawns]"; fi
-done
+# One call per row, the row as its argument array: a string split on whitespace could not carry
+# the empty --run-dir value, and a word-split '' arrives as two quote characters.
+usage_error() { # usage_error <rloop arguments...>: exit 2, nothing spawned, standard error written
+  local rec="$work/rec-usage" e; rm -rf "$rec"
+  e=$(run_rloop "$repo" "$rec" "$@")
+  if [ "$e" != 2 ] || [ "$(spawn_count "$rec")" != 0 ] || [ ! -s "$rec/stderr" ]; then ok=0; detail="$detail [$(printf '%q ' "$@")-> exit $e, $(spawn_count "$rec") spawns]"; fi
+}
+usage_error --bogus
+usage_error --max-rounds 0
+usage_error --max-rounds x
+usage_error --reviewer-timeout -1
+usage_error --reviewer-timeout 0
+usage_error --probe-timeout 0
+usage_error --kill-after 0
+usage_error a b
+usage_error --auto --base HEAD
+usage_error --auto --run-dir "$repo/d"
+usage_error --auto --run-dir ''
+usage_error --implementer-model --max-rounds 1
+usage_error --=x
+usage_error --auto=1
+usage_error --help=x
+usage_error --version=x
+usage_error --manager gpt-6-astra
 for args in "--version" "--help"; do
   rec="$work/rec-usage"; rm -rf "$rec"
   # shellcheck disable=SC2086
   e=$(run_rloop "$repo" "$rec" $args)
   if [ "$e" != 0 ] || [ "$(spawn_count "$rec")" != 0 ]; then ok=0; detail="$detail [$args -> exit $e]"; fi
 done
-if [ "$ok" = 1 ]; then verdict CNF-5 ok "usage errors exit 2 and spawn nothing; --version/--help exit 0"; else verdict CNF-5 fail "$detail"; fi
+# --max-runs 08 is eight: one pick when the first goes idle, eight when every pick ends done.
+rec="$work/rec-usage"; rm -rf "$rec"
+e=$(RLOOP_FAKE_RUNS=idle run_rloop "$repo" "$rec" --auto --max-runs 08)
+picks=$(ls "$rec"/*-manager-0.argv 2>/dev/null | wc -l | tr -d ' ')
+[ "$e" = 0 ] && [ "$picks" = 1 ] || { ok=0; detail="$detail [--auto --max-runs 08, idle -> exit $e, $picks picks]"; }
+rec="$work/rec-usage"; rm -rf "$rec"
+e=$(RLOOP_FAKE_RUNS="done,done,done,done,done,done,done,done,done" run_rloop "$repo" "$rec" --auto --max-runs 08)
+picks=$(ls "$rec"/*-manager-0.argv 2>/dev/null | wc -l | tr -d ' ')
+[ "$e" = 2 ] && [ "$picks" = 8 ] || { ok=0; detail="$detail [--auto --max-runs 08, nine done -> exit $e, $picks picks]"; }
+if [ "$ok" = 1 ]; then verdict CNF-5 ok "usage errors exit 2 and spawn nothing; --version/--help exit 0; --max-runs 08 is eight"; else verdict CNF-5 fail "$detail"; fi
 
 # --- CNF-6: outside git -----------------------------------------------------------------------------
 notgit="$(mktemp -d "$work/notgit.XXXXXX")"; rec="$work/rec-notgit"

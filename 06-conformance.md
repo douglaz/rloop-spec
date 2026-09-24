@@ -50,10 +50,15 @@ is a green check that asserts nothing.* (`RUN-11`)
 ## Starting and stopping
 
 **CNF-5** Each of these invocations exits 2, spawns nothing, and writes to standard error: an
-unknown option; `--max-rounds 0`; `--max-rounds x`; `--reviewer-timeout -1`; `--reviewer-timeout 0`;
-`--probe-timeout 0`; `--kill-after 0`; two `INSTRUCTION` arguments; `--auto --base HEAD`;
-`--auto --run-dir d`; `--manager gpt-6-astra`, a value outside the preset's set and the mistake a
-caller makes who means `--manager codex --manager-model gpt-6-astra`. `--version` and `--help` exit 0 and spawn nothing. (`AGT-1`, `AGT-2`, `SEQ-3`)
+unknown option; `--max-rounds 0`; `--max-rounds x`; `--reviewer-timeout -1`;
+`--reviewer-timeout 0`; `--probe-timeout 0`; `--kill-after 0`; two `INSTRUCTION` arguments;
+`--auto --base HEAD`; `--auto --run-dir d`; `--auto --run-dir ''`, the value empty;
+`--implementer-model --max-rounds 1`, the value swallowed; `--=x`; `--auto=1`; `--help=x`;
+`--version=x`; `--manager gpt-6-astra`, a value outside the preset's set and the mistake a caller
+makes who means `--manager codex --manager-model gpt-6-astra`. `--version` and `--help` exit 0
+and spawn nothing. `--auto --max-runs 08` with a Manager fake scripted idle spawns exactly one
+pick and exits 0; with nine scripted done, it stops after exactly eight picks and exits 2.
+(`AGT-1`, `AGT-2`, `SEQ-3`, `SEQ-5`, `SEQ-6`)
 
 **CNF-6** Outside a git working tree the executable exits 2 and spawns nothing. (`RUN-1`)
 
