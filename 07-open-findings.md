@@ -41,8 +41,16 @@ excuse a second rule.
 exact normalized-text digest, with the reason each citation names
 an input, command, subject or related operation. A changed clause requires renewed ownership
 review; a new definition line is not automatically exempt. Fingerprints cover individual clauses,
-not entire association units, so an adjacent new rule still needs review. The digest ignores
-whitespace and Markdown emphasis, not changed words. Self-citations remain at their own home.
+not entire association units, so an adjacent new rule still needs review. The digest is taken
+over normalized text, and the normalization is a character rule, not a Markdown parser: every
+asterisk, backtick and tilde is removed wherever it occurs, including inside literal code and
+identifiers, so `~~strikethrough~~` and `*emphasis*` never change a digest or a quotation, and a
+tilde or asterisk that is part of a path or a glob is lost too; every underscore is kept wherever
+it occurs, so `_emphasis_` changes a digest and a quotation and an underscore inside an identifier
+is significant; runs of whitespace, including wrapping, collapse to one space, and case,
+punctuation and words are preserved. A reviewed clause rewrapped in `_…_` therefore reads as a
+new clause and needs its digest in `tools/restatement-homes.json` refreshed, while one rewrapped
+in `~~…~~` or `**…**` does not. Self-citations remain at their own home.
 
 Both checks report each finding as `BLOCKING` or `ADVISORY`. Blocking findings fail the
 individual check and the aggregate gate, even alongside advisories. Advisories remain visible
@@ -88,8 +96,8 @@ with no recognized owner does not cover a modal for the restatement check, so a 
 attribution can still report an advisory restatement.
 
 The citation check compares a contiguous phrase against that owner's body only, ending at the
-next definition or section heading. It preserves case, punctuation and words while normalizing
-wrapping and Markdown emphasis. A parenthetical attribution without an RFC-2119 keyword or an
+next definition or section heading. Both sides are normalized by the character rule stated above
+for the digest, and by nothing else. A parenthetical attribution without an RFC-2119 keyword or an
 explicit introducer retains the source's four-word prose heuristic, so short code labels citing
 their definitions are not mistaken for prose quotations. Normative phrases and explicit
 introducers have no such minimum. Both tiers use the same phrase eligibility and verification;

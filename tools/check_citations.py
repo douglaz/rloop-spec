@@ -5,7 +5,7 @@ Port of /home/master/projects/provisiond-spec/tools/check_citations.py's QUOTED
 rule and direct-speech/possessive patterns. spec_text adds rloop's backtick and
 parenthetical forms and shares the route used by check_ids' restatement rule.
 
-Only whitespace and Markdown emphasis are normalized. A quote must be a
+Both sides pass through spec_text.norm (F2 states its rule). A quote must be a
 contiguous phrase in its owner's body, with word boundaries; no document/ADR
 fallback, ellipsis splicing, historical/teaching exemption or baseline can make
 a false explicit attribution pass. Inferred attributions are still reported,

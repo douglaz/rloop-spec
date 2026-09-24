@@ -47,8 +47,8 @@ def prefix(rid):
 
 
 # Reviewed clauses are recorded only when they define their enclosing
-# requirement's own rule. Exact text (apart from wrapping/emphasis), never an id
-# or document exemption: an edit reopens the ownership question. See F2.
+# requirement's own rule. Exact text as spec_text.norm sees it, never an id or
+# document exemption: an edit reopens the ownership question. See F2.
 def clause_key(home, text):
     from spec_text import norm
     return home, hashlib.sha256(norm(text).encode()).hexdigest()

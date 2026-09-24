@@ -34,7 +34,10 @@ class Requirement:
 
 
 def norm(text):
-    """Ignore wrapping and Markdown emphasis, not case, punctuation or words."""
+    """A character rule, not a Markdown parser (F2 states why this is the boundary):
+    every asterisk, backtick and tilde is removed wherever it occurs, code spans and
+    paths included; every underscore is kept; whitespace runs, wrapping included,
+    collapse to one space. Case, punctuation and words are preserved."""
     return " ".join(re.sub(r"[*`~]", "", text).split())
 
 

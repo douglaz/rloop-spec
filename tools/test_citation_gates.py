@@ -350,6 +350,49 @@ class CitationControls(unittest.TestCase):
         self.ids()
         self.citations()
 
+    CLAUSE = "A Reviewer that `RUN-21` recorded `unavailable` MUST NOT be called at all"
+
+    def test_strikethrough_never_changes_a_digest_or_a_quotation(self):
+        # F2: tildes are removed wherever they occur, so ~~...~~ keeps the reviewed
+        # digest and the quotation, and cannot hide a changed word inside either.
+        self.replace("01-run-lifecycle.md", f"{self.CLAUSE}.", f"~~{self.CLAUSE}~~.")
+        self.append(f"`RUN-16`: `~~{QUOTE}~~`.")
+        self.assertNotIn("MUST NOT be called at all", self.ids())
+        self.citations()
+        self.replace("01-run-lifecycle.md", f"~~{self.CLAUSE}~~.",
+                     f"~~{self.CLAUSE.replace('at all', 'twice')}~~.")
+        self.replace("00-overview.md", f"`~~{QUOTE}~~`", f"`~~{FALSE_QUOTE}~~`")
+        self.ids(0, "RESTATEMENT: 01-run-lifecycle.md:", "RUN-21", "MUST NOT be called twice",
+                 tier="ADVISORY")
+        self.citations(1, "CITATION: 00-overview.md:", "RUN-16 (01-run-lifecycle.md)", FALSE_QUOTE)
+
+    def test_underscore_emphasis_is_a_changed_word(self):
+        # F2: underscores are kept wherever they occur. One in the owner's body
+        # verifies; _..._ around a reviewed clause or a quotation is a new clause.
+        self.replace("01-run-lifecycle.md", f"{self.CLAUSE}.", f"_{self.CLAUSE}_.")
+        self.append("`RUN-16`: `it is the thread_id of the first`.")
+        self.ids(0, "RESTATEMENT: 01-run-lifecycle.md:", "RUN-21",
+                 "_A Reviewer that RUN-21 recorded unavailable MUST NOT be called at all_.",
+                 tier="ADVISORY")
+        self.citations()
+        self.replace("00-overview.md", "`it is the thread_id of the first`", f"`_{QUOTE}_`")
+        self.citations(1, "CITATION: 00-overview.md:", "RUN-16 (01-run-lifecycle.md)",
+                       f"_{QUOTE}_")
+
+    def test_literal_code_characters_follow_the_same_rule(self):
+        # F2: an underscore inside an identifier is significant; a tilde in a path
+        # or an asterisk in a glob is lost on both sides, so those compare equal.
+        self.append("**OVR-5** rloop MUST read `check_ids.py` under `/x` for every `.md` file.")
+        path = self.root / "control.md"  # outside OVR-5's own body
+        path.write_text("`OVR-5`: `check_ids.py`, `OVR-5`: `~/x`, `OVR-5`: `*.md`.")
+        self.ids()
+        self.citations()
+        path.write_text("`OVR-5`: `checkids.py`, `OVR-5`: `~~under /y~~`, "
+                        "`OVR-5`: `**every .txt file**`.")
+        self.ids()
+        for absent in ("checkids.py", "under /y", "every .txt file"):
+            self.citations(1, "CITATION: control.md:", "OVR-5 (00-overview.md)", absent)
+
     def test_parenthetical_existing_quote_is_verified(self):
         self.replace("01-run-lifecycle.md", f"`RUN-16`: `{QUOTE}`",
                      f"`RUN-16`: `{FALSE_QUOTE}`")
