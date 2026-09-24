@@ -196,7 +196,7 @@
   },
   {
     "owner": "AGT-1",
-    "sha256": "d1ecbde6a9f0197ebee0f042828693a6d2e56297788638c394f8171da4a8da35",
+    "sha256": "43309091bed96f520993afea3cf69c9d1ecadbf852ffd1be0a65761965a107d0",
     "reason": "Owns accepted option syntax; PRM-1 names the consumer of the adjacent INSTRUCTION argument."
   },
   {

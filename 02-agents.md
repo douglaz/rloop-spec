@@ -30,20 +30,31 @@ rloop [OPTIONS] [INSTRUCTION]
 ```
 
 `INSTRUCTION` is one argument, free text, rendered into the Manager's pick prompt (`PRM-1`);
-absent, the Manager picks on its own. Long options MAY also be given as `--flag=value`. There are
-no environment-variable equivalents and no configuration file.
+absent, the Manager picks on its own. A long option that takes a value MAY also be given as
+`--flag=value`. There are no environment-variable equivalents and no configuration file.
 
 **AGT-2** An unknown option, a missing or non-numeric value, a value outside the set a preset
 flag names — `--manager` and `--implementer` each take `claude` or `codex` and nothing else — a
 number below 1 for `--max-rounds`, `--max-runs`, a timeout or `--kill-after`, more than one
 `INSTRUCTION`, or a combination `SEQ-3` forbids MUST exit 2 with a message on standard error and
-nothing spawned. *A usage error found after the first agent call has already spent money.*
+nothing spawned. A value is missing when its option is the last argument or when the next
+argument begins with `--`; a flag never becomes another flag's value. A number is a string of
+decimal digits read in base ten, so `08` is `8`. A value given with `=` to `--auto`, `--help` or
+`--version`, which take none, is an unknown option. *A usage error found after the first agent
+call has already spent money.*
 *The preset clause is stated here from 2026-09-20 with `--manager`; it was always true of
 `--implementer`, which named its two values in `AGT-1` and nowhere said what a third does.*
-*Every duration's minimum is 1 from 2026-09-24; until then a timeout could be 0. GNU `timeout`
-documents that value as `a duration of 0 disables the associated timeout`, so a zero passed
-through left a call `AGT-14` says `MUST be bounded by its role's timeout` with no bound at all,
-and `--kill-after 0` never reached the SIGKILL.*
+*Every duration's minimum is 1 from 2026-09-24; until then a timeout or `--kill-after` could be
+0. GNU `timeout` documents that value as `a duration of 0 disables the associated timeout`, so a
+zero passed through left a call `AGT-14` says `MUST be bounded by its role's timeout` — and the
+Probe's (`AGT-18`) by `--probe-timeout` — with no bound at all, and `--kill-after 0` never
+reached the SIGKILL.*
+*The missing-value, base-ten and `=` sentences are stated here from 2026-09-24, after a review
+of one Implementation found four invocations spawning agents: `--auto --run-dir ''`, whose empty
+value passed a test of the value rather than of the option's presence; `--implementer-model
+--max-rounds 1`, whose Implementer model became `--max-rounds`; `--=x`, rewritten into a `--`
+terminator that `AGT-1` does not define; and `--auto=1`, a Sequence with the instruction `1`.
+`--help=x` and `--version=x` exited 0, and `--max-runs 08` was refused as an octal literal.*
 
 ## The agent command lines
 
