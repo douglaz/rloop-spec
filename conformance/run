@@ -2,7 +2,9 @@
 # The Conformance Suite (06-conformance.md): conformance/run <rloop executable> [--self-check]
 #
 # Runs every CNF item against the executable with fake agents first on PATH, prints one line per
-# item, exits 0 only if all passed. Needs bash, git, GNU coreutils, grep, sed and awk; nothing else.
+# item, exits 0 only if all passed. Needs bash, git, GNU coreutils, grep, sed, awk, cmp and find;
+# nothing else. The executable sees the fakes, the tools CNF-1 names for an Implementation, and
+# the git shim for the CNF-19 items — see CNF-2; restrict_path in scenario-lib.sh builds it.
 set -u
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -26,6 +28,7 @@ verdict() { # verdict <CNF id> <ok|fail> <detail>
 export -n RLOOP_FAKE_PICK RLOOP_FAKE_ROUNDS RLOOP_FAKE_INTERFERENCE RLOOP_FAKE_RUNS RLOOP_FAKE_THREAD_ID RLOOP_FAKE_NO_THREAD_ID RLOOP_FAKE_PROBE_PICK 2>/dev/null || true
 
 source "$here/scenario-lib.sh"
+restrict_path
 spawn_count() { ls "$1"/*.argv 2>/dev/null | wc -l | tr -d ' '; }
 # Both Seats on a model RUN-21's table does not name, so that no verdict of theirs stops the Run.
 off=(--manager-model "$off_table_model" --implementer-model "$off_table_model")
@@ -393,7 +396,7 @@ if [ "$ok" = 1 ]; then verdict CNF-17 ok "timeouts kill the group, the child tha
 ok=1; detail=""
 for sig in INT TERM; do
   repo="$(new_repo)"; rec="$work/rec-sig-$sig"; mkdir -p "$rec"
-  ( cd "$repo" && exec env --default-signal=INT,TERM PATH="$fakes:$PATH" RLOOP_FAKE_RECORD="$rec" RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_SLEEP_IMPLEMENTER=60 RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=1 \
+  ( cd "$repo" && exec env --default-signal=INT,TERM PATH="$fakes:$private" RLOOP_FAKE_RECORD="$rec" RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_SLEEP_IMPLEMENTER=60 RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=1 \
       "$exe" --run-dir "$repo/run" --kill-after 1 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
   rpid=$!
   for _ in $(seq 1 50); do ls "$rec"/*-implementer-1.env >/dev/null 2>&1 && break; sleep 0.2; done
@@ -411,7 +414,7 @@ for sig in INT TERM; do
   kill_recorded "$rec"
 done
 repo="$(new_repo)"; rec="$work/rec-sig2"; mkdir -p "$rec"
-( cd "$repo" && exec env --default-signal=INT,TERM PATH="$fakes:$PATH" RLOOP_FAKE_RECORD="$rec" RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_SLEEP_IMPLEMENTER=60 RLOOP_FAKE_IGNORE_TERM=1 \
+( cd "$repo" && exec env --default-signal=INT,TERM PATH="$fakes:$private" RLOOP_FAKE_RECORD="$rec" RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_SLEEP_IMPLEMENTER=60 RLOOP_FAKE_IGNORE_TERM=1 \
     "$exe" --run-dir "$repo/run" --kill-after 30 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
 rpid=$!
 for _ in $(seq 1 50); do ls "$rec"/*-implementer-1.env >/dev/null 2>&1 && break; sleep 0.2; done
@@ -426,10 +429,10 @@ shim="$work/shim"; mkdir -p "$shim"; cp "$here/fakes/git-shim" "$shim/git"; chmo
 ok=1; detail=""
 repo="$(new_repo)"; rec="$work/rec-git"; mkdir -p "$rec"
 head0=$(cd "$repo" && git rev-parse HEAD); reflog0=$(cd "$repo" && git reflog | wc -l)
-( cd "$repo" && PATH="$fakes:$shim:$PATH" RLOOP_FAKE_REAL_GIT="$real_git" RLOOP_FAKE_GIT_LOG="$rec/gitlog" RLOOP_FAKE_RECORD="$rec" \
+( cd "$repo" && PATH="$fakes:$shim:$private" RLOOP_FAKE_REAL_GIT="$real_git" RLOOP_FAKE_GIT_LOG="$rec/gitlog" RLOOP_FAKE_RECORD="$rec" \
     RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=done" \
     "$exe" </dev/null >"$rec/stdout" 2>"$rec/stderr" ); e=$?
-( cd "$repo" && PATH="$fakes:$shim:$PATH" RLOOP_FAKE_REAL_GIT="$real_git" RLOOP_FAKE_GIT_LOG="$rec/gitlog" RLOOP_FAKE_RECORD="$rec-seq" RLOOP_FAKE_RUNS="done,done,idle" \
+( cd "$repo" && PATH="$fakes:$shim:$private" RLOOP_FAKE_REAL_GIT="$real_git" RLOOP_FAKE_GIT_LOG="$rec/gitlog" RLOOP_FAKE_RECORD="$rec-seq" RLOOP_FAKE_RUNS="done,done,idle" \
     "$exe" --auto </dev/null >"$rec/stdout2" 2>"$rec/stderr2" ); e2=$?
 bad_sub=$(grep -v -x -E 'rev-parse|status|diff|log' "$rec/gitlog" 2>/dev/null | sort -u | tr '\n' ' ')
 head1=$(cd "$repo" && git rev-parse HEAD); reflog1=$(cd "$repo" && git reflog | wc -l)

@@ -9,9 +9,9 @@ cannot be executed is in the last section, with the reason.
 
 **CNF-1** `conformance/run <path to an rloop executable>` MUST run every item below against that
 executable and exit 0 only if every one passed, printing each item's identifier and verdict. It
-needs `bash`, `git`, GNU coreutils, `grep`, `sed` and `awk` on `PATH` and nothing else — no Lean, no
-Python, no network —
-so that an Implementation repository in any language runs it from the submodule.
+needs `bash`, `git`, GNU coreutils, `grep`, `sed`, `awk`, `cmp` (diffutils) and `find` (findutils)
+on `PATH` and nothing else — no Lean, no Python, no network — so that an Implementation repository
+in any language runs it from the submodule.
 (`00-overview.md`)
 
 **CNF-2** The suite puts fake `claude` and `codex` executables first on `PATH`. A fake reads
@@ -20,7 +20,20 @@ its scripted part, records what it received — argument list, environment, work
 whether standard input was at end of file — and acts: writes a Task File or Finished File, exits
 non-zero, sleeps, ignores a signal, spawns a grandchild, or interferes with the Manager's files,
 as the scenario says. The fake never reads a prompt and never parses a flag, which is what keeps
-the suite's control flow independent of `02` and `03`. (`AGT-13`)
+the suite's control flow independent of `02` and `03`. Before the suite runs the executable, it
+resolves the tools `CNF-1` names for an Implementation to absolute paths and builds one private
+directory of symlinks under those exact names; a name the host lacks is left out and named once
+on standard error. The executable, and so every fake it spawns, runs with `PATH` set to the fakes
+directory, then that private directory, and nothing else; for the `CNF-19` items the `git` shim's
+directory sits between the two. `cmp` and `find` are the suite's own and are not on the
+executable's `PATH`. An executable that relies on anything more brings it itself; a wrapper that
+puts its own inputs on `PATH`, as a nix `writeShellApplication` does, satisfies this. *Why the
+host's `PATH` is withheld: rloop-bash `02c6206` compared `task.md` against `task-<r>.md` with
+`cmp`, which its flake did not wrap, and read a missing `cmp` as "differs". The Run `RUN-12`
+describes — `rloop MUST exit 2 rather than start another Round` — then burns every remaining
+Round on the same brief instead of ending at the no-decision one, and every Round's Task File
+goes where `DIR-6`'s `move task.md to rejected-<r>-task.md` sends it; on a host with diffutils on
+`PATH`, the suite could not tell.* (`AGT-13`)
 
 ## The scenarios
 

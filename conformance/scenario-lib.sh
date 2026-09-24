@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Shared scenario replay and comparison for run and test-panel-trace.
-# Caller supplies work, fakes and exe, and owns scratch-directory cleanup.
+# Caller supplies work, fakes and exe, calls restrict_path once, and owns scratch-directory cleanup.
 
 # --- a fresh repository per run ----------------------------------------------------------------
 new_repo() { # new_repo -> prints path; a git repo with one commit
@@ -10,11 +10,48 @@ new_repo() { # new_repo -> prints path; a git repo with one commit
   echo "$r"
 }
 
+# --- CNF-2: the executable's PATH -------------------------------------------------------------------
+# What GNU coreutils ships, by its own program list: not what this host installs (a host may lack
+# some) and not what any Implementation happens to call.
+coreutils_programs='[ arch b2sum base32 base64 basename basenc cat chcon chgrp chmod chown chroot cksum comm
+coreutils cp csplit cut date dd df dir dircolors dirname du echo env expand expr factor false
+fmt fold groups head hostid hostname id install join kill link ln logname ls md5sum mkdir
+mkfifo mknod mktemp mv nice nl nohup nproc numfmt od paste pathchk pinky pr printenv printf
+ptx pwd readlink realpath rm rmdir runcon seq sha1sum sha224sum sha256sum sha384sum sha512sum
+shred shuf sleep sort split stat stdbuf stty sum sync tac tail tee test timeout touch tr true
+truncate tsort tty uname unexpand uniq unlink uptime users vdir wc who whoami yes'
+# The names the fakes and the git shim run under the executable's PATH: a host without one would
+# turn a suite defect into a red item, so the suite refuses to start instead.
+executable_path_needs='bash git grep sed tr timeout head date sleep basename ls'
+# restrict_path: builds $private, the only directory after $fakes on the executable's PATH: the
+# tools CNF-1 names for an Implementation, each a symlink to the file bash finds. `type -P`, not
+# `command -v`, which names the builtin for printf, kill, test, [, echo, pwd and true, so the
+# link would dangle for the names a script calls most. A name the host lacks is skipped and
+# named once on standard error; one the suite itself needs, here or on its own PATH (cmp and
+# find, which stay the suite's), is exit 2 before any item.
+restrict_path() {
+  local name file skipped=""
+  private="$work/private"; mkdir -p "$private"
+  for name in cmp find; do
+    type -P "$name" >/dev/null || { echo "conformance: $name is not on PATH and the suite needs it" >&2; exit 2; }
+  done
+  for name in bash git grep sed awk $coreutils_programs; do
+    if file="$(type -P "$name")"; then
+      case "$file" in /*) ;; *) file="$PWD/$file" ;; esac # a relative PATH entry prints a relative path
+      ln -s "$file" "$private/$name"
+    else skipped="$skipped $name"; fi
+  done
+  for name in $executable_path_needs; do
+    [ -e "$private/$name" ] || { echo "conformance: $name could not be linked into the executable's PATH and the fakes need it" >&2; exit 2; }
+  done
+  [ -z "$skipped" ] || echo "conformance: not on this host, so not on the executable's PATH:$skipped" >&2
+}
+
 # run_rloop <repo> <record dir> [rloop args...] ; environment for the fakes comes from the caller
 run_rloop() {
   local repo="$1" rec="$2"; shift 2
   mkdir -p "$rec"
-  ( cd "$repo" && PATH="$fakes:$PATH" RLOOP_FAKE_RECORD="$rec" "$exe" "$@" </dev/null \
+  ( cd "$repo" && PATH="$fakes:$private" RLOOP_FAKE_RECORD="$rec" "$exe" "$@" </dev/null \
       >"$rec/stdout" 2>"$rec/stderr" )
   echo $? > "$rec/exit"
   cat "$rec/exit"

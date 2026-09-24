@@ -26,6 +26,7 @@ assert_equal() { [ "$1" = "$2" ] || die "$3: expected '$2', got '$1'"; }
 fakes="$work/fakes"; mkdir -p "$fakes"
 cp "$here/fakes/agent" "$fakes/claude" && cp "$here/fakes/agent" "$fakes/codex" || exit 1
 chmod +x "$fakes/claude" "$fakes/codex"
+restrict_path
 
 # Exercise completion order deterministically using the fake agents' record format. Both
 # permutations have the same identity-specific outcomes; failures still count as members.
