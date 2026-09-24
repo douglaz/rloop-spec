@@ -80,8 +80,10 @@ not exist, the executable exits 2 and spawns nothing. With `--run-dir` naming a 
 directory exists afterwards and is the only one created. (`DIR-1`, `DIR-3`)
 
 **CNF-8** Without `--run-dir`, the Run Directory is created under `<toplevel>/.rloop/runs/`,
-`<toplevel>/.rloop/.gitignore` exists holding the line `*`, and `git status --porcelain` prints
-nothing after a Run whose fakes changed no tracked file. (`DIR-2`, `RUN-4`)
+`<toplevel>/.rloop/.gitignore` holds exactly `*` and a newline — compared byte for byte — and
+`git status --porcelain` prints nothing after a Run whose fakes changed no tracked file; and a
+pre-existing `.gitignore` of either shape a check by eye accepts, `*` followed by two newlines or
+`*` with no newline, holds those same two bytes after such a Run. (`DIR-2`, `RUN-4`)
 
 **CNF-9** After a two-Round Run the Run Directory holds exactly the names `DIR-4` lists for two
 Rounds and nothing else, `probe-pick.out`, `probe-pick.err` and `probe-pick.md` among them; each
@@ -128,7 +130,9 @@ into Round 2's prompts. (`RUN-2`)
 **CNF-14** For a Run ending 0, 1 or 3, standard output is byte-identical to `finished.md` and
 nothing else; for a Run ending 2, standard output is empty and standard error is not, whether no
 Finished File was written (a pick that fails) or one is on disk (a pick whose first line is not a
-status; a judge that wrote `STATUS: idle` after a Round). (`RUN-10`)
+status; a pick whose first line is `STATUS: done` with a NUL byte inside it; a judge that wrote
+`STATUS: idle` after a Round). *The NUL case is there because `RUN-9` compares the first line
+`byte for byte` and a reader that drops NUL bytes sees `done`.* (`RUN-9`, `RUN-10`)
 
 **CNF-15** A Reviewer fake that exits 7 after writing a line leaves its Feedback File holding that
 line followed by `REVIEWER FAILED (exit 7)`; a Round with one such Reviewer proceeds to the judge.
@@ -242,12 +246,13 @@ copied from a Reviewer's line, and a Round's verdict on the Implementer's Seat s
 probe writes nothing; when it writes output carrying no `Current week` line; when it reports a family at
 `99% used`; when it reports only `Current week (all models): 100% used`; when it reports a family
 at `100% used` but **exits non-zero**; when those words appear
-somewhere other than the start of a line; and when it does not finish within its bound, however
-complete the output it would have written. In each case the
-Run reaches its judge and ends exactly as the same Run does with a probe reporting nothing
-exhausted. *These are the fail-open paths, and they are the reason `RUN-21` reads one shape and
-calls everything else `unknown`. An item that only ever saw a well-formed probe would be a
-green check over a rule nobody tested.* (`RUN-21`)
+somewhere other than the start of a line; when a family line's `100% used` is split by a NUL
+byte; and when it does not finish within its bound, however complete the output it would have
+written. In each case the Run reaches its judge and ends exactly as the same Run does with a
+probe reporting nothing exhausted. *These are the fail-open paths, and they are the reason
+`RUN-21` reads one shape and calls everything else `unknown`. The NUL-split line does not begin
+with `RUN-21`'s prefix, however it reads once a byte is dropped. An item that only ever saw a
+well-formed probe would be a green check over a rule nobody tested.* (`RUN-21`)
 
 **CNF-27** With both Seats' models off `RUN-21`'s table and the probe scripted to report
 `Current week (Fable): 100% used`, the Round runs no

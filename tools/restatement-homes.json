@@ -221,7 +221,7 @@
   },
   {
     "owner": "DIR-2",
-    "sha256": "16a995aaa78724eb74611a967b1917c27c2f75a7570b2928a30e565426329feb",
+    "sha256": "42723bcfe6c1f1101c0b0f15a991fa020346db2567b7eafa5f7f9551c2824866",
     "reason": "Owns default Run Directory naming and ignore-file creation; SEQ-3 separately owns the incompatible option combination."
   },
   {

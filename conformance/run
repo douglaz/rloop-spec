@@ -124,9 +124,21 @@ repo="$(new_repo)"; rec="$work/rec-default"
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec")
 rd=$(ls -d "$repo"/.rloop/runs/*/ 2>/dev/null | head -1)
 status_out=$(cd "$repo" && git status --porcelain)
-if [ "$e" = 0 ] && [ -n "$rd" ] && [ "$(cat "$repo/.rloop/.gitignore" 2>/dev/null)" = "*" ] && [ -z "$status_out" ]; then
-  verdict CNF-8 ok ".rloop/runs/<id>/ created, self-ignored, tree clean"
-else verdict CNF-8 fail "exit $e, run dir '$rd', gitignore '$(cat "$repo/.rloop/.gitignore" 2>/dev/null)', status '$status_out'"; fi
+ok=1; detail=""
+if [ "$e" = 0 ] && [ -n "$rd" ] && printf '*\n' | cmp -s - "$repo/.rloop/.gitignore" && [ -z "$status_out" ]; then :
+else ok=0; detail="$detail [fresh: exit $e, run dir '$rd', gitignore '$(od -An -c "$repo/.rloop/.gitignore" 2>/dev/null | tr -s ' ')', status '$status_out']"; fi
+# DIR-2 states bytes: a pre-existing file a check by eye accepts — `*` and two newlines, or `*`
+# and no newline — is rewritten to exactly `*` and a newline.
+for shape in 'two newlines:*\n\n' 'no newline:*'; do
+  label="${shape%%:*}"; repo="$(new_repo)"; rec="$work/rec-default-$label"
+  mkdir -p "$repo/.rloop" && printf "${shape#*:}" > "$repo/.rloop/.gitignore"
+  e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec")
+  status_out=$(cd "$repo" && git status --porcelain)
+  if [ "$e" = 0 ] && printf '*\n' | cmp -s - "$repo/.rloop/.gitignore" && [ -z "$status_out" ]; then :
+  else ok=0; detail="$detail [$label: exit $e, gitignore '$(od -An -c "$repo/.rloop/.gitignore" 2>/dev/null | tr -s ' ')', status '$status_out']"; fi
+done
+if [ "$ok" = 1 ]; then verdict CNF-8 ok ".rloop/runs/<id>/ created, self-ignored byte for byte (a pre-existing by-eye .gitignore rewritten), tree clean"
+else verdict CNF-8 fail "$detail"; fi
 
 # --- CNF-9: the layout --------------------------------------------------------------------------------
 repo="$(new_repo)"; rec="$work/rec-layout"
@@ -332,6 +344,13 @@ e=$(RLOOP_FAKE_PICK=fail run_rloop "$repo" "$rec" --run-dir "$repo/run")
 repo="$(new_repo)"; rec="$work/rec-out-2-other"
 e=$(RLOOP_FAKE_PICK=ok:other run_rloop "$repo" "$rec" --run-dir "$repo/run")
 [ "$e" = 2 ] && [ ! -s "$rec/stdout" ] && [ -s "$rec/stderr" ] && [ -f "$repo/run/finished.md" ] || { ok=0; detail="$detail [ok:other: exit $e, stdout/stderr/finished.md]"; }
+# A first line of `STATUS: do`, NUL, `ne`: RUN-9 compares byte for byte, and a reader that drops
+# NUL bytes sees `done` and exits 0. The byte count of the raw first line is what such a reader
+# gets wrong: 14 (`STATUS: done` is 12, the NUL 13, the newline 14).
+repo="$(new_repo)"; rec="$work/rec-out-2-nul"
+e=$(RLOOP_FAKE_PICK=ok:nul run_rloop "$repo" "$rec" --run-dir "$repo/run")
+[ "$e" = 2 ] && [ ! -s "$rec/stdout" ] && [ -s "$rec/stderr" ] && [ -f "$repo/run/finished.md" ] || { ok=0; detail="$detail [ok:nul: exit $e, stdout/stderr/finished.md]"; }
+[ "$(head -n1 "$repo/run/finished.md" 2>/dev/null | wc -c | tr -d ' ')" = 14 ] || { ok=0; detail="$detail [ok:nul: first line is not 14 bytes]"; }
 repo="$(new_repo)"; rec="$work/rec-out-2-idle-judge"
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=idle" run_rloop "$repo" "$rec" --run-dir "$repo/run")
 [ "$e" = 2 ] && [ ! -s "$rec/stdout" ] && [ -s "$rec/stderr" ] && [ -f "$repo/run/finished.md" ] || { ok=0; detail="$detail [judge=idle: exit $e, stdout/stderr/finished.md]"; }
@@ -580,7 +599,7 @@ if [ "$ok" = 1 ]; then verdict CNF-25 ok "six lines, one per Seat; either family
 
 # --- CNF-26: fail open ---------------------------------------------------------------------------------
 ok=1; detail=""
-for shape in clear aggregate fail silent garbage under loose slow; do
+for shape in clear aggregate fail silent garbage under loose nul slow; do
   repo="$(new_repo)"; rec="$work/rec-probe-$shape"
   # `slow` is the bound being hit: the probe sleeps past a --probe-timeout of one second. It is
   # scripted to report fable at 100% precisely so the row can fail — an Implementation that
@@ -598,7 +617,7 @@ for shape in clear aggregate fail silent garbage under loose slow; do
     ls "$rec"/*-reviewer-1-"$rv".argv >/dev/null 2>&1 || { ok=0; detail="$detail [$shape: $rv not spawned]"; }
   done
 done
-if [ "$ok" = 1 ]; then verdict CNF-26 ok "aggregate exhaustion or a failed, silent, unparseable, under-100% or timed-out probe leaves every Seat unknown and the Panel whole"; else verdict CNF-26 fail "$detail"; fi
+if [ "$ok" = 1 ]; then verdict CNF-26 ok "aggregate exhaustion or a failed, silent, unparseable, under-100%, mid-line, NUL-split or timed-out probe leaves every Seat unknown and the Panel whole"; else verdict CNF-26 fail "$detail"; fi
 
 # --- CNF-27: an unavailable Reviewer is recorded in place, never called -------------------------------
 ok=1; detail=""

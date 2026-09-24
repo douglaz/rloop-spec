@@ -5,7 +5,9 @@
 # received, and acts.
 #
 # Script, from the environment conformance/run sets:
-#   RLOOP_FAKE_PICK          ok:task | ok:done | ok:blocked | ok:idle | ok:other | ok:nothing | fail
+#   RLOOP_FAKE_PICK          ok:task | ok:done | ok:blocked | ok:idle | ok:other | ok:nul | ok:nothing | fail
+#                            (ok:other writes STATUS: maybe; ok:nul writes STATUS: done with a NUL byte
+#                            between do and ne, which a reader that drops NUL bytes sees as done, RUN-9)
 #   RLOOP_FAKE_ROUNDS        impl=<ok|fail>;panel=<all|some|none>;judge=<...>  joined by |, one per Round
 #   RLOOP_FAKE_INTERFERENCE  - | <round>:<afterImplementer|afterPanel>:<editTask|writeFinished|both>
 #   RLOOP_FAKE_RUNS          for a Sequence: pick outcomes per Run, comma-separated (done,done,idle);
@@ -23,6 +25,7 @@
 #                            under = 99; garbage = no usage line; silent = nothing;
 #                            fail = the fable line but exit 3; loose = the words mid-line;
 #                            unlisted = families outside RUN-21's table at 100, codex-like ones too
+#                            nul = the Fable line at 100 with a NUL byte inside the percentage
 #   RLOOP_FAKE_PROBE_PICK    what the probe before the pick (RLOOP_ROUND=0) writes: one shape from
 #                            RLOOP_FAKE_PROBE's list (default: clear). RLOOP_FAKE_PROBE scripts the
 #                            Rounds' probes alone, so scripting the pick changes none of them
@@ -104,6 +107,7 @@ write_finished() { # write_finished <status word>
   case "$1" in
     done|blocked|idle) printf 'STATUS: %s\nreport from the fake %s, round %s\n' "$1" "$role" "$round" > "$run_dir/finished.md" ;;
     other) printf 'STATUS: maybe\n' > "$run_dir/finished.md" ;;
+    nul) printf 'STATUS: do\0ne\nreport from the fake %s, round %s\n' "$role" "$round" > "$run_dir/finished.md" ;;
   esac
 }
 
@@ -208,6 +212,9 @@ case "$role" in
       # as their models: a Reviewer's family comes from that table or nowhere, so all stay unknown.
       unlisted) printf 'Current week (%s): 100%% used · resets Sep 24, 3pm (UTC)\n' \
                  Sonnet Astra Sol gpt-6-astra gpt-5.6-sol ;;
+      # A NUL byte inside the percentage: the line does not begin with RUN-21's prefix, however it
+      # reads once a byte is dropped, so it must stay unknown.
+      nul)     printf 'Current week (Fable): 1\0'; printf '00%% used · resets Sep 24, 3pm (UTC)\n' ;;
     esac
     outcome=ok
     ;;

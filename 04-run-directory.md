@@ -16,10 +16,15 @@ yesterday's report. There is no emptiness scan and no resume.*
 `<toplevel>/.rloop/runs/<UTC timestamp>-<pid>/` under the git toplevel — the timestamp precise
 enough that two Runs of one Sequence, which share the pid, get distinct names — and rloop MUST
 ensure
-`<toplevel>/.rloop/.gitignore` exists containing the single line `*` before creating it. *The
-directory ignores itself: no tracked file changes, `.git` is never touched, and it works in a
-worktree, where `.git` is a file.* In a Sequence each Run gets its own directory this way and
-`--run-dir` is a usage error (`SEQ-3`).
+`<toplevel>/.rloop/.gitignore` exists holding exactly the two bytes `*` and a newline before
+creating it, rewriting a file whose bytes differ. *The directory ignores itself: no tracked file
+changes, `.git` is never touched, and it works in a worktree, where `.git` is a file.* In a
+Sequence each Run gets its own directory this way and `--run-dir` is a usage error (`SEQ-3`).
+*Amended 2026-09-23 (`rl-exact-bytes-nul-gitignore-pjc`): the rule used to say `containing the
+single line *`, which a check by eye satisfies for a pre-existing file of `*` followed by two
+newlines and for `*` with no newline at all; both are now rewritten. The bytes follow the set's
+convention for the files it writes, as `RUN-21` says of its records: `Every line of either
+record ends with a newline, the last one included`.*
 
 **DIR-3** A Run Directory MUST be used by exactly one Run. There is no flag to reuse one.
 
