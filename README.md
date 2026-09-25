@@ -15,7 +15,7 @@ executable, and run `spec/conformance/run ./result/bin/rloop`.
 
 `nix develop --command bash tools/check-all.sh` runs the gates on your host; `nix flake check`
 runs the same script inside the Nix build sandbox (`flake.nix` `checks.gates`), which is what shows
-the derivation itself builds; `.github/workflows/gates.yml` runs both in CI — in the runner's shell,
+the derivation itself builds; `.github/workflows/gates.yml` runs both in CI — the gates directly,
 and again inside that sandbox. When an agent working here runs each is `AGENTS.md`, *Gates*. The
 script runs every gate below:
 

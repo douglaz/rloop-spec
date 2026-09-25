@@ -24,10 +24,10 @@ the first and left the derivation red until `d0e25a2` added it to the second —
 sandbox-only breakage with them. Caveat: the sandbox gets the repository's *tracked* files, so
 `git add` a new gate, fixture or scenario file before running it, or the sandbox is green on a tree
 the next commit reds; and on a tree whose output is already in the store it is a cache hit —
-`running 0 flake checks...` in under a second, no gate output to quote — which
-`nix build --rebuild --no-link -L .#checks.x86_64-linux.gates` builds anyway. This is the slower
-run — it gets no incremental `lake` cache — which is why the dev-shell run stays the loop you
-iterate in.
+`running 0 flake checks...` in under a second, no gate output to quote — and
+`nix build --rebuild --no-link -L .#checks.x86_64-linux.gates` builds the check anyway. The sandbox
+run is the slower one — it gets no incremental `lake` cache — which is why the dev-shell run stays
+the loop you iterate in.
 
 A formalized clause's home is its Lean declaration in `tools/formal/`, tagged `@[req "RUN-13"]`
 (`ADR-0002`). Change the declaration and the Markdown together; a theorem that stops proving is
