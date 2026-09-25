@@ -299,8 +299,8 @@ Manager, Implementer or Reviewer argument list recorded, standard output empty, 
 holding the three `probe-pick.*` files alone, `probe-pick.md` reading `manager:unknown` and
 `implementer:unavailable`, and standard error naming `implementer`, `claude-fable-5-1` and the
 probe's line. With `--implementer-model claude-opus-5` and `Current week (Opus): 100% used`
-instead, the Run is refused the same way and standard error names `claude-opus-5`. The item
-asserts presence only: `RUN-22` sets what the message carries — `a message naming the Seat — both,
+instead, the Run is refused the same way and standard error names `claude-opus-5`. Of standard
+error the item asserts presence only: `RUN-22` sets what the message carries — `a message naming the Seat — both,
 when both are — its model, and the reset the probe reported` — and no bound on it, and `RUN-10`
 leaves the rest of the stream unspecified — `Progress and diagnostics go to standard error and
 their wording is not specified`. The pick is scripted to fail. *Again the spawn record, not the
