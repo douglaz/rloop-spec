@@ -642,7 +642,7 @@ ok=1; detail=""
 # The shapes run least to most of RUN-21's reading completed: nothing written, no usage line, no
 # family, the wrong family (CNF-31's `unlisted`, which this site does not drive), under 100, the
 # words off the line's start, the prefix broken, the exit non-zero, the bound missed. `clear` is
-# not one of them but the control the other eight are compared against, and sits beside the
+# not one of them but the control the others are compared against, and sits beside the
 # `aggregate` line it is one number away from.
 for shape in silent garbage clear aggregate under loose nul fail slow; do
   repo="$(new_repo)"; rec="$work/rec-probe-$shape"

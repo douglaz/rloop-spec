@@ -243,18 +243,18 @@ reaches its judge and ends 0. *The record is per Seat, read from each Seat's own
 copied from a Reviewer's line, and a Round's verdict on the Implementer's Seat stops nothing.*
 (`RUN-21`, `RUN-22`, `DIR-4`)
 
-**CNF-26** With both Seats' models off `RUN-21`'s table, every Seat reads `unknown` —
-`probe-1.md` compared byte for byte, as in `CNF-25` — and the Panel still runs in full, when the
-probe writes nothing; when it writes output carrying no `Current week` line; when it reports only
-`Current week (all models): 100% used`; when it reports a family at `99% used`; when a family's
-`100% used` appears somewhere other than the start of a line; when a family line's `100% used` is
-split by a NUL byte; when it reports a family at `100% used` but **exits non-zero**; and when it
-does not finish within its bound, however complete the output it would have written. In each case
-the Run reaches its judge and ends exactly as the same Run does with a probe reporting nothing
-exhausted. *These are the fail-open paths, and they are the reason `RUN-21` reads one shape and
-calls everything else `unknown`. The NUL-split line does not begin with `RUN-21`'s prefix, however
-it reads once a byte is dropped. An item that only ever saw a well-formed probe would be a green
-check over a rule nobody tested. `CNF-31` drives these shapes again, in this order, at
+**CNF-26** With both Seats' models off `RUN-21`'s table, every Seat reads `unknown` — `probe-1.md`
+compared byte for byte, as in `CNF-25` — and the Panel still runs in full, when the probe writes
+nothing; when it writes output carrying no `Current week` line; when it reports only
+`Current week (all models): 100% used`; when it reports a family at `99% used`; when it writes
+`Current week (Fable): 100% used` other than at the start of a line; when a family line's
+`100% used` is split by a NUL byte; when it reports a family at `100% used` but **exits non-zero**;
+and when it does not finish within its bound, however complete the output it would have written. In
+each case the Run reaches its judge and ends exactly as the same Run does with a probe reporting
+nothing exhausted. *These are the fail-open paths, and they are the reason `RUN-21` reads one shape
+and calls everything else `unknown`. The NUL-split line does not begin with `RUN-21`'s prefix,
+however it reads once a byte is dropped. An item that only ever saw a well-formed probe would be a
+green check over a rule nobody tested. `CNF-31` drives these shapes again at
 `the probe before the pick`, and says how the two sets differ.* (`RUN-21`)
 
 **CNF-27** With both Seats' models off `RUN-21`'s table and the probe scripted to report
