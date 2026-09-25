@@ -240,9 +240,9 @@ claude -p "/usage"
 
 It is a **Probe** (`CONTEXT.md`), not an agent: no prompt is rendered into it, no Feedback File
 comes out of it, and it takes no part in the spawn trace the Conformance Suite compares (`CNF-3`).
-One invocation covers both claude Reviewers, because it reports every claude family at once and
-answers even through a model that is itself exhausted. There is no codex command line here;
-`RUN-21` says what follows from that.
+One invocation serves every Seat, whichever model each holds, because it reports every claude
+family at once and answers even through a model that is itself exhausted; what each Seat then
+reads is `RUN-21`'s. There is no codex command line here; `RUN-21` says what follows from that.
 
 `AGT-12` through `AGT-16` each name the **Probe** beside every agent process, so it is started,
 bounded and killed by those rules rather than by anything stated here. *Everything they exist to
