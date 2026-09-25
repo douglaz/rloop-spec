@@ -15,10 +15,13 @@ set -u
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 original=
 if [ "$#" -ge 1 ]; then
+  [ -f "$1" ] && [ -x "$1" ] || { echo "not executable: $1" >&2; exit 2; }
   original="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
-  [ -f "$original" ] && [ -x "$original" ] || { echo "not executable: $1" >&2; exit 2; }
 fi
-work="$(mktemp -d "${TMPDIR:-/tmp}/rloop-panel-trace.XXXXXX")"
+# No die() yet, it is defined below; a TMPDIR that vanished mid-run left work empty and the
+# failure was named by a later cp.
+work="$(mktemp -d "${TMPDIR:-/tmp}/rloop-panel-trace.XXXXXX")" \
+  || { echo "FAIL: mktemp -d under ${TMPDIR:-/tmp} made no scratch directory" >&2; exit 1; }
 trap 'rm -rf "$work"' EXIT
 source "$here/scenario-lib.sh"
 die() { echo "FAIL: $*" >&2; exit 1; }
@@ -38,7 +41,9 @@ for cls in all some none; do
     timestamp=3
     for reviewer in $order; do
       outcome=fail
-      if [ "$cls" = all ] || { [ "$cls" = some ] && [ "$reviewer" = fable ]; }; then outcome=ok; fi
+      if [ "$cls" = all ] || { [ "$cls" = some ] && [ "$reviewer" = fable ]; }; then
+        outcome=ok
+      fi
       printf 'reviewer:1:%s:start:2\nreviewer:1:%s:end:%s:%s\n' \
         "$reviewer" "$reviewer" "$timestamp" "$outcome" >> "$rec/trace"
       timestamp=$((timestamp + 1))
@@ -125,8 +130,8 @@ cmp -s "$work/probe/late-3" "$work/probe/opus-1" && die "Round 3 repeats the scr
 echo "PASS: a Round past the probe script's last shape gets clear"
 
 # Past a script's last Round the fake fails in all three roles, which is what the model reads
-# there (`getD false`, `getD .none` and the `fail` judge in Scenarios.lean's behaviour). Round 1 of
-# the same one-Round script must differ, or a fake that failed in every Round would pass too.
+# there (`getD false`, `getD .none` and the `fail` judge in Scenarios.lean's behaviour). Round 1
+# of the same one-Round script must differ, or a fake that failed in every Round would pass too.
 rounds_dir="$work/rounds"; mkdir -p "$rounds_dir"
 rounds_exit() { # rounds_exit <fake> <role> <round> [reviewer]; echoes the exit status
   local st=0
@@ -225,7 +230,8 @@ for skipped_round in 1 2; do
   result=$(run_scenarios "$work/one.tsv" 2> "$work/diagnostic")
   cat "$work/diagnostic"
   assert_equal "$result" '1 1' "$id omitted-Reviewer verdict"
-  observed=${exp_trace/"panel$skipped_round:all:$members"/"panel$skipped_round:all:astra+fable+opus"}
+  without_sol="panel$skipped_round:all:astra+fable+opus"
+  observed=${exp_trace/"panel$skipped_round:all:$members"/"$without_sol"}
   assert_equal "$(cat "$work/diagnostic")" \
     "        $id: expected exit $exp_exit trace $exp_trace; got exit $exp_exit trace $observed" \
     "$id isolated membership mismatch"
@@ -235,7 +241,8 @@ done
 
 # The probe scripts (RUN-21, RUN-15): every generated line carrying one probe column passes
 # against the executable and goes red against a mutant that gets that case wrong. Lines are
-# selected, never edited; each mutation site must exist exactly once, or the mutant proves nothing.
+# selected, never edited; each mutation site must exist exactly once, or the mutant proves
+# nothing.
 probe_case() { # probe_case <probe column> <label> <mutation site, fixed string> <sed expression>
   local probe="$1" label="$2" site="$3" expr="$4" n result
   awk -F '\t' -v p="$probe" 'NR==1 || $6==p' "$here/scenarios.tsv" > "$work/probe.tsv"
@@ -281,7 +288,8 @@ assert_equal "$(grep -cF -- "$site" "$original")" 1 'uncalled beside a failure: 
 sed 's/\[ "\$failed" -lt 4 \]/& \&\& { unrun=0; for u in "${pids[@]}"; do [ -n "$u" ] || unrun=$((unrun + 1)); done; [ "$unrun" = 0 ] || [ "$unrun" = "$failed" ]; }/' \
   "$original" > "$work/uncalled-with-failure"
 chmod +x "$work/uncalled-with-failure"
-cmp -s "$original" "$work/uncalled-with-failure" && die 'uncalled beside a failure: the mutation changed nothing'
+cmp -s "$original" "$work/uncalled-with-failure" \
+  && die 'uncalled beside a failure: the mutation changed nothing'
 exe="$work/uncalled-with-failure"
 result=$(run_scenarios "$work/one.tsv" 2> "$work/diagnostic")
 cat "$work/diagnostic"
