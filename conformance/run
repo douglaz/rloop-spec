@@ -30,6 +30,14 @@ export -n RLOOP_FAKE_PICK RLOOP_FAKE_ROUNDS RLOOP_FAKE_INTERFERENCE RLOOP_FAKE_R
 source "$here/scenario-lib.sh"
 restrict_path
 spawn_count() { ls "$1"/*.argv 2>/dev/null | wc -l | tr -d ' '; }
+# A recorded argument list is NUL-separated, and one argument can hold newlines, so it is read
+# argument by argument — the idiom check_call reads a prompt argument with — and never flattened:
+# a string equal to a line inside an argument is not an argument of that record.
+carries_arg() { # carries_arg <record file> <string>: some argument of the record equals the string
+  local arg
+  while IFS= read -r -d '' arg; do [ "$arg" = "$2" ] && return 0; done < "$1"
+  return 1
+}
 # Both Seats on a model RUN-21's table does not name, so that no verdict of theirs stops the Run.
 off=(--manager-model "$off_table_model" --implementer-model "$off_table_model")
 # record_is <record file> <label> <verdict of each Seat, in RUN-21's order>: byte for byte, every line
@@ -162,13 +170,13 @@ if [ "$ok" = 1 ]; then verdict CNF-9 ok "exactly DIR-4's names; outputs captured
 ok=1; detail=""
 check_env() { # check_env <env file> <ROLE> <ROUND> <REVIEWER or <unset>>
   local f="$1"
-  grep -qx "ROLE=$2" "$f" || { ok=0; detail="$detail [$(basename "$f"): ROLE]"; }
-  grep -qx "ROUND=$3" "$f" || { ok=0; detail="$detail [$(basename "$f"): ROUND]"; }
-  grep -qx "RUN=1" "$f" || { ok=0; detail="$detail [$(basename "$f"): RUN]"; }
-  grep -qx "RUN_DIR=$repo/run" "$f" || { ok=0; detail="$detail [$(basename "$f"): RUN_DIR]"; }
-  grep -qx "REVIEWER=$4" "$f" || { ok=0; detail="$detail [$(basename "$f"): REVIEWER]"; }
-  grep -qx "CWD=$repo" "$f" || { ok=0; detail="$detail [$(basename "$f"): CWD]"; }
-  grep -qx "STDIN=eof" "$f" || { ok=0; detail="$detail [$(basename "$f"): STDIN]"; }
+  grep -Fqx "ROLE=$2" "$f" || { ok=0; detail="$detail [$(basename "$f"): ROLE]"; }
+  grep -Fqx "ROUND=$3" "$f" || { ok=0; detail="$detail [$(basename "$f"): ROUND]"; }
+  grep -Fqx "RUN=1" "$f" || { ok=0; detail="$detail [$(basename "$f"): RUN]"; }
+  grep -Fqx "RUN_DIR=$repo/run" "$f" || { ok=0; detail="$detail [$(basename "$f"): RUN_DIR]"; }
+  grep -Fqx "REVIEWER=$4" "$f" || { ok=0; detail="$detail [$(basename "$f"): REVIEWER]"; }
+  grep -Fqx "CWD=$repo" "$f" || { ok=0; detail="$detail [$(basename "$f"): CWD]"; }
+  grep -Fqx "STDIN=eof" "$f" || { ok=0; detail="$detail [$(basename "$f"): STDIN]"; }
 }
 check_env "$(ls "$rec"/*-manager-0.env)" manager 0 "<unset>"
 check_env "$(ls "$rec"/*-implementer-1.env)" implementer 1 "<unset>"
@@ -335,7 +343,7 @@ judges=0
 for f in "$rec"/*-manager-[1-9]*.argv; do
   [ -e "$f" ] || continue
   judges=$(( judges + 1 ))
-  tr '\0' '\n' < "$f" | grep -Fqx -- "$sid" || { ok=0; detail="$detail [judge call $(basename "$f") does not carry the id]"; }
+  carries_arg "$f" "$sid" || { ok=0; detail="$detail [judge call $(basename "$f") does not carry the id]"; }
 done
 if [ "$judges" = 0 ]; then ok=0; detail="$detail [no judge argv recorded]"
 elif [ "$judges" != 2 ]; then ok=0; detail="$detail [judge argv records: $judges, not the two this Run's two Rounds make]"; fi
@@ -554,10 +562,10 @@ present() { [ "$2" != -1 ] || { ok=0; detail="$detail [$1 never spawned]"; retur
 check_probe_env() { # check_probe_env <record tag> <RLOOP_ROUND> <label>
   local ef; ef=$(ls "$rec"/*-"$1".env 2>/dev/null | head -1)
   if [ -z "$ef" ]; then ok=0; detail="$detail [$3: no probe env recorded]"; return; fi
-  grep -qx "ROLE=probe" "$ef"   || { ok=0; detail="$detail [$3: probe ROLE]"; }
-  grep -qx "ROUND=$2" "$ef"     || { ok=0; detail="$detail [$3: probe ROUND]"; }
-  grep -qx "STDIN=eof" "$ef"    || { ok=0; detail="$detail [$3: probe stdin not closed]"; }
-  grep -qx "CWD=$(cd "$repo" && pwd -P)" "$ef" || { ok=0; detail="$detail [$3: probe cwd]"; }
+  grep -Fqx "ROLE=probe" "$ef"   || { ok=0; detail="$detail [$3: probe ROLE]"; }
+  grep -Fqx "ROUND=$2" "$ef"     || { ok=0; detail="$detail [$3: probe ROUND]"; }
+  grep -Fqx "STDIN=eof" "$ef"    || { ok=0; detail="$detail [$3: probe stdin not closed]"; }
+  grep -Fqx "CWD=$(cd "$repo" && pwd -P)" "$ef" || { ok=0; detail="$detail [$3: probe cwd]"; }
 }
 # byte for byte, not merely present: the fake's `clear` shape writes exactly this line
 clear_bytes() { printf 'Current week (all models): 67%% used · resets Sep 24, 3pm (UTC)\n'; }
@@ -833,9 +841,9 @@ repo="$(new_repo)"; rec="$work/rec-claude-judge-sid"; ok=1; detail=""
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run")
 sid=$(cat "$repo/run/session" 2>/dev/null)
 [ "$e" = 0 ] || { ok=0; detail="$detail [the Run exited $e, not 0]"; }
-# a non-empty id, because the comparison below cannot catch an empty one: a judge record carries
-# the rendered prompt, whose blank lines survive tr '\0' '\n', so grep -Fqx -- '' matches and each
-# call reads as carrying the id. The guard is what fails an empty id. CNF-9 owns what the file holds
+# without this line an empty session file can pass this item vacuously: a call rendering that empty
+# id into AGT-4-1's `<session id>` slot records an empty argument, and carries_arg matches it, so the
+# loop below reports nothing at all. This line's detail names the file; CNF-9 owns what the file holds
 [ -n "$sid" ] || { ok=0; detail="$detail [the session file is empty or absent]"; }
 # every judge call, not the first one: round 0 is the pick, which establishes the id rather than
 # resuming it, so the glob starts at 1. A record that fails names itself
@@ -843,7 +851,7 @@ judges=0
 for f in "$rec"/*-manager-[1-9]*.argv; do
   [ -e "$f" ] || continue
   judges=$(( judges + 1 ))
-  tr '\0' '\n' < "$f" | grep -Fqx -- "$sid" || { ok=0; detail="$detail [judge call $(basename "$f") does not carry the id]"; }
+  carries_arg "$f" "$sid" || { ok=0; detail="$detail [judge call $(basename "$f") does not carry the id]"; }
 done
 if [ "$judges" = 0 ]; then ok=0; detail="$detail [no judge argv recorded]"
 elif [ "$judges" != 2 ]; then ok=0; detail="$detail [judge argv records: $judges, not the two this Run's two Rounds make]"; fi
