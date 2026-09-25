@@ -833,9 +833,9 @@ repo="$(new_repo)"; rec="$work/rec-claude-judge-sid"; ok=1; detail=""
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run")
 sid=$(cat "$repo/run/session" 2>/dev/null)
 [ "$e" = 0 ] || { ok=0; detail="$detail [the Run exited $e, not 0]"; }
-# a non-empty id before the comparison: an empty or absent session file gets this one detail
-# line, not a grep -Fqx miss per judge call reading 'does not carry the id'. CNF-9 owns what
-# the file holds
+# a non-empty id, because the comparison below cannot catch an empty one: a judge record carries
+# the rendered prompt, whose blank lines survive tr '\0' '\n', so grep -Fqx -- '' matches and each
+# call reads as carrying the id. The guard is what fails an empty id. CNF-9 owns what the file holds
 [ -n "$sid" ] || { ok=0; detail="$detail [the session file is empty or absent]"; }
 # every judge call, not the first one: round 0 is the pick, which establishes the id rather than
 # resuming it, so the glob starts at 1. A record that fails names itself
