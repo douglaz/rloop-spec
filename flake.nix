@@ -36,7 +36,9 @@
         # patchShebangs: the sandbox has no /usr/bin/env, so the build copy's scripts get
         # store-path shebangs; a script a gate copies and execs carries the patched one.
         gates = pkgs.runCommandCC "rloop-spec-gates"
-          { nativeBuildInputs = [ pkgs.python3 pkgs.bash pkgs.lean4 ]; } ''
+          # git: `restrict_path` in conformance/scenario-lib.sh names it in
+          # `executable_path_needs` and exits 2 before any item without it.
+          { nativeBuildInputs = [ pkgs.python3 pkgs.bash pkgs.lean4 pkgs.git ]; } ''
           export HOME="$TMPDIR"
           cp -r ${self} src && chmod -R u+w src && cd src && patchShebangs .
           bash tools/check-all.sh
