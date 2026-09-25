@@ -245,16 +245,17 @@ copied from a Reviewer's line, and a Round's verdict on the Implementer's Seat s
 
 **CNF-26** With both Seats' models off `RUN-21`'s table, every Seat reads `unknown` —
 `probe-1.md` compared byte for byte, as in `CNF-25` — and the Panel still runs in full, when the
-probe writes nothing; when it writes output carrying no `Current week` line; when it reports a family at
-`99% used`; when it reports only `Current week (all models): 100% used`; when it reports a family
-at `100% used` but **exits non-zero**; when those words appear
-somewhere other than the start of a line; when a family line's `100% used` is split by a NUL
-byte; and when it does not finish within its bound, however complete the output it would have
-written. In each case the Run reaches its judge and ends exactly as the same Run does with a
-probe reporting nothing exhausted. *These are the fail-open paths, and they are the reason
-`RUN-21` reads one shape and calls everything else `unknown`. The NUL-split line does not begin
-with `RUN-21`'s prefix, however it reads once a byte is dropped. An item that only ever saw a
-well-formed probe would be a green check over a rule nobody tested.* (`RUN-21`)
+probe writes nothing; when it writes output carrying no `Current week` line; when it reports only
+`Current week (all models): 100% used`; when it reports a family at `99% used`; when a family's
+`100% used` appears somewhere other than the start of a line; when a family line's `100% used` is
+split by a NUL byte; when it reports a family at `100% used` but **exits non-zero**; and when it
+does not finish within its bound, however complete the output it would have written. In each case
+the Run reaches its judge and ends exactly as the same Run does with a probe reporting nothing
+exhausted. *These are the fail-open paths, and they are the reason `RUN-21` reads one shape and
+calls everything else `unknown`. The NUL-split line does not begin with `RUN-21`'s prefix, however
+it reads once a byte is dropped. An item that only ever saw a well-formed probe would be a green
+check over a rule nobody tested. `CNF-31` drives these shapes again, in this order, at
+`the probe before the pick`, and says how the two sets differ.* (`RUN-21`)
 
 **CNF-27** With both Seats' models off `RUN-21`'s table and the probe scripted to report
 `Current week (Fable): 100% used`, the Round runs no
@@ -334,15 +335,17 @@ get one Seat's row right and another's wrong.* (`RUN-22`, `RUN-21`, `RUN-7`, `RU
 `Current week (Fable): 100% used`, or `Fable` and `Opus` both at 100%, the Run starts — the pick
 is called — and ends 0, and `probe-pick.md` reads `manager:unknown`, `implementer:unknown` and
 the Reviewers' lines `CNF-25` and `CNF-27` give those reports. With the default models, the Run
-starts and ends 0, every Seat `unknown` in `probe-pick.md`, when the probe before the pick exits
-non-zero after the `Fable` line; writes those words other than at the start of a line; reports
-`99% used`; writes nothing; reports only families outside the table; reports only
-`Current week (all models): 100% used`; writes no usage line; writes a family line whose
-`100% used` is split by a NUL byte; or does not finish within `--probe-timeout 1`. *This is what
+starts and ends 0, every Seat `unknown` in `probe-pick.md`, when the probe before the pick writes
+nothing; writes no usage line; reports only `Current week (all models): 100% used`; reports only
+families outside the table; reports `99% used`; writes `Current week (Fable): 100% used` other
+than at the start of a line; writes a family line whose `100% used` is split by a NUL byte; exits
+non-zero after the `Fable` line; or does not finish within `--probe-timeout 1`. *This is what
 shows fail-open reaches the pick: the pick being called is the assertion, since a refused Run and
 an agent that failed both end without a Finished File. On the default models the Manager's or the
-Implementer's Seat misread `unavailable` here refuses the Run under `RUN-22`, so a parser that
-reads too much before the pick costs the whole Run.*
+Implementer's Seat misread `unavailable` here refuses the Run under `RUN-22`. Both sites drive
+these shapes in one order but not the same set: this one adds the families outside the table, and
+leaves out the Run `CNF-26` compares against, `with a probe reporting nothing exhausted`, which is
+that item's control rather than a fail-open shape.*
 (`RUN-21`, `RUN-22`)
 
 **CNF-32** The pick's prompt argument equals `PRM-1`'s fixture rendered as in `CNF-12`, with

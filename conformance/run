@@ -639,7 +639,12 @@ if [ "$ok" = 1 ]; then verdict CNF-25 ok "six lines, one per Seat; either family
 
 # --- CNF-26: fail open ---------------------------------------------------------------------------------
 ok=1; detail=""
-for shape in clear aggregate fail silent garbage under loose nul slow; do
+# The shapes run least to most of RUN-21's reading completed: nothing written, no usage line, no
+# family, the wrong family (CNF-31's `unlisted`, which this site does not drive), under 100, the
+# words off the line's start, the prefix broken, the exit non-zero, the bound missed. `clear` is
+# not one of them but the control the other eight are compared against, and sits beside the
+# `aggregate` line it is one number away from.
+for shape in silent garbage clear aggregate under loose nul fail slow; do
   repo="$(new_repo)"; rec="$work/rec-probe-$shape"
   # `slow` is the bound being hit: the probe sleeps past a --probe-timeout of one second. It is
   # scripted to report fable at 100% precisely so the row can fail — an Implementation that
@@ -657,7 +662,7 @@ for shape in clear aggregate fail silent garbage under loose nul slow; do
     ls "$rec"/*-reviewer-1-"$rv".argv >/dev/null 2>&1 || { ok=0; detail="$detail [$shape: $rv not spawned]"; }
   done
 done
-if [ "$ok" = 1 ]; then verdict CNF-26 ok "aggregate exhaustion or a failed, silent, unparseable, under-100%, mid-line, NUL-split or timed-out probe leaves every Seat unknown and the Panel whole"; else verdict CNF-26 fail "$detail"; fi
+if [ "$ok" = 1 ]; then verdict CNF-26 ok "a silent, unparseable, aggregate, under-100%, mid-line, NUL-split, failed or timed-out probe leaves every Seat unknown and the Panel whole"; else verdict CNF-26 fail "$detail"; fi
 
 # --- CNF-27: an unavailable Reviewer is recorded in place, never called -------------------------------
 ok=1; detail=""
@@ -800,7 +805,9 @@ for shape in fable both; do
   opus_verdict=unknown; [ "$shape" = both ] && opus_verdict=unavailable
   record_is "$repo/run/probe-pick.md" "$shape, Seats off the table" unknown unknown unavailable "$opus_verdict" unknown unknown
 done
-for shape in fail loose under silent unlisted aggregate garbage nul slow; do
+# CNF-26's order, with `unlisted` in the slot its defect gives it — a family line at 100% whose
+# family RUN-21's table does not hold — and without CNF-26's `clear`, which is that item's control.
+for shape in silent garbage aggregate unlisted under loose nul fail slow; do
   repo="$(new_repo)"; rec="$work/rec-open-pick-$shape"
   # `slow` reports `Fable` at 100% after sleeping past a one-second bound, as in CNF-26: only an
   # Implementation that honours the bound reads it `unknown`.
