@@ -44,7 +44,7 @@ identifier failures still fail the build alongside advisories.
 | `00-overview.md` | What rloop is, where it came from, design goals, non-goals, and **how much to trust this** |
 | `01-run-lifecycle.md` | The Run: pick, Round, the Finished File, exit codes, the decision table (rendered from Lean), the round cap |
 | `02-agents.md` | rloop's command line; every agent command line verbatim; the environment contract; spawning, timeouts, signals |
-| `03-prompts.md` | The five prompts verbatim, and the rendering rule |
+| `03-prompts.md` | The prompts verbatim, and the rendering rule |
 | `04-run-directory.md` | Where a Run's files go, who owns which, the Checkpoint, the threat model |
 | `05-sequence.md` | `--auto`: Runs in sequence, the clean-tree check, who commits |
 | `06-conformance.md` | What `conformance/run` proves of an Implementation, item by item, and what only a live Run can |

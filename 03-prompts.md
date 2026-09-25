@@ -1,6 +1,6 @@
 # 03 — Prompts
 
-The five prompts, verbatim. Each fenced block is the prompt's template; an Implementation renders
+The prompts, verbatim. Each fenced block is the prompt's template; an Implementation renders
 it by `PRM-6` and passes the result as the one argument `02-agents.md` marks `<… prompt>`. The
 Conformance Suite's fixtures are these blocks, and a gate holds the two identical (`ADR-0001`).
 Nothing here is checked for being a good prompt — only for being this one (`00-overview.md`, *How
