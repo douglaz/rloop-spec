@@ -338,14 +338,14 @@ the Reviewers' lines `CNF-25` and `CNF-27` give those reports. With the default 
 starts and ends 0, every Seat `unknown` in `probe-pick.md`, when the probe before the pick writes
 nothing; writes no usage line; reports only `Current week (all models): 100% used`; reports only
 families outside the table; reports `99% used`; writes `Current week (Fable): 100% used` other
-than at the start of a line; writes a family line whose `100% used` is split by a NUL byte; exits
-non-zero after the `Fable` line; or does not finish within `--probe-timeout 1`. *This is what
-shows fail-open reaches the pick: the pick being called is the assertion, since a refused Run and
-an agent that failed both end without a Finished File. On the default models the Manager's or the
-Implementer's Seat misread `unavailable` here refuses the Run under `RUN-22`. Both sites drive
-these shapes in one order but not the same set: this one adds the families outside the table, and
-leaves out the Run `CNF-26` compares against, `with a probe reporting nothing exhausted`, which is
-that item's control rather than a fail-open shape.*
+than at the start of a line; writes a family line whose `100% used` is split by a NUL byte;
+reports a family at `100% used` but **exits non-zero**; or does not finish within `--probe-timeout
+1`. *This is what shows fail-open reaches the pick: the pick being called is the assertion, since
+a refused Run and an agent that failed both end without a Finished File. On the default models the
+Manager's or the Implementer's Seat misread `unavailable` here refuses the Run under `RUN-22`.
+Both sites drive these shapes in one order but not the same set: this one adds the families
+outside the table, and leaves out the Run `CNF-26` compares against, `with a probe reporting
+nothing exhausted`, which is that item's control rather than a fail-open shape.*
 (`RUN-21`, `RUN-22`)
 
 **CNF-32** The pick's prompt argument equals `PRM-1`'s fixture rendered as in `CNF-12`, with
