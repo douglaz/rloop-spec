@@ -307,7 +307,9 @@ ok=1; detail=""
 [ "$e_codex" = 0 ] || { ok=0; detail="$detail [the codex Manager Run exited $e_codex, not 0]"; }
 grep -q '^STATUS: done' "$repo_codex/run/finished.md" 2>/dev/null || { ok=0; detail="$detail [the codex Manager Run left no done Finished File]"; }
 [ "$sid" = "00000000-0000-4000-8000-00000000cafe" ] || { ok=0; detail="$detail [session '$sid' is not the reported thread_id]"; }
-tr '\0' '\n' < "$(ls $rec/*-manager-1.argv 2>/dev/null | head -1)" | grep -qx -- "$sid" || { ok=0; detail="$detail [the judge call does not carry the id]"; }
+f=$(ls "$rec"/*-manager-1.argv 2>/dev/null | head -1)
+if [ -z "$f" ]; then ok=0; detail="$detail [no judge argv recorded]"
+else tr '\0' '\n' < "$f" | grep -qx -- "$sid" || { ok=0; detail="$detail [the judge call does not carry the id]"; }; fi
 printf '{"type":"thread.started","thread_id":"%s"}\nmanager output, round 0\n' "$sid" > "$work/expected-pick.out"
 cmp -s "$repo_codex/run/manager-pick.out" "$work/expected-pick.out" || { ok=0; detail="$detail [manager-pick.out is not the pick's output entire]"; }
 repo="$(new_repo)"; rec="$work/rec-nothread"
@@ -679,9 +681,6 @@ names() { # names <label> <text...>: standard error carries each text; a Seat's 
     esac || { ok=0; detail="$detail [$label: standard error does not name '$t']"; }
   done
 }
-not_named() { # not_named <label> <seat>: standard error does not name the Seat (RUN-22: `both, when both are`)
-  seat_words | grep -qwF -- "$2" && { ok=0; detail="$detail [$1: standard error names '$2']"; }
-}
 fable_line='Current week (Fable): 100% used · resets Sep 24, 3pm (UTC)'
 opus_line='Current week (Opus): 100% used · resets Sep 24, 3pm (UTC)'
 ok=1; detail=""
@@ -703,16 +702,14 @@ repo="$(new_repo)"; rec="$work/rec-refuse-implementer"
 e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=fable run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager-model "$off_table_model")
 refused "Implementer's Seat"
 names "Implementer's Seat" implementer claude-fable-5-1 "$fable_line"
-not_named "Implementer's Seat" manager
 record_is "$repo/run/probe-pick.md" "Implementer's Seat" unknown unavailable unavailable unknown unknown unknown
 # The table's other row, so a rule that hardcodes `fable` for the Implementer's Seat cannot pass.
 repo="$(new_repo)"; rec="$work/rec-refuse-implementer-opus"
 e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=opus run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager-model "$off_table_model" --implementer-model claude-opus-5)
 refused "Implementer's Seat on claude-opus-5"
 names "Implementer's Seat on claude-opus-5" implementer claude-opus-5 "$opus_line"
-not_named "Implementer's Seat on claude-opus-5" manager
 record_is "$repo/run/probe-pick.md" "Implementer's Seat on claude-opus-5" unknown unavailable unknown unavailable unknown unknown
-if [ "$ok" = 1 ]; then verdict CNF-29 ok "an Implementer's Seat recorded unavailable before the pick, on either row: exit 2, no agent spawned, the Seat, model and line named, the Manager's Seat not"; else verdict CNF-29 fail "$detail"; fi
+if [ "$ok" = 1 ]; then verdict CNF-29 ok "an Implementer's Seat recorded unavailable before the pick, on either row: exit 2, no agent spawned, the Seat, model and line named"; else verdict CNF-29 fail "$detail"; fi
 
 # --- CNF-30: no judge call for a Manager's Seat recorded unavailable ------------------------------------
 # The withheld judge is scripted to fail, so calling it would exit 2 as well: the missing judge,

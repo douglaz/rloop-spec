@@ -299,13 +299,17 @@ Manager, Implementer or Reviewer argument list recorded, standard output empty, 
 holding the three `probe-pick.*` files alone, `probe-pick.md` reading `manager:unknown` and
 `implementer:unavailable`, and standard error naming `implementer`, `claude-fable-5-1` and the
 probe's line. With `--implementer-model claude-opus-5` and `Current week (Opus): 100% used`
-instead, the Run is refused the same way and standard error names `claude-opus-5`. In neither Run
-does standard error name `manager`: `RUN-22`'s message names `the Seat — both, when both are`, and
-only the Implementer's is. The pick is scripted to fail. *Again the spawn record, not the status,
-is what an Implementation that refuses only for the Manager's Seat fails. The second Run is there
-because one row cannot tell a Seat read from its own model from a rule that hardcodes `fable`, and
-a per-Seat or per-site lookup can get one Seat's row right and another's wrong.* (`RUN-22`,
-`RUN-21`, `DIR-4`, `RUN-10`)
+instead, the Run is refused the same way and standard error names `claude-opus-5`. The item
+asserts presence only: `RUN-22` sets what the message carries — `a message naming the Seat — both,
+when both are — its model, and the reset the probe reported` — and no bound on it, and `RUN-10`
+leaves the rest of the stream unspecified — `Progress and diagnostics go to standard error and
+their wording is not specified`. The pick is scripted to fail. *Again the spawn record, not the
+status, is what an Implementation that refuses only for the Manager's Seat fails. The second Run is
+there because one row cannot tell a Seat read from its own model from a rule that hardcodes
+`fable`, and a per-Seat or per-site lookup can get one Seat's row right and another's wrong. A
+message naming both Seats unavailable when only one is passes here, since no sentence in the set
+forbids it; the per-Seat reading stays asserted where it is observable, in `probe-pick.md`'s
+`manager:unknown` and `implementer:unavailable`.* (`RUN-22`, `RUN-21`, `DIR-4`, `RUN-10`)
 
 **CNF-30** With the Manager's model at its default and the Implementer's off `RUN-21`'s table, the
 probes before the pick and in Round 1 reporting nothing exhausted, Round 2's reporting
