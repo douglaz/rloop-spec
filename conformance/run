@@ -826,6 +826,28 @@ opus"; seats=("${off[@]}"); model="$off_table_model" ;;
 done
 if [ "$ok" = 1 ] && [ "$prompt_ok" = 1 ]; then verdict CNF-32 ok "the pick prompt lists the Reviewer Seats the Probe before the pick read unavailable: opus; fable; fable and opus; none"; else verdict CNF-32 fail "$detail $prompt_detail"; fi
 
+# --- CNF-33: the default Manager's session id, in every judge call -----------------------------------
+# A Run of this item's own, in its own record directory: the default Manager preset (no --manager),
+# two Rounds, Round 1 judging rewrite and Round 2 done, so that there is more than one judge call
+repo="$(new_repo)"; rec="$work/rec-claude-judge-sid"; ok=1; detail=""
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run")
+sid=$(cat "$repo/run/session" 2>/dev/null)
+[ "$e" = 0 ] || { ok=0; detail="$detail [the Run exited $e, not 0]"; }
+# a non-empty id before the comparison: grep -qx over an empty one matches the trailing empty
+# line every NUL-terminated argument list ends with. CNF-9 owns what the file holds
+[ -n "$sid" ] || { ok=0; detail="$detail [the session file is empty or absent]"; }
+# every judge call, not the first one: round 0 is the pick, which establishes the id rather than
+# resuming it, so the glob starts at 1. A record that fails names itself
+judges=0
+for f in "$rec"/*-manager-[1-9]*.argv; do
+  [ -e "$f" ] || continue
+  judges=$(( judges + 1 ))
+  tr '\0' '\n' < "$f" | grep -qx -- "$sid" || { ok=0; detail="$detail [judge call $(basename "$f") does not carry the id]"; }
+done
+if [ "$judges" = 0 ]; then ok=0; detail="$detail [no judge argv recorded]"
+elif [ "$judges" != 2 ]; then ok=0; detail="$detail [judge argv records: $judges, not the two this Run's two Rounds make]"; fi
+if [ "$ok" = 1 ]; then verdict CNF-33 ok "a default-preset Run of two Rounds ends 0 and both of its judge calls carry the session file's id"; else verdict CNF-33 fail "$detail"; fi
+
 verdict CNF-22 ok "(live; by hand once per release — see 06-conformance.md)"
 
 echo

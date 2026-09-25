@@ -100,7 +100,8 @@ toplevel, and standard input at end of file on first read. (`AGT-12`, `AGT-13`)
 **CNF-11** For each role the recorded argument list equals the fixture in
 `conformance/fixtures/argv/` with the placeholders filled in: the pick's `<session id>` is the
 `session` file's content and each Run's Round 1 judge call, the one read here, carries that same
-id — `CNF-23` says `every judge call is given that same id` and is the item that reads them all;
+id — every judge call of a Run is read by `CNF-23` under `--manager codex` and by `CNF-33` under
+the default preset;
 `<manager model>` is `--manager-model`'s value, or the preset's default; `<implementer model>` is
 `--implementer-model`'s value, or the preset's default, asserted for the claude default, the codex
 default and a non-default value given on the command line; `--manager codex` produces `AGT-3`'s
@@ -358,6 +359,14 @@ hardcodes a Seat, the same argument `CNF-25` and `CNF-28` make of one row of the
 are chosen so that no Run is refused (`RUN-22`): on the default models a `Fable` report refuses
 the Run before any pick prompt exists, so the Runs that report it put both Seats off the table.*
 (`PRM-1`, `PRM-6`, `RUN-21`, `RUN-20`, `RUN-22`)
+
+**CNF-33** With the default Manager preset a Run of two Rounds — Round 1 judges `rewrite`, Round 2
+judges `done` — ends 0, and the recorded argument list of the judge call of each of those two
+Rounds carries the `session` file's id, in a Run of this item's own: `RUN-16` says `every judge
+call resumes it`, and a Run that ran one Round, or a reading that found no judge call, is a
+failure here rather than a silent pass. *Why this is not left to `CNF-11`, which reads each Run's
+Round 1 judge call alone, is `CNF-23`'s rationale, which holds of either preset.* (`RUN-16`,
+`AGT-4`, `DIR-4`)
 
 ## Not testable black-box
 
