@@ -131,6 +131,62 @@ jobs:
           grep -qF "FAIL: Round 2 Implementer: expected '1', got '0'" "$tmp/out" \
             || { echo "::error::panel-trace gate red, but not on the old succeeding defaults"; exit 1; }
 
+      # restrict_path's four groups (CNF-2), every mutation in conformance/scenario-lib.sh: one
+      # file, so one scratch copy each, as above. The first two take away a step of the function;
+      # the last two shrink a name list a refusal walks, which is what those groups pin -- a
+      # refusal that only ever covers cmp says nothing about find.
+      - name: Prove the panel-trace gate can fail on a skipped name linked anyway
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"; cp -r . "$tmp/repo"; cd "$tmp/repo"
+          conformance/test-panel-trace || { echo "::error::panel-trace gate red unmutated"; exit 1; }
+          sed -i 's|else skipped="$skipped $name"; fi|else skipped="$skipped $name"; ln -s "$work/nowhere-$name" "$private/$name"; fi|' conformance/scenario-lib.sh
+          st=0; conformance/test-panel-trace > "$tmp/out" 2>&1 || st=$?
+          cat "$tmp/out"
+          [ "$st" != 0 ] \
+            || { echo "::error::panel-trace gate passed a link for a skipped name"; exit 1; }
+          grep -qF 'FAIL: a name the host lacks: factor was linked anyway' "$tmp/out" \
+            || { echo "::error::panel-trace gate red, but not on the skipped name's link"; exit 1; }
+
+      - name: Prove the panel-trace gate can fail on a lost relative-entry normalisation
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"; cp -r . "$tmp/repo"; cd "$tmp/repo"
+          conformance/test-panel-trace || { echo "::error::panel-trace gate red unmutated"; exit 1; }
+          sed -i '/a relative PATH entry prints a relative path/d' conformance/scenario-lib.sh
+          st=0; conformance/test-panel-trace > "$tmp/out" 2>&1 || st=$?
+          cat "$tmp/out"
+          [ "$st" != 0 ] \
+            || { echo "::error::panel-trace gate passed a link made from a relative path"; exit 1; }
+          grep -qF 'FAIL: a relative PATH entry: sed links to a relative path' "$tmp/out" \
+            || { echo "::error::panel-trace gate red, but not on the relative link"; exit 1; }
+
+      - name: Prove the panel-trace gate can fail on a refusal that forgets find
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"; cp -r . "$tmp/repo"; cd "$tmp/repo"
+          conformance/test-panel-trace || { echo "::error::panel-trace gate red unmutated"; exit 1; }
+          sed -i 's/for name in cmp find; do/for name in cmp; do/' conformance/scenario-lib.sh
+          st=0; conformance/test-panel-trace > "$tmp/out" 2>&1 || st=$?
+          cat "$tmp/out"
+          [ "$st" != 0 ] \
+            || { echo "::error::panel-trace gate passed a refusal that only covers cmp"; exit 1; }
+          grep -qF "FAIL: find missing: exit status: expected '2', got '0'" "$tmp/out" \
+            || { echo "::error::panel-trace gate red, but not on the refusal that forgets find"; exit 1; }
+
+      - name: Prove the panel-trace gate can fail on a name dropped from executable_path_needs
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"; cp -r . "$tmp/repo"; cd "$tmp/repo"
+          conformance/test-panel-trace || { echo "::error::panel-trace gate red unmutated"; exit 1; }
+          sed -i 's/ sed tr timeout/ sed timeout/' conformance/scenario-lib.sh
+          st=0; conformance/test-panel-trace > "$tmp/out" 2>&1 || st=$?
+          cat "$tmp/out"
+          [ "$st" != 0 ] \
+            || { echo "::error::panel-trace gate passed executable_path_needs without tr"; exit 1; }
+          grep -qF "FAIL: a name the fakes need: exit status: expected '2', got '0'" "$tmp/out" \
+            || { echo "::error::panel-trace gate red, but not on the dropped name"; exit 1; }
+
       - name: Prove the formal gate refuses sorry
         run: |
           set -euo pipefail
