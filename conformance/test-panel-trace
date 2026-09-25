@@ -208,7 +208,9 @@ for name in $rp_drops; do
   case " $rp_skipped " in
     *" $name "*) ;; *) die "a name the host lacks: $name is not in the expected skip set" ;;
   esac
-  [ -e "$rp_work/private/$name" ] && die "a name the host lacks: $name was linked anyway"
+  # Either test: -e alone follows the link, so a dropped name linked to nothing would read as absent.
+  [ -e "$rp_work/private/$name" ] || [ -L "$rp_work/private/$name" ] \
+    && die "a name the host lacks: $name was linked anyway"
 done
 [ -L "$rp_work/private/sed" ] || die 'a name the host lacks: sed is not a symlink in the private directory'
 case "$(readlink "$rp_work/private/sed")" in
@@ -221,6 +223,7 @@ for name in cmp find; do
   thin_path "$work/thin-no-$name" "$name"
   mkdir -p "$work/rp-no-$name"
   assert_equal "$(rp_run "$work/rp-no-$name" "$work/thin-no-$name")" 2 "$name missing: exit status"
+  assert_equal "$(wc -l < "$rp_err" | tr -d ' ')" 1 "$name missing: one line and no more"
   assert_equal "$(cat "$rp_err")" "conformance: $name is not on PATH and the suite needs it" \
     "$name missing: the refusal, alone"
 done
@@ -232,6 +235,7 @@ echo 'PASS: restrict_path refuses, exit 2, when a tool the suite itself needs is
 thin_path "$work/thin-no-tr" tr
 mkdir -p "$work/rp-no-tr"
 assert_equal "$(rp_run "$work/rp-no-tr" "$work/thin-no-tr")" 2 'a name the fakes need: exit status'
+assert_equal "$(wc -l < "$rp_err" | tr -d ' ')" 1 'a name the fakes need: one line and no more'
 assert_equal "$(cat "$rp_err")" \
   "conformance: tr could not be linked into the executable's PATH and the fakes need it" \
   'a name the fakes need: the refusal, without the skip line'
