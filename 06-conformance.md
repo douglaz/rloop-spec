@@ -99,8 +99,9 @@ toplevel, and standard input at end of file on first read. (`AGT-12`, `AGT-13`)
 
 **CNF-11** For each role the recorded argument list equals the fixture in
 `conformance/fixtures/argv/` with the placeholders filled in: the pick's `<session id>` is the
-`session` file's content and every judge call carries that same id; `<manager model>` is
-`--manager-model`'s value, or the preset's default; `<implementer model>` is
+`session` file's content and each Run's Round 1 judge call, the one read here, carries that same
+id — `CNF-23` says `every judge call is given that same id` and is the item that reads them all;
+`<manager model>` is `--manager-model`'s value, or the preset's default; `<implementer model>` is
 `--implementer-model`'s value, or the preset's default, asserted for the claude default, the codex
 default and a non-default value given on the command line; `--manager codex` produces `AGT-3`'s
 and `AGT-4`'s second lists and the default produces their first;
@@ -211,10 +212,12 @@ Directories and the commits are kept as the record. (`AGT-9`, `AGT-17`, `SEQ-8`,
 **CNF-23** With `--manager codex` a Run that judges `done` ends 0 with that Finished File, the
 `session` file holds the `thread_id` of the `thread.started` event the fake wrote as the pick's
 first line of standard output, every judge call is given that same id, and `manager-pick.out`
-still holds that output byte for byte. A pick that exits 0 having written no `thread.started`
-event exits 2 with no Round run and the Run Directory kept. *The ordinary Run is asserted here and
-not left to `CNF-11`, which reads the argument lists and would stay green over a preset that
-spawns every call correctly and then exits 2.* (`RUN-16`, `AGT-3`, `AGT-4`, `DIR-4`)
+still holds that output byte for byte. That Run has two Rounds — Round 1 sends the brief back,
+Round 2 judges `done` — and the judge call of each is read, not the first alone. A pick that
+exits 0 having written no `thread.started` event exits 2 with no Round run and the Run Directory
+kept. *The ordinary Run is asserted here and not left to `CNF-11`, which reads the argument lists
+and would stay green over a preset that spawns every call correctly and then exits 2.*
+(`RUN-16`, `AGT-3`, `AGT-4`, `DIR-4`)
 
 **CNF-24** The pick runs the probe exactly once, before the pick's Manager call, with
 `RLOOP_ROUND` `0`, `RLOOP_ROLE` `probe`, standard input at end of file and the git toplevel as its
