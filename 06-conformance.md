@@ -340,9 +340,9 @@ non-zero after the `Fable` line; writes those words other than at the start of a
 `Current week (all models): 100% used`; writes no usage line; writes a family line whose
 `100% used` is split by a NUL byte; or does not finish within `--probe-timeout 1`. *This is what
 shows fail-open reaches the pick: the pick being called is the assertion, since a refused Run and
-an agent that failed both end without a Finished File. On the default models a Seat misread
-`unavailable` here refuses the Run under `RUN-22`, so a parser that reads too much before the
-pick costs the whole Run.*
+an agent that failed both end without a Finished File. On the default models the Manager's or the
+Implementer's Seat misread `unavailable` here refuses the Run under `RUN-22`, so a parser that
+reads too much before the pick costs the whole Run.*
 (`RUN-21`, `RUN-22`)
 
 **CNF-32** The pick's prompt argument equals `PRM-1`'s fixture rendered as in `CNF-12`, with
