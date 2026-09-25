@@ -7,10 +7,24 @@ as a submodule.
 
 ## Gates
 
-`nix develop --command bash tools/check-all.sh`, before you start and again before you report
-done. Run it unpiped — a pipe reports the pipeline's status, not the gate's, which is why
+`nix develop --command bash tools/check-all.sh`, before you start and again every time you change
+something. Run it unpiped — a pipe reports the pipeline's status, not the gate's, which is why
 `check-all.sh` captures each exit code directly. The shell is required: the formal gate needs
 Lean, and a missing toolchain is a red gate, not a skipped one.
+
+`nix flake check -L`, also unpiped, before you report done. It builds `flake.nix`'s `checks.gates`,
+which runs that same `tools/check-all.sh` inside the Nix build sandbox, where `PATH` holds nothing
+but the derivation's inputs and there is no `/usr/bin/env`. The dev shell has names the derivation
+does not, so a breakage that is the sandbox's alone is green there and red here.
+`conformance/scenario-lib.sh` calls `executable_path_needs` "the names the fakes and the git shim
+run under the executable's PATH", and `restrict_path` exits 2 before any item without one of them;
+besides what stdenv supplies, `checks.gates`'s `nativeBuildInputs` is what puts them on `PATH` in
+the sandbox. Those are the lists this command catches drifting apart — `cd376d3` added `git` to
+the first and left the derivation red until `d0e25a2` added it to the second — and every other
+sandbox-only breakage with them. Caveat: the sandbox gets the repository's *tracked* files, so
+`git add` a new gate, fixture or scenario file before running it, or the sandbox is green on a tree
+the next commit reds. This is the slower run — it gets no incremental `lake` cache — which is why
+the dev-shell run stays the loop you iterate in.
 
 A formalized clause's home is its Lean declaration in `tools/formal/`, tagged `@[req "RUN-13"]`
 (`ADR-0002`). Change the declaration and the Markdown together; a theorem that stops proving is
