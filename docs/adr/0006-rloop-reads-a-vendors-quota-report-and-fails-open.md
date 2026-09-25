@@ -8,9 +8,9 @@ that was never going to answer, and rloop learns this by spending the timeout an
 the next Round. Measured on the Run that produced `9bd4166`: `fable` was killed at exit 124 in both
 Rounds, roughly thirty of the Run's forty-six minutes.
 
-So rloop runs the probe `AGT-18` states before each Panel and reads the `Current week (<family>):
-<n>% used` line out of it (`RUN-21`). That is a vendor's human-facing report, with no contract
-behind it, parsed by a Specification that is otherwise language-neutral. All three advisers
+So rloop runs the probe `AGT-18` states before each Panel, and `RUN-21` reads out of it a line
+beginning `Current week (<family>): 100% used`. That is a vendor's human-facing report, with no
+contract behind it, parsed by a Specification that is otherwise language-neutral. All three advisers
 consulted on rloop-spec#3 objected to exactly that, in some form of "this encodes vendor billing
 behaviour in an orchestration Specification".
 
@@ -41,9 +41,9 @@ and the two signatures are not confusable.
   `Behaviour.seatAvailable` joins them. So a Reviewer `RUN-21` recorded `unavailable` is left out
   of its Round's `panel` entry in the trace, though not out of the Panel (`RUN-15`); a Manager's
   or Implementer's Seat unavailable before the pick refuses the Run with nothing spawned; and a
-  Manager's Seat unavailable in a Round withholds that Round's judge call (`RUN-22`). The scenario
-  file scripts them all in its `probe` and `seats` columns. It is nonetheless bounded, recorded and
-  argv-checked like everything else rloop spawns.
+  Manager's Seat unavailable in a Round withholds that Round's judge call, the exit taking its
+  place (`RUN-22`). The scenario file scripts them all in its `probe` and `seats` columns. It is
+  nonetheless bounded, recorded and argv-checked like everything else rloop spawns.
 - **No codex probe.** That vendor publishes no quota at all: `codex exec "/status"` reports the
   sandbox and `codex doctor` reports auth and reachability. The only probe available would be a
   real inference call every Round, and fail-open means not probing costs nothing but the status
