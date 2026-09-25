@@ -13,8 +13,8 @@ executable, and run `spec/conformance/run ./result/bin/rloop`.
 
 ## Gates
 
-`nix develop --command bash tools/check-all.sh` runs every gate below, and CI runs the same script
-on every push:
+`nix develop --command bash tools/check-all.sh` runs every gate below, and
+`.github/workflows/gates.yml` runs the same script in CI:
 
 | Gate | Blocking failures and advisory reports |
 |---|---|
