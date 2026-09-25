@@ -337,7 +337,7 @@ e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_NO_THREAD_ID=1 run_rloop "$repo" "$rec" -
 [ "$e" = 2 ] || { ok=0; detail="$detail [a pick reporting no id exited $e]"; }
 ls "$rec"/*-implementer-*.argv >/dev/null 2>&1 && { ok=0; detail="$detail [a Round ran after a pick reporting no id]"; }
 [ -d "$repo/run" ] || { ok=0; detail="$detail [the Run Directory was not kept]"; }
-if [ "$ok" = 1 ]; then verdict CNF-23 ok "a codex Manager Run ends 0 done; the session file holds the reported thread_id, every judge call carries it, the pick's output is kept entire, and a pick reporting none exits 2"; else verdict CNF-23 fail "$detail"; fi
+if [ "$ok" = 1 ]; then verdict CNF-23 ok "a codex Manager Run ends 0 done; the session file holds the reported thread_id, the one Round's judge call carries it, the pick's output is kept entire, and a pick reporting none exits 2"; else verdict CNF-23 fail "$detail"; fi
 
 # --- CNF-13: the base ---------------------------------------------------------------------------------
 repo="$(new_repo)"; rec="$work/rec-base"
