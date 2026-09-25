@@ -221,6 +221,7 @@ P_DIRTY_AT_START=" M README
 ?? untracked.txt"
 P_UNAVAILABLE=""
 ok=1; detail=""; prompt_ok=1; prompt_detail=""
+[ "$e" = 0 ] || { ok=0; detail="$detail [run 1: exit $e]"; }
 check_call() { # check_call <recorded glob> <argv fixture> <prompt fixture> <session> <model> <label>
   local recf prompt arg seen=0; recf=$(ls $1 2>/dev/null | head -1)
   [ -n "$recf" ] || { ok=0; detail="$detail [$6: not spawned]"; prompt_ok=0; prompt_detail="$prompt_detail [$6: not spawned]"; return; }
@@ -251,6 +252,7 @@ $repo/run/feedback-1-opus.md
 $repo/run/feedback-1-astra.md
 $repo/run/feedback-1-sol.md"
 ok=1; detail=""
+[ "$e" = 0 ] || { ok=0; detail="$detail [run 2 (codex implementer): exit $e]"; }
 check_call "$rec/*-manager-0.argv" "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid" claude-opus-5 "pick (clean, no instruction)"
 check_call "$rec/*-implementer-1.argv" "$fx/argv/AGT-6.txt" "$fx/prompts/PRM-3.txt" "$sid" gpt-6-astra "codex implementer"
 check_call "$rec/*-manager-1.argv" "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid" claude-opus-5 "judge (clean)"
@@ -274,7 +276,8 @@ argv3_ok=$ok; argv3_detail="$detail"
 # a hostile Run: the instruction holds placeholder names and bytes a rescanning or unquoted
 # substitution would change, and the Run Directory path holds {{INSTRUCTION}} (the cyclic case);
 # PRM-6 renders each once, byte for byte. The fake reads no prompt; the instruction reaches it
-# through rloop's argv alone, so no knob is needed.
+# through rloop's argv alone, so no knob is needed. The instruction reaches the pick's prompt alone
+# (PRM-2 carries no {{INSTRUCTION}}); the judge check exercises the cyclic Run Directory path only.
 repo="$(new_repo)"; rec_h="$work/rec-argv-hostile"  # its own rec and sid: CNF-23 reads the third Run's
 base_hash=$(cd "$repo" && git rev-parse HEAD)
 P_INSTRUCTION='Repair literal {{TASK_FILE}} and {{UNAVAILABLE}} tokens; keep \ & %s and {{ROUND}} as written'
@@ -288,17 +291,34 @@ $P_RUN_DIR/feedback-1-opus.md
 $P_RUN_DIR/feedback-1-astra.md
 $P_RUN_DIR/feedback-1-sol.md"
 ok=1; detail=""
+[ "$e" = 0 ] || { ok=0; detail="$detail [hostile: exit $e]"; }
 check_call "$rec_h/*-manager-0.argv" "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid_h" claude-fable-5-1 "pick (hostile instruction, cyclic run dir)"
 check_call "$rec_h/*-implementer-1.argv" "$fx/argv/AGT-5.txt" "$fx/prompts/PRM-3.txt" "$sid_h" claude-fable-5-1 "implementer (cyclic run dir)"
-check_call "$rec_h/*-manager-1.argv" "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid_h" claude-fable-5-1 "judge (hostile instruction, cyclic run dir)"
-argv_hostile_ok=$ok; argv_hostile_detail="$detail"; prompts_ok=$prompt_ok; prompts_detail="$prompt_detail"
-# a fourth Run: an Implementer model no preset defaults to. CNF-11's alone, as an Implementation without
-# the flag spawns nothing here (AGT-2); its own record directory, as CNF-23 reads the third Run's
+check_call "$rec_h/*-manager-1.argv" "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid_h" claude-fable-5-1 "judge (cyclic run dir)"
+argv_hostile_ok=$ok; argv_hostile_detail="$detail"
+# a fourth Run: the Implementer on a model no Seat defaults to ($off_table_model, scenario-lib.sh); every Seat is asserted, so a flag that moved
+# the Manager's model (the claude preset's default here) or any Reviewer's fixed one is caught. Without the
+# flag an Implementation spawns nothing here (AGT-2), failing CNF-11 and CNF-12, whose snapshot follows this Run
 repo="$(new_repo)"; rec4="$work/rec-argv4"
-e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec4" --run-dir "$repo/run" --implementer-model claude-opus-5)
-P_TASK_FILE="$repo/run/task.md"; P_RUN_DIR="$repo/run"; P_UNAVAILABLE=""
+base_hash=$(cd "$repo" && git rev-parse HEAD)
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec4" --run-dir "$repo/run" --implementer-model "$off_table_model")
+sid4=$(cat "$repo/run/session" 2>/dev/null)  # its own record directory and sid: CNF-23 reads the third Run's
+P_INSTRUCTION=""; P_TASK_FILE="$repo/run/task.md"; P_FINISHED_FILE="$repo/run/finished.md"; P_RUN_DIR="$repo/run"; P_BASE="$base_hash"
+P_ROUND=1; P_MAX_ROUNDS=10; P_IMPLEMENTER_LOG="$repo/run/implementer-1.out"; P_DIRTY_AT_START=""; P_UNAVAILABLE=""
+P_FEEDBACK_FILES="$repo/run/feedback-1-fable.md
+$repo/run/feedback-1-opus.md
+$repo/run/feedback-1-astra.md
+$repo/run/feedback-1-sol.md"
 ok=1; detail=""
-check_call "$rec4/*-implementer-1.argv" "$fx/argv/AGT-5.txt" "$fx/prompts/PRM-3.txt" x claude-opus-5 "implementer (--implementer-model claude-opus-5)"
+[ "$e" = 0 ] || { ok=0; detail="$detail [--implementer-model $off_table_model: exit $e]"; }
+check_call "$rec4/*-manager-0.argv" "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid4" claude-fable-5-1 "pick (--implementer-model $off_table_model)"
+check_call "$rec4/*-implementer-1.argv" "$fx/argv/AGT-5.txt" "$fx/prompts/PRM-3.txt" x "$off_table_model" "implementer (--implementer-model $off_table_model)"
+check_call "$rec4/*-reviewer-1-fable.argv" "$fx/argv/AGT-7.txt" "$fx/prompts/PRM-4.txt" "$sid4" x "fable (--implementer-model $off_table_model)"
+check_call "$rec4/*-reviewer-1-opus.argv" "$fx/argv/AGT-8.txt" "$fx/prompts/PRM-4.txt" "$sid4" x "opus (--implementer-model $off_table_model)"
+check_call "$rec4/*-reviewer-1-astra.argv" "$fx/argv/AGT-10-1.txt" "$fx/prompts/PRM-4.txt" "$sid4" x "astra (--implementer-model $off_table_model)"
+check_call "$rec4/*-reviewer-1-sol.argv" "$fx/argv/AGT-10-2.txt" "$fx/prompts/PRM-4.txt" "$sid4" x "sol (--implementer-model $off_table_model)"
+check_call "$rec4/*-manager-1.argv" "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid4" claude-fable-5-1 "judge (--implementer-model $off_table_model)"
+prompts_ok=$prompt_ok; prompts_detail="$prompt_detail"
 if [ "$argv_ok" = 1 ] && [ "$argv2_ok" = 1 ] && [ "$argv3_ok" = 1 ] && [ "$argv_hostile_ok" = 1 ] && [ "$ok" = 1 ]; then verdict CNF-11 ok "every role's argv is its fixture with the placeholders filled, under both presets of the Manager and the Implementer, and a model given to each"; else verdict CNF-11 fail "$argv_detail $argv2_detail $argv3_detail $argv_hostile_detail $detail"; fi
 if [ "$prompts_ok" = 1 ]; then verdict CNF-12 ok "every prompt is its fixture rendered in one pass; placeholder names, backslash, & and %s in an instruction and {{INSTRUCTION}} in the Run Directory path survive"; else verdict CNF-12 fail "$prompts_detail"; fi
 
