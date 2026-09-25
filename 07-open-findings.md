@@ -152,7 +152,7 @@ the judge withheld in Round 1 and in Round 2; the Implementer's Seat read `unava
 and the Run finishing; both Seats on the table under two probes that fail open and one clear one —
 because crossing Seats with the rest would repeat every line that no verdict of theirs can stop.
 The cost has the same shape: the 227 lines seat no model on the table, so an Implementation whose
-Seat reading leaks into a Run they script is caught only by the block and by `CNF-25` to `CNF-31`.
+Seat reading leaks into a Run they script is caught only by the block and by `CNF-25` to `CNF-32`.
 
 ## F5 — The first Implementation's findings (closed 2026-09-18)
 
