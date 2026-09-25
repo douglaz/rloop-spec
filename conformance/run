@@ -335,7 +335,7 @@ judges=0
 for f in "$rec"/*-manager-[1-9]*.argv; do
   [ -e "$f" ] || continue
   judges=$(( judges + 1 ))
-  tr '\0' '\n' < "$f" | grep -qx -- "$sid" || { ok=0; detail="$detail [judge call $(basename "$f") does not carry the id]"; }
+  tr '\0' '\n' < "$f" | grep -Fqx -- "$sid" || { ok=0; detail="$detail [judge call $(basename "$f") does not carry the id]"; }
 done
 if [ "$judges" = 0 ]; then ok=0; detail="$detail [no judge argv recorded]"
 elif [ "$judges" != 2 ]; then ok=0; detail="$detail [judge argv records: $judges, not the two this Run's two Rounds make]"; fi
@@ -842,7 +842,7 @@ judges=0
 for f in "$rec"/*-manager-[1-9]*.argv; do
   [ -e "$f" ] || continue
   judges=$(( judges + 1 ))
-  tr '\0' '\n' < "$f" | grep -qx -- "$sid" || { ok=0; detail="$detail [judge call $(basename "$f") does not carry the id]"; }
+  tr '\0' '\n' < "$f" | grep -Fqx -- "$sid" || { ok=0; detail="$detail [judge call $(basename "$f") does not carry the id]"; }
 done
 if [ "$judges" = 0 ]; then ok=0; detail="$detail [no judge argv recorded]"
 elif [ "$judges" != 2 ]; then ok=0; detail="$detail [judge argv records: $judges, not the two this Run's two Rounds make]"; fi
