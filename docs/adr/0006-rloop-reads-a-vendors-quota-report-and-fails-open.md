@@ -36,12 +36,14 @@ and the two signatures are not confusable.
 
 - **The probe is not an agent.** No prompt is rendered into it, it produces no Feedback File, and
   it takes no part in the spawn trace the model enumerates — yet its verdict reaches the model and
-  `conformance/scenarios.tsv`. `Behaviour`'s `available` and `seat` fields in
-  `tools/formal/Rloop/Loop.lean` carry it, so a Reviewer `RUN-21` recorded `unavailable` is left
-  out of its Round's `panel` members, and a Manager's or Implementer's Seat unavailable before the
-  pick refuses the Run with nothing spawned; the scenario file scripts both in its `probe` and
-  `seats` columns. It is nonetheless bounded, recorded and argv-checked like everything else rloop
-  spawns.
+  `conformance/scenarios.tsv`. In `tools/formal/Rloop/Loop.lean`, `Behaviour`'s `available` field
+  carries the verdict and its `seat` field says which row of `RUN-21`'s table each Seat reads;
+  `Behaviour.seatAvailable` joins them. So a Reviewer `RUN-21` recorded `unavailable` is left out
+  of its Round's `panel` entry in the trace, though not out of the Panel (`RUN-15`); a Manager's
+  or Implementer's Seat unavailable before the pick refuses the Run with nothing spawned; and a
+  Manager's Seat unavailable in a Round withholds that Round's judge call (`RUN-22`). The scenario
+  file scripts them all in its `probe` and `seats` columns. It is nonetheless bounded, recorded and
+  argv-checked like everything else rloop spawns.
 - **No codex probe.** That vendor publishes no quota at all: `codex exec "/status"` reports the
   sandbox and `codex doctor` reports auth and reachability. The only probe available would be a
   real inference call every Round, and fail-open means not probing costs nothing but the status
