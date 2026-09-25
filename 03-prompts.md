@@ -40,7 +40,7 @@ These paths were already modified or untracked before this Run started; they bel
 These advisers cannot answer now — their models were out of quota when rloop checked, just before this pick — so count each as a model that did not answer and do not call it:
 {{UNAVAILABLE}}
 
-Do not create, modify or delete anything under {{RUN_DIR}} except the file this prompt tells you to write.
+Run every command in the foreground and wait for it to finish; do not use your shell tool's background facility, because nothing resumes you if your turn ends while a command is still running. Do not create, modify or delete anything under {{RUN_DIR}} except the file this prompt tells you to write.
 ```
 
 *`{{UNAVAILABLE}}` names the advisers the Probe before the pick found out of quota (`PRM-6`), so
@@ -76,7 +76,7 @@ B. Another Round is needed. Rewrite {{TASK_FILE}} in place as a self-contained b
 
 If you write neither file, rloop treats it as no decision and stops.
 
-Do not create, modify or delete anything under {{RUN_DIR}} except the file this prompt tells you to write.
+Run every command in the foreground and wait for it to finish; do not use your shell tool's background facility, because nothing resumes you if your turn ends while a command is still running. Do not create, modify or delete anything under {{RUN_DIR}} except the file this prompt tells you to write.
 ```
 
 ## The Implementer

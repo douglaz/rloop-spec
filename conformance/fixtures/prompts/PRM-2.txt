@@ -22,4 +22,4 @@ B. Another Round is needed. Rewrite {{TASK_FILE}} in place as a self-contained b
 
 If you write neither file, rloop treats it as no decision and stops.
 
-Do not create, modify or delete anything under {{RUN_DIR}} except the file this prompt tells you to write.
+Run every command in the foreground and wait for it to finish; do not use your shell tool's background facility, because nothing resumes you if your turn ends while a command is still running. Do not create, modify or delete anything under {{RUN_DIR}} except the file this prompt tells you to write.

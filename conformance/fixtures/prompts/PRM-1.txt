@@ -27,4 +27,4 @@ These paths were already modified or untracked before this Run started; they bel
 These advisers cannot answer now — their models were out of quota when rloop checked, just before this pick — so count each as a model that did not answer and do not call it:
 {{UNAVAILABLE}}
 
-Do not create, modify or delete anything under {{RUN_DIR}} except the file this prompt tells you to write.
+Run every command in the foreground and wait for it to finish; do not use your shell tool's background facility, because nothing resumes you if your turn ends while a command is still running. Do not create, modify or delete anything under {{RUN_DIR}} except the file this prompt tells you to write.

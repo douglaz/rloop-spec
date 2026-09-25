@@ -423,6 +423,12 @@ to await it. Headless, nothing resumes it.
   carried the milder `Do not end your turn while a check is still running in the background; wait
   for it and report its result.` The Round 2 brief said `Run every command in the foreground and
   wait for it.` and forbade the background outright, with the reason; the Implementer complied.
+- Run `20260925T024030.524416029Z-367594`, Round 1, the **judge** (the Manager under `PRM-2`, a
+  `claude` Seat): its whole output, `manager-judge-1.out`, was one line, `The suite is halfway;
+  the rest of my work needs its final verdict list, so I'll wait for its completion notice.`
+  Neither `task.md` rewritten nor a Finished File: `RUN-12` took it as no decision, rloop exited
+  2, the Round's accepted work was left uncommitted, the bead claimed, and the Sequence stopped.
+  `PRM-2` carried no such sentence: the amendment below had reached `PRM-3` and `PRM-4` only.
 
 Amended `PRM-3` and `PRM-4` with one identical sentence before the closing one, and regenerated
 `PRM-3.txt` and `PRM-4.txt` by the fixtures tool (rl-agents-end-turn-on-background-check-twn).
@@ -431,8 +437,15 @@ tool's background facility, because nothing resumes you if your turn ends while 
 still running.` A Consultation chose the prohibition over the milder sentence and over leaving it
 to each brief: the failure is the harness's, not any task's.
 
+Amended `PRM-1` and `PRM-2` on 2026-09-25 with the same sentence in the same place, the block's
+last line before the closing one, and regenerated `PRM-1.txt` and `PRM-2.txt` by the fixtures tool
+(rl-prm2-foreground-judge-88k). `PRM-2`: `Run every command in the foreground and wait for it to
+finish; do not use your shell tool's background facility, because nothing resumes you if your
+turn ends while a command is still running.` The judge is the call whose lost turn costs the most:
+the Round's accepted work stays uncommitted and the Sequence stops.
+
 *What does not follow.* One observation of the prohibition complying, in a brief, under
 `--implementer claude`; nothing yet shows the sentence working as prompt text, nor anything under
 `--implementer codex` or from a codex Reviewer. `00-overview.md` says the prompts are `checked for
 equality, never for quality`. **Open** until a Run on an Implementation carrying the amended
-prompts shows an Implementer and a claude Reviewer running a long check to completion.
+prompts shows an Implementer, a claude Reviewer and the judge running a long check to completion.
