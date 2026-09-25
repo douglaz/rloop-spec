@@ -108,6 +108,18 @@ observed_trace() { # observed_trace <record dir>
 # A model RUN-21's table does not name: a Seat holding it reads `unknown` whatever the probe says,
 # so a Run can be refused, or its judge withheld, only where a script seats a model on the table.
 off_table_model=claude-sonnet-5
+# The invariant every reader of it rests on: no Seat defaults to it and no Reviewer's command line
+# fixes it, so an assertion naming it discriminates. The list is every model a Seat defaults to or
+# a Reviewer's command line fixes: `<manager model>`'s defaults (AGT-3), `<implementer model>`'s
+# (AGT-5, AGT-6), and the one each Reviewer's command line fixes (AGT-7, AGT-8, AGT-10, AGT-11).
+# It covers RUN-21's table too, whose entries are Reviewer models, and off the table
+# `Every other case is` `unknown`. A suite whose own fixture is wrong has nothing to report, so
+# this refuses before any item rather than letting one go red.
+case "$off_table_model" in
+  claude-fable-5-1|gpt-6-astra|claude-opus-5|gpt-6-sol)
+    echo "conformance: off_table_model is $off_table_model, a model a Seat defaults to or fixes (AGT-3, AGT-5, AGT-6, AGT-7, AGT-8, AGT-10, AGT-11), and the suite needs one no Seat defaults to and no Reviewer's command line fixes" >&2
+    exit 2 ;;
+esac
 seat_model() { # seat_model <fable|opus|anything else> -> that Reviewer's model (AGT-7, AGT-8), or the off-table one
   case $1 in fable) echo claude-fable-5-1 ;; opus) echo claude-opus-5 ;; *) echo "$off_table_model" ;; esac
 }

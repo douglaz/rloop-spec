@@ -306,9 +306,10 @@ check_call "$rec_h/*-manager-0.argv" "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.t
 check_call "$rec_h/*-implementer-1.argv" "$fx/argv/AGT-5.txt" "$fx/prompts/PRM-3.txt" "$sid_h" claude-fable-5-1 "implementer (cyclic run dir)"
 check_call "$rec_h/*-manager-1.argv" "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid_h" claude-fable-5-1 "judge (cyclic run dir)"
 argv_hostile_ok=$ok; argv_hostile_detail="$detail"
-# a fourth Run: the Implementer on a model no Seat defaults to ($off_table_model, scenario-lib.sh); every Seat is asserted, so a flag that moved
-# the Manager's model (the claude preset's default here) or any Reviewer's fixed one is caught. Without the
-# flag an Implementation spawns nothing here (AGT-2), failing CNF-11 and CNF-12, whose snapshot follows this Run
+# a fourth Run: the Implementer on a model no Seat defaults to ($off_table_model, scenario-lib.sh);
+# every Seat is asserted, so a flag that moved the Manager's model (the claude preset's default
+# here) or any Reviewer's fixed one is caught. An Implementation that does not accept the flag
+# spawns nothing here (AGT-2), failing CNF-11 and CNF-12, whose snapshot follows this Run
 repo="$(new_repo)"; rec4="$work/rec-argv4"
 base_hash=$(cd "$repo" && git rev-parse HEAD)
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec4" --run-dir "$repo/run" --implementer-model "$off_table_model")
@@ -320,7 +321,7 @@ $repo/run/feedback-1-opus.md
 $repo/run/feedback-1-astra.md
 $repo/run/feedback-1-sol.md"
 ok=1; detail=""
-[ "$e" = 0 ] || { ok=0; detail="$detail [--implementer-model $off_table_model: exit $e]"; }
+[ "$e" = 0 ] || { ok=0; detail="$detail [run 4 (implementer on a model no Seat defaults to): exit $e]"; }
 check_call "$rec4/*-manager-0.argv" "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid4" claude-fable-5-1 "pick (--implementer-model $off_table_model)"
 check_call "$rec4/*-implementer-1.argv" "$fx/argv/AGT-5.txt" "$fx/prompts/PRM-3.txt" x "$off_table_model" "implementer (--implementer-model $off_table_model)"
 check_call "$rec4/*-reviewer-1-fable.argv" "$fx/argv/AGT-7.txt" "$fx/prompts/PRM-4.txt" "$sid4" x "fable (--implementer-model $off_table_model)"
