@@ -800,7 +800,7 @@ for shape in fable both; do
   opus_verdict=unknown; [ "$shape" = both ] && opus_verdict=unavailable
   record_is "$repo/run/probe-pick.md" "$shape, Seats off the table" unknown unknown unavailable "$opus_verdict" unknown unknown
 done
-for shape in fail loose under silent unlisted aggregate garbage slow; do
+for shape in fail loose under silent unlisted aggregate garbage nul slow; do
   repo="$(new_repo)"; rec="$work/rec-open-pick-$shape"
   # `slow` reports `Fable` at 100% after sleeping past a one-second bound, as in CNF-26: only an
   # Implementation that honours the bound reads it `unknown`.

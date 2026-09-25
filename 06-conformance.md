@@ -337,9 +337,12 @@ the Reviewers' lines `CNF-25` and `CNF-27` give those reports. With the default 
 starts and ends 0, every Seat `unknown` in `probe-pick.md`, when the probe before the pick exits
 non-zero after the `Fable` line; writes those words other than at the start of a line; reports
 `99% used`; writes nothing; reports only families outside the table; reports only
-`Current week (all models): 100% used`; writes no usage line; or does not finish within
-`--probe-timeout 1`. *This is what shows fail-open reaches the pick: the pick being called is the
-assertion, since a refused Run and an agent that failed both end without a Finished File.*
+`Current week (all models): 100% used`; writes no usage line; writes a family line whose
+`100% used` is split by a NUL byte; or does not finish within `--probe-timeout 1`. *This is what
+shows fail-open reaches the pick: the pick being called is the assertion, since a refused Run and
+an agent that failed both end without a Finished File. On the default models a Seat misread
+`unavailable` here refuses the Run under `RUN-22`, so a parser that reads too much before the
+pick costs the whole Run.*
 (`RUN-21`, `RUN-22`)
 
 **CNF-32** The pick's prompt argument equals `PRM-1`'s fixture rendered as in `CNF-12`, with
