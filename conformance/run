@@ -257,10 +257,12 @@ check_call "$rec/*-manager-0.argv" "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt
 check_call "$rec/*-implementer-1.argv" "$fx/argv/AGT-6.txt" "$fx/prompts/PRM-3.txt" "$sid" gpt-6-astra "codex implementer"
 check_call "$rec/*-manager-1.argv" "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid" claude-opus-5 "judge (clean)"
 argv2_ok=$ok; argv2_detail="$detail"
-# a third Run: the codex Manager preset, at its default model, resuming the id the pick reported
+# a third Run: the codex Manager preset, at its default model, resuming the id the pick reported,
+# over two Rounds (Round 1 sends the brief back, Round 2 finishes) so that CNF-23 reads more than
+# one judge call. CNF-11 below reads Round 1's records; Round 2's are its own and read by CNF-23
 repo="$(new_repo)"; rec="$work/rec-argv3"
 base_hash=$(cd "$repo" && git rev-parse HEAD)
-e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager codex)
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager codex)
 e_codex=$e; repo_codex="$repo"
 sid=$(cat "$repo/run/session" 2>/dev/null)
 P_TASK_FILE="$repo/run/task.md"; P_FINISHED_FILE="$repo/run/finished.md"; P_RUN_DIR="$repo/run"; P_BASE="$base_hash"
@@ -327,9 +329,16 @@ ok=1; detail=""
 [ "$e_codex" = 0 ] || { ok=0; detail="$detail [the codex Manager Run exited $e_codex, not 0]"; }
 grep -q '^STATUS: done' "$repo_codex/run/finished.md" 2>/dev/null || { ok=0; detail="$detail [the codex Manager Run left no done Finished File]"; }
 [ "$sid" = "00000000-0000-4000-8000-00000000cafe" ] || { ok=0; detail="$detail [session '$sid' is not the reported thread_id]"; }
-f=$(ls "$rec"/*-manager-1.argv 2>/dev/null | head -1)
-if [ -z "$f" ]; then ok=0; detail="$detail [no judge argv recorded]"
-else tr '\0' '\n' < "$f" | grep -qx -- "$sid" || { ok=0; detail="$detail [the judge call does not carry the id]"; }; fi
+# every judge call, not the first one: round 0 is the pick, which reports the id rather than
+# carrying it, so the glob starts at 1. A record that fails names itself
+judges=0
+for f in "$rec"/*-manager-[1-9]*.argv; do
+  [ -e "$f" ] || continue
+  judges=$(( judges + 1 ))
+  tr '\0' '\n' < "$f" | grep -qx -- "$sid" || { ok=0; detail="$detail [judge call $(basename "$f") does not carry the id]"; }
+done
+if [ "$judges" = 0 ]; then ok=0; detail="$detail [no judge argv recorded]"
+elif [ "$judges" != 2 ]; then ok=0; detail="$detail [judge argv records: $judges, not the two this Run's two Rounds make]"; fi
 printf '{"type":"thread.started","thread_id":"%s"}\nmanager output, round 0\n' "$sid" > "$work/expected-pick.out"
 cmp -s "$repo_codex/run/manager-pick.out" "$work/expected-pick.out" || { ok=0; detail="$detail [manager-pick.out is not the pick's output entire]"; }
 repo="$(new_repo)"; rec="$work/rec-nothread"
@@ -337,7 +346,7 @@ e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_NO_THREAD_ID=1 run_rloop "$repo" "$rec" -
 [ "$e" = 2 ] || { ok=0; detail="$detail [a pick reporting no id exited $e]"; }
 ls "$rec"/*-implementer-*.argv >/dev/null 2>&1 && { ok=0; detail="$detail [a Round ran after a pick reporting no id]"; }
 [ -d "$repo/run" ] || { ok=0; detail="$detail [the Run Directory was not kept]"; }
-if [ "$ok" = 1 ]; then verdict CNF-23 ok "a codex Manager Run ends 0 done; the session file holds the reported thread_id, the one Round's judge call carries it, the pick's output is kept entire, and a pick reporting none exits 2"; else verdict CNF-23 fail "$detail"; fi
+if [ "$ok" = 1 ]; then verdict CNF-23 ok "a codex Manager Run of two Rounds ends 0 done; the session file holds the reported thread_id, every judge call carries it, the pick's output is kept entire, and a pick reporting none exits 2"; else verdict CNF-23 fail "$detail"; fi
 
 # --- CNF-13: the base ---------------------------------------------------------------------------------
 repo="$(new_repo)"; rec="$work/rec-base"
