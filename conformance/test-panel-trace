@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 # Regression checks for the suite's Panel-membership comparator, observed_trace in
-# scenario-lib.sh, and for the fake past a script's last Round and last probe shape, with only the
+# scenario-lib.sh, for the fake past a script's last Round and last probe shape, and for the skip
+# and the two refusals of restrict_path, the same library's executable PATH (CNF-2), with only the
 # Conformance Suite's dependencies. Always invoked directly:
 #   spec/conformance/test-panel-trace ./result/bin/rloop    in the CI of rloop-bash
 #   conformance/test-panel-trace                            as tools/check-all.sh runs it
-# Without an argument only the hand-written traces and the fake's fallthrough are checked, and one
-# NOT RUN line names the checks that need an executable: the fake-agent timeout, the positive
-# scenario replays and the mutants. The mutants are pinned to rloop-bash's source, its two literal
-# Reviewer loops in do_round and its probe reading (RUN-21), and to no other Implementation's, so
-# the argument must be the rloop-bash script. Mutants are made only in scratch space; neither the
-# executable nor its checkout is modified. The normal Conformance Suite remains
-# implementation-independent. No expected scenario is edited here.
+# Without an argument the hand-written traces, the fake's fallthrough and restrict_path's three
+# outcomes are checked, and one NOT RUN line names the checks that need an executable: the
+# fake-agent timeout, the positive scenario replays and the mutants. The mutants are pinned to
+# rloop-bash's source, its two literal Reviewer loops in do_round and its probe reading (RUN-21),
+# and to no other Implementation's, so the argument must be the rloop-bash script. Mutants are
+# made only in scratch space; neither the executable nor its checkout is modified. The normal
+# Conformance Suite remains implementation-independent. No expected scenario is edited here.
 set -u
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 original=
@@ -165,6 +166,77 @@ cmp -s "$fakes/claude" "$work/old-defaults" && die 'old-defaults control: restor
   && die 'old-defaults control: the succeeding defaults passed the new assertions'
 echo "PASS: a Round past the script's last one fails in all three roles;" \
   'the old succeeding defaults are red'
+# CNF-2's executable PATH: restrict_path's skip line and its two refusals. Every name the function
+# looks for resolves on this repository's development and CI hosts, so nothing else this repository
+# runs reaches those three paths -- they were exercised once, by hand, by a Reviewer. Drive the
+# function against a PATH built here instead. It calls exit on a refusal and overwrites the globals
+# `private` and `work`, so each invocation gets a subshell and its own fresh `work`: `mkdir -p` is
+# happy to reuse a directory, and a previous invocation's symlinks would satisfy the
+# `executable_path_needs` refusal's `[ -e ]` for a name just taken off PATH.
+thin_path() { # thin_path <dir> <names to leave out>; links every name restrict_path looks for, minus those
+  local name file dir="$1" left_out=" $2 "
+  mkdir -p "$dir"
+  for name in cmp find bash git grep sed awk $coreutils_programs; do
+    case "$left_out" in *" $name "*) continue ;; esac
+    file="$(type -P "$name")" || continue
+    case "$file" in /*) ;; *) file="$PWD/$file" ;; esac
+    ln -s "$file" "$dir/$name"
+  done
+}
+rp_err="$work/restrict-path-stderr"
+rp_run() { # rp_run <fresh work directory> <the PATH restrict_path searches>; echoes the exit status
+  local st=0
+  ( work="$1"; PATH="$2"; restrict_path ) 2>"$rp_err" || st=$?
+  echo "$st"
+}
+# The expected skip set is computed from what this host resolved, never written down: a host that
+# itself lacks a coreutils program would join it and redden a check about the three names dropped
+# here. Its order is the function's own iteration order, since the message appends in that loop.
+rp_drops='factor nproc yes' # needed by nobody: neither cmp/find, nor in executable_path_needs, nor mkdir/ln
+thin="$work/thin"; thin_path "$thin" "$rp_drops"
+rp_skipped=''
+for name in bash git grep sed awk $coreutils_programs; do
+  [ -e "$thin/$name" ] || rp_skipped="$rp_skipped $name"
+done
+rp_work="$work/rp-skip"; mkdir -p "$rp_work"
+assert_equal "$(rp_run "$rp_work" "$thin")" 0 'a name the host lacks: exit status'
+assert_equal "$(wc -l < "$rp_err" | tr -d ' ')" 1 'a name the host lacks: CNF-2 names it once'
+assert_equal "$(cat "$rp_err")" \
+  "conformance: not on this host, so not on the executable's PATH:$rp_skipped" \
+  'a name the host lacks: the whole skip line'
+for name in $rp_drops; do
+  case " $rp_skipped " in
+    *" $name "*) ;; *) die "a name the host lacks: $name is not in the expected skip set" ;;
+  esac
+  [ -e "$rp_work/private/$name" ] && die "a name the host lacks: $name was linked anyway"
+done
+[ -L "$rp_work/private/sed" ] || die 'a name the host lacks: sed is not a symlink in the private directory'
+case "$(readlink "$rp_work/private/sed")" in
+  /*) ;; *) die 'a name the host lacks: sed links to a relative path' ;;
+esac
+echo 'PASS: restrict_path leaves out what the host lacks, names it once, and links the rest'
+
+# Per name, not once for the pair: a check that only ever drops cmp says nothing about find.
+for name in cmp find; do
+  thin_path "$work/thin-no-$name" "$name"
+  mkdir -p "$work/rp-no-$name"
+  assert_equal "$(rp_run "$work/rp-no-$name" "$work/thin-no-$name")" 2 "$name missing: exit status"
+  assert_equal "$(cat "$rp_err")" "conformance: $name is not on PATH and the suite needs it" \
+    "$name missing: the refusal, alone"
+done
+echo 'PASS: restrict_path refuses, exit 2, when a tool the suite itself needs is off PATH'
+
+# tr is in executable_path_needs, so it is also in the skip set by the time the refusal fires.
+# Standard error is compared whole: it must carry the refusal and not the skip line, or the order
+# of the two could invert unnoticed.
+thin_path "$work/thin-no-tr" tr
+mkdir -p "$work/rp-no-tr"
+assert_equal "$(rp_run "$work/rp-no-tr" "$work/thin-no-tr")" 2 'a name the fakes need: exit status'
+assert_equal "$(cat "$rp_err")" \
+  "conformance: tr could not be linked into the executable's PATH and the fakes need it" \
+  'a name the fakes need: the refusal, without the skip line'
+echo 'PASS: restrict_path refuses, exit 2, when a name the fakes need cannot be linked'
+
 # Everything below needs an executable; without one, say so in a line no CI log hides.
 if [ -z "$original" ]; then
   echo 'NOT RUN: no executable given, so the fake-agent timeout, the positive scenario' \
