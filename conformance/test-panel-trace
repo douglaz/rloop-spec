@@ -222,11 +222,11 @@ echo 'PASS: restrict_path leaves out what the host lacks, names it once, and lin
 # The same thin directory, reached as a relative PATH entry from the directory that holds it:
 # `type -P` prints a relative path for it, and a link made from what it printed would dangle from
 # $private, which is somewhere else entirely. The name read is cat, which coreutils_programs has
-# and executable_path_needs does not: on a name that second list holds, restrict_path's own
-# refusal turns a dangling link into exit 2 before it returns, so an assertion on one of those
-# could never be the reason this group fails. The link is read before the exit status, because a
-# lost normalisation goes on to dangle every name the fakes need and would otherwise be reported
-# as that refusal instead of as itself.
+# and executable_path_needs does not: a regression that normalises only the names that second
+# list holds leaves every other link relative while restrict_path, whose refusal walks that list
+# alone, still returns 0 -- a read on one of those names would see nothing. The link is read
+# before the exit status, because a lost normalisation goes on to dangle every name the fakes
+# need and would otherwise be reported as that refusal instead of as itself.
 rp_rel="$work/rp-rel"; mkdir -p "$rp_rel"
 rp_rel_status="$(rp_run "$rp_rel" "${thin##*/}" "$work")"
 case "$(readlink "$rp_rel/private/cat")" in

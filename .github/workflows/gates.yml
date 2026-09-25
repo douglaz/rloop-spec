@@ -159,7 +159,7 @@ jobs:
           cat "$tmp/out"
           [ "$st" != 0 ] \
             || { echo "::error::panel-trace gate passed a link made from a relative path"; exit 1; }
-          grep -qF 'FAIL: a relative PATH entry: sed links to a relative path' "$tmp/out" \
+          grep -qF 'FAIL: a relative PATH entry: cat links to a relative path' "$tmp/out" \
             || { echo "::error::panel-trace gate red, but not on the relative link"; exit 1; }
 
       - name: Prove the panel-trace gate can fail on a refusal that forgets find
