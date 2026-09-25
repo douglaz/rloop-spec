@@ -409,8 +409,8 @@ prompts are `checked for equality, never for quality`; this is one observation, 
 
 ## F16 — Headless agents end their turn on a background check (open 2026-09-23)
 
-Three times a claude Seat started a long check in its shell tool's background and ended its turn
-to await it. Headless, nothing resumes it.
+Each observation below is a claude Seat that started a long check in its shell tool's background
+and ended its turn to await it. Headless, nothing resumes it.
 
 - Run `20260923T022252.771492072Z-505649`, Round 1, the Implementer: its whole output was
   ``Still running `u2`. I'll be re-invoked when it finishes.`` Its work was left uncommitted and
@@ -426,7 +426,7 @@ to await it. Headless, nothing resumes it.
 - Run `20260925T024030.524416029Z-367594`, Round 1, the **judge** (the Manager under `PRM-2`, a
   `claude` Seat): its whole output, `manager-judge-1.out`, was one line, `The suite is halfway;
   the rest of my work needs its final verdict list, so I'll wait for its completion notice.`
-  Neither `task.md` rewritten nor a Finished File: `RUN-12` took it as no decision, rloop exited
+  Neither `task.md` rewritten nor a Finished File: `RUN-12`'s `no decision`, so rloop exited
   2, the Round's accepted work was left uncommitted, the bead claimed, and the Sequence stopped.
   `PRM-2` carried no such sentence: the amendment below had reached `PRM-3` and `PRM-4` only.
 
