@@ -183,8 +183,9 @@ echo "PASS: actual fake-agent timeouts, exit $got_exit, trace $(observed_trace "
 rm -rf "$repo" "$rec"
 
 # Select existing generated scenarios, leaving every field (including expectations) intact.
-select_scenario() {
-  awk -F '\t' -v rounds="$1" 'NR==1 || ($4==rounds && $5=="-" && $6=="-" && $7=="-" && !found++)' \
+select_scenario() { # select_scenario <rounds> [probe column, default the unscripted probe]
+  awk -F '\t' -v rounds="$1" -v probe="${2:--}" \
+    'NR==1 || ($4==rounds && $5=="-" && $6==probe && $7=="-" && !found++)' \
     "$here/scenarios.tsv" > "$work/one.tsv"
   assert_equal "$(wc -l < "$work/one.tsv" | tr -d ' ')" 2 'one selected scenario'
   IFS=$'\t' read -r id cap pick rounds interference probe seats exp_exit exp_trace \
@@ -267,3 +268,26 @@ probe_case unlisted 'families outside the table; mutant: the codex Reviewers giv
   "*) fam='' ;;" "s/ \*) fam='' ;;/ astra) fam=Astra ;; sol) fam=Sol ;; *) fam='' ;;/"
 probe_case unlisted 'families outside the table; mutant: any family name matches' \
   '"Current week ($fam): 100% used"*)' 's/"Current week (\$fam): 100% used"\*)/"Current week ("*"): 100% used"*)/'
+
+# A Round the probe left a Reviewer out of, whose called Reviewers did not agree (RUN-15): the
+# one that succeeded is kept and the judge is reached. The mutant reads a Reviewer not run beside
+# a called one that failed as an all-down Panel, so it exits 2 with no judge; the diagnostic must
+# be that difference and nothing else, or the control is not the one it names. The zero-survivor
+# abort is the single site, and the mutant leaves it standing for the Panels it already aborts.
+select_scenario 'impl=ok;panel=some;judge=done' fable
+positive
+site='[ "$failed" -lt 4 ]'
+assert_equal "$(grep -cF -- "$site" "$original")" 1 'uncalled beside a failure: mutation site'
+sed 's/\[ "\$failed" -lt 4 \]/& \&\& { unrun=0; for u in "${pids[@]}"; do [ -n "$u" ] || unrun=$((unrun + 1)); done; [ "$unrun" = 0 ] || [ "$unrun" = "$failed" ]; }/' \
+  "$original" > "$work/uncalled-with-failure"
+chmod +x "$work/uncalled-with-failure"
+cmp -s "$original" "$work/uncalled-with-failure" && die 'uncalled beside a failure: the mutation changed nothing'
+exe="$work/uncalled-with-failure"
+result=$(run_scenarios "$work/one.tsv" 2> "$work/diagnostic")
+cat "$work/diagnostic"
+assert_equal "$result" '1 1' "$id uncalled-beside-a-failure verdict"
+assert_equal "$(cat "$work/diagnostic")" \
+  "        $id: expected exit $exp_exit trace $exp_trace; got exit 2 trace ${exp_trace%,judge1}" \
+  "$id withheld judge, unchanged membership"
+echo "PASS: $id negative control rejected (1 of 1 scenarios differ);" \
+  'the mutant keeps the survivor and withholds the judge'

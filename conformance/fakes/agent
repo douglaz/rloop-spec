@@ -179,7 +179,9 @@ case "$role" in
     case "$p" in
       all) o=ok ;;
       none) o=fail ;;
-      some) if [ "$reviewer" = fable ]; then o=ok; else o=fail; fi ;;
+      # fable and astra succeed, opus and sol fail. astra's model is one RUN-21's table does not
+      # name, so it is called whatever the probe reported: some is a mixed Panel in every Round.
+      some) case "$reviewer" in fable|astra) o=ok ;; *) o=fail ;; esac ;;
     esac
     [ "$reviewer" = fable ] && interfere afterPanel
     if [ "$o" = ok ]; then echo "No findings."; else echo "partial feedback"; status=7; fi

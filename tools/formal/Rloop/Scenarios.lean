@@ -195,13 +195,15 @@ def narrow : Alphabet :=
   { impls := implChoices.take 1, panels := panelChoices.take 1,
     judges := managerChoices.filter fun (n, _) => n == "task" || n == "nothing" || n == "done" }
 
-/-- The probe scripts draw from their own narrow alphabet: a succeeding Implementer, a Panel whose
-called Reviewers all succeed or all fail, and a judge that ends the Run or rewrites the brief —
-what the probe changes is who is called and whether the Panel is all down, and nothing after.
-`some` is left out because the fakes script it as `fable` alone succeeding, so with `fable` not
-called it is a Panel of failures, not the class the line would name. -/
+/-- The probe scripts draw from their own narrow alphabet: a succeeding Implementer, every Panel
+class, and a judge that ends the Run or rewrites the brief — what the probe changes is who is
+called and whether the Panel is all down, and nothing after. `.some` is a called Reviewer that
+failed beside one that succeeded, which `allDown` reads as not all down whatever the probe took
+out, so those lines reach their judge; `conformance/fakes/agent` scripts it as `fable` and `astra`
+succeeding, and `astra` holds a model `probeReads` above leaves called under every shape, so the
+class the line names is what each script realises. -/
 def narrowProbe : Alphabet :=
-  { impls := implChoices.take 1, panels := panelChoices.filter (·.2 != .some),
+  { impls := implChoices.take 1,
     judges := managerChoices.filter fun (n, _) => n == "task" || n == "done" }
 
 /-- Each probe script with its cap: either family at 100% and both (`RUN-21`'s table, both rows),

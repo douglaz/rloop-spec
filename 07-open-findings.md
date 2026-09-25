@@ -154,6 +154,20 @@ because crossing Seats with the rest would repeat every line that no verdict of 
 The cost has the same shape: the 227 lines seat no model on the table, so an Implementation whose
 Seat reading leaks into a Run they script is caught only by the block and by `CNF-25` to `CNF-32`.
 
+Giving the probe block the `some` Panel class took it from 237 to 256, and that growth is
+additive too: every one of the 237 kept its exit and trace byte for byte. The class had been left
+out of all seven scripts for one reason — `conformance/fakes/agent` scripted `some` as `fable`
+alone succeeding, so where a probe took `fable` out of the calls the Round was a Panel of failures
+rather than the class the line named. The reason covered three scripts of the seven, `fable`,
+`both` and Round 1 of `fable|clear`, and cost the block the one combination none of the rest
+reaches: a Round with an uncalled Reviewer, mixed outcomes among the called ones, and a judge that
+still runs. The fake now scripts `astra` succeeding beside `fable`, and `astra` holds a model
+`RUN-21`'s table does not name, so no probe shape takes it out and every script realises the
+class — the old reason is obsolete, not narrowed. The cost of the block keeps its shape: those
+lines are where an Implementation that drops a Panel's survivors once the probe has taken a
+Reviewer out is caught, and `conformance/test-panel-trace` shows one of them red against a mutant
+that reads a Reviewer not run beside a called one that failed as an all-down Panel.
+
 ## F5 — The first Implementation's findings (closed 2026-09-18)
 
 The first `rloop-bash` build from the documents alone, by an implementer with no knowledge of
