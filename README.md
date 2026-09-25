@@ -27,8 +27,10 @@ on every push:
 | `tools/check_scenarios.py` | A committed `conformance/scenarios.tsv` that is not what the model enumerates; it prints the count so growth shows in review |
 | `conformance/test-panel-trace` | A regression in the suite's Panel-membership comparator, `observed_trace` in `conformance/scenario-lib.sh`, caught on hand-written traces — such as a comparator that observes only `end` records and so loses a Reviewer that started and never finished — and a fake that, past its script's last entry, writes anything but `clear` for the probe or does not fail as Implementer, Panel and judge. The checks that need an executable — a real fake-agent timeout, the positive scenario replays and the mutants of `rloop-bash` — are not run here, and the gate says so in one `NOT RUN:` line; an Implementation that is `rloop-bash` runs them in its CI with `spec/conformance/test-panel-trace ./result/bin/rloop` |
 
-The workflow also breaks a document deliberately on every run and asserts each gate that has a
-negative control rejects it, so that green is evidence.
+On every run the workflow also proves each gate that has a negative control can fail: per control
+a scratch copy, the gate green on it unmutated, then one thing broken — a document, the suite's
+comparator or the fake agent — and the gate required to exit non-zero and print the diagnostic
+that mutation causes, so that green is evidence.
 The restatement/citation controls also run locally with
 `nix develop --command python3 tools/test_citation_gates.py`; each mutation uses a disposable
 copy and asserts the gates' exit statuses, diagnostics and tiers. Aggregate controls prove that

@@ -1,7 +1,10 @@
 name: gates
 
 # A green check that asserts nothing is worse than no check, so this workflow runs gates that
-# can fail, and then proves each one can by breaking a scratch copy of the set and requiring red.
+# can fail, and then proves each one can, on a scratch copy of the set: the gate green there
+# unmutated, then one thing broken and the gate required to exit non-zero *and* print the
+# diagnostic that this mutation causes, with the mutated run's output in the log either way
+# (ADR-0007: a control names concrete syntax and pairs with a positive one).
 
 on:
   push:
@@ -26,49 +29,120 @@ jobs:
       - name: Prove blocking and advisory citation tiers compose through all gates
         run: nix develop --command python3 tools/test_citation_gates.py
 
+      # check_ids.py prints advisory findings on a clean tree too, so this control anchors on the
+      # DANGLING: line and not on exit status alone.
       - name: Prove the identifier gate can fail
         run: |
           set -euo pipefail
           tmp="$(mktemp -d)"; cp -r . "$tmp/repo"; cd "$tmp/repo"
+          python3 tools/check_ids.py || { echo "::error::identifier gate red unmutated"; exit 1; }
           printf '\n**RUN-9999** A citation to `DIR-9999`, which does not exist.\n' >> 00-overview.md
-          if python3 tools/check_ids.py; then echo "::error::identifier gate passed a dangling citation"; exit 1; fi
+          st=0; python3 tools/check_ids.py > "$tmp/out" 2>&1 || st=$?
+          cat "$tmp/out"
+          [ "$st" != 0 ] || { echo "::error::identifier gate passed a dangling citation"; exit 1; }
+          grep -qF "DANGLING: ['DIR-9999']" "$tmp/out" \
+            || { echo "::error::identifier gate red, but not on the dangling citation"; exit 1; }
 
       - name: Prove the coverage gate can fail
         run: |
           set -euo pipefail
           tmp="$(mktemp -d)"; cp -r . "$tmp/repo"; cd "$tmp/repo"
+          python3 tools/check_coverage.py || { echo "::error::coverage gate red unmutated"; exit 1; }
           printf '\n**SEQ-11** rloop MUST do a thing no item proves.\n' >> 05-sequence.md
-          if python3 tools/check_coverage.py; then echo "::error::coverage gate passed an uncited requirement"; exit 1; fi
+          st=0; python3 tools/check_coverage.py > "$tmp/out" 2>&1 || st=$?
+          cat "$tmp/out"
+          [ "$st" != 0 ] || { echo "::error::coverage gate passed an uncited requirement"; exit 1; }
+          grep -qF 'UNCOVERED (no CNF item cites it and it is not excused): SEQ-11' "$tmp/out" \
+            || { echo "::error::coverage gate red, but not on the uncited requirement"; exit 1; }
 
       - name: Prove the fixture gate can fail
         run: |
           set -euo pipefail
           tmp="$(mktemp -d)"; cp -r . "$tmp/repo"; cd "$tmp/repo"
+          python3 tools/check_fixtures.py || { echo "::error::fixture gate red unmutated"; exit 1; }
           printf 'x' >> conformance/fixtures/prompts/PRM-1.txt
-          if python3 tools/check_fixtures.py; then echo "::error::fixture gate passed a drifted fixture"; exit 1; fi
+          st=0; python3 tools/check_fixtures.py > "$tmp/out" 2>&1 || st=$?
+          cat "$tmp/out"
+          [ "$st" != 0 ] || { echo "::error::fixture gate passed a drifted fixture"; exit 1; }
+          grep -qF 'prompts/PRM-1.txt: differs from the document' "$tmp/out" \
+            || { echo "::error::fixture gate red, but not on the drifted fixture"; exit 1; }
 
+      # Two controls in one step: the mutations are in different files and answer to different
+      # gates, so the regions mutation left in place decides nothing for the scenarios one.
       - name: Prove the regions and scenarios gates can fail
         run: |
           set -euo pipefail
           tmp="$(mktemp -d)"; cp -r . "$tmp/repo"; cd "$tmp/repo"
+          python3 tools/check_regions.py || { echo "::error::regions gate red unmutated"; exit 1; }
           sed -i 's/| judge | 0 | none | unchanged | no | \*\*exit 2\*\* |/| judge | 0 | none | unchanged | no | **next Round** |/' 01-run-lifecycle.md
-          if python3 tools/check_regions.py; then echo "::error::regions gate passed a drifted table"; exit 1; fi
+          st=0; python3 tools/check_regions.py > "$tmp/regions" 2>&1 || st=$?
+          cat "$tmp/regions"
+          [ "$st" != 0 ] || { echo "::error::regions gate passed a drifted table"; exit 1; }
+          grep -qF 'Rloop.Render.decisionTable drifted from its declaration' "$tmp/regions" \
+            || { echo "::error::regions gate red, but not on the drifted table"; exit 1; }
+          python3 tools/check_scenarios.py || { echo "::error::scenarios gate red unmutated"; exit 1; }
           sed -i '2s/\t0\t/\t2\t/; 2s/\t2\tpick/\t0\tpick/' conformance/scenarios.tsv
-          if python3 tools/check_scenarios.py; then echo "::error::scenarios gate passed a drifted file"; exit 1; fi
+          st=0; python3 tools/check_scenarios.py > "$tmp/scenarios" 2>&1 || st=$?
+          cat "$tmp/scenarios"
+          [ "$st" != 0 ] || { echo "::error::scenarios gate passed a drifted file"; exit 1; }
+          grep -qF 'FAIL: conformance/scenarios.tsv is not what the model enumerates; run with --write' \
+            "$tmp/scenarios" \
+            || { echo "::error::scenarios gate red, but not on the drifted file"; exit 1; }
 
       - name: Prove the panel-trace gate can fail
         run: |
           set -euo pipefail
           tmp="$(mktemp -d)"; cp -r . "$tmp/repo"; cd "$tmp/repo"
+          conformance/test-panel-trace || { echo "::error::panel-trace gate red unmutated"; exit 1; }
           sed -i 's/ || (\$1 == "reviewer" && \$i == "start")//' conformance/scenario-lib.sh
-          if conformance/test-panel-trace; then echo "::error::panel-trace gate passed an end-only comparator"; exit 1; fi
+          st=0; conformance/test-panel-trace > "$tmp/out" 2>&1 || st=$?
+          cat "$tmp/out"
+          [ "$st" != 0 ] || { echo "::error::panel-trace gate passed an end-only comparator"; exit 1; }
+          grep -qF 'FAIL: mixed success and timeout' "$tmp/out" \
+            || { echo "::error::panel-trace gate red, but not on the end-only comparator"; exit 1; }
+
+      # The fake's two fallthroughs past the end of a script (conformance/fakes/agent). Each
+      # restores the older, non-failing behaviour, and each gets its own scratch copy: a mutation
+      # left in place would decide the other control's verdict.
+      - name: Prove the panel-trace gate can fail on the fake's probe fallthrough
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"; cp -r . "$tmp/repo"; cd "$tmp/repo"
+          conformance/test-panel-trace || { echo "::error::panel-trace gate red unmutated"; exit 1; }
+          sed -i 's/|| shape=clear/|| shape="${shapes##*|}"/' conformance/fakes/agent
+          st=0; conformance/test-panel-trace > "$tmp/out" 2>&1 || st=$?
+          cat "$tmp/out"
+          [ "$st" != 0 ] \
+            || { echo "::error::panel-trace gate passed a repeated last probe shape"; exit 1; }
+          grep -qF "FAIL: Round 2 of a fable-only probe script: not the bytes of clear" "$tmp/out" \
+            || { echo "::error::panel-trace gate red, but not on the repeated probe shape"; exit 1; }
+
+      - name: Prove the panel-trace gate can fail on the fake's Rounds fallthrough
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"; cp -r . "$tmp/repo"; cd "$tmp/repo"
+          conformance/test-panel-trace || { echo "::error::panel-trace gate red unmutated"; exit 1; }
+          sed -i -e 's/o:-fail/o:-ok/' -e 's/p:-none/p:-all/' \
+            -e 's/; judge="${judge:-fail}"//' conformance/fakes/agent
+          st=0; conformance/test-panel-trace > "$tmp/out" 2>&1 || st=$?
+          cat "$tmp/out"
+          [ "$st" != 0 ] \
+            || { echo "::error::panel-trace gate passed the old succeeding defaults"; exit 1; }
+          grep -qF "FAIL: Round 2 Implementer: expected '1', got '0'" "$tmp/out" \
+            || { echo "::error::panel-trace gate red, but not on the old succeeding defaults"; exit 1; }
 
       - name: Prove the formal gate refuses sorry
         run: |
           set -euo pipefail
           tmp="$(mktemp -d)"; cp -r . "$tmp/repo"; cd "$tmp/repo"
+          nix develop --command bash tools/check_formal.sh \
+            || { echo "::error::formal gate red unmutated"; exit 1; }
           sed -i 's/^theorem cap_off_overruns :$/theorem cap_off_overruns : True ∧/; s/implementers (run { Guards.all with cap := false } restless 1).2 = 2 := by decide/implementers (run { Guards.all with cap := false } restless 1).2 = 2 := ⟨trivial, sorry⟩/' tools/formal/Rloop/Properties.lean
-          if nix develop --command bash tools/check_formal.sh; then echo "::error::formal gate passed a sorry"; exit 1; fi
+          st=0; nix develop --command bash tools/check_formal.sh > "$tmp/out" 2>&1 || st=$?
+          cat "$tmp/out"
+          [ "$st" != 0 ] || { echo "::error::formal gate passed a sorry"; exit 1; }
+          grep -qF 'FAIL  Rloop.cap_off_overruns (RUN-13) depends on [sorryAx]' "$tmp/out" \
+            || { echo "::error::formal gate red, but not on the sorry's axiom dependency"; exit 1; }
 
       # The same gates again, inside the Nix build sandbox (flake.nix `checks.gates`), which has
       # no /usr/bin/env and nothing on PATH but the derivation's inputs. The steps above run in a
