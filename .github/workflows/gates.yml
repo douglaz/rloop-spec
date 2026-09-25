@@ -215,9 +215,10 @@ jobs:
             || { echo "::error::formal gate red, but not on the sorry's axiom dependency"; exit 1; }
 
       # The same gates again, inside the Nix build sandbox (flake.nix `checks.gates`), which has
-      # no /usr/bin/env and nothing on PATH but the derivation's inputs. The steps above run in a
-      # `nix develop` shell on an Ubuntu runner and cannot show that the derivation builds; only
-      # this step can, and without it the derivation went red unnoticed. It costs one more Lean
-      # build plus the gates, on the toolchain `nix develop` already fetched.
+      # no /usr/bin/env and nothing on PATH but the derivation's inputs. The steps above run the
+      # gates on the Ubuntu runner, whatever shell each of them uses, and so cannot show that the
+      # derivation builds; only this step can, and without it the derivation went red unnoticed.
+      # It costs one more Lean build plus the gates, on the toolchain `nix develop` already
+      # fetched.
       - name: Run all gates in the Nix build sandbox
-        run: nix flake check
+        run: nix flake check -L
