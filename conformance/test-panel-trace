@@ -199,8 +199,12 @@ rp_skipped=''
 for name in bash git grep sed awk $coreutils_programs; do
   [ -e "$thin/$name" ] || rp_skipped="$rp_skipped $name"
 done
+# Both of this group's link reads read cat, and its exit status is asserted after them, for the
+# reasons the relative-PATH-entry group's comment below owns: cat is a name `coreutils_programs has
+# and executable_path_needs does not`, and the link is `read before the exit status` so that a
+# defect reaching both is reported as the read and not as restrict_path's refusal.
 rp_work="$work/rp-skip"; mkdir -p "$rp_work"
-assert_equal "$(rp_run "$rp_work" "$thin")" 0 'a name the host lacks: exit status'
+rp_skip_status="$(rp_run "$rp_work" "$thin")"
 assert_equal "$(wc -l < "$rp_err" | tr -d ' ')" 1 'a name the host lacks: CNF-2 names it once'
 assert_equal "$(cat "$rp_err")" \
   "conformance: not on this host, so not on the executable's PATH:$rp_skipped" \
@@ -213,10 +217,11 @@ for name in $rp_drops; do
   [ -e "$rp_work/private/$name" ] || [ -L "$rp_work/private/$name" ] \
     && die "a name the host lacks: $name was linked anyway"
 done
-[ -L "$rp_work/private/sed" ] || die 'a name the host lacks: sed is not a symlink in the private directory'
-case "$(readlink "$rp_work/private/sed")" in
-  /*) ;; *) die 'a name the host lacks: sed links to a relative path' ;;
+[ -L "$rp_work/private/cat" ] || die 'a name the host lacks: cat is not a symlink in the private directory'
+case "$(readlink "$rp_work/private/cat")" in
+  /*) ;; *) die 'a name the host lacks: cat links to a relative path' ;;
 esac
+assert_equal "$rp_skip_status" 0 'a name the host lacks: exit status'
 echo 'PASS: restrict_path leaves out what the host lacks, names it once, and links the rest'
 
 # The same thin directory, reached as a relative PATH entry from the directory that holds it:
