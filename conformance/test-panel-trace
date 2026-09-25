@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # Regression checks for the suite's Panel-membership comparator, observed_trace in
-# scenario-lib.sh, and for the fake's probe past a script's last shape, with only the Conformance
-# Suite's dependencies. Always invoked directly:
+# scenario-lib.sh, and for the fake past a script's last Round and last probe shape, with only the
+# Conformance Suite's dependencies. Always invoked directly:
 #   spec/conformance/test-panel-trace ./result/bin/rloop    in the CI of rloop-bash
 #   conformance/test-panel-trace                            as tools/check-all.sh runs it
-# Without an argument only the hand-written traces and the fake's probe are checked, and one NOT
-# RUN line names the checks that need an executable: the fake-agent timeout, the positive scenario
-# replays and the mutants. The mutants are pinned to rloop-bash's source, its two literal Reviewer
-# loops in do_round and its probe reading (RUN-21), and to no other Implementation's, so the
-# argument must be the rloop-bash script. Mutants are made only in scratch space; neither the
+# Without an argument only the hand-written traces and the fake's fallthrough are checked, and one
+# NOT RUN line names the checks that need an executable: the fake-agent timeout, the positive
+# scenario replays and the mutants. The mutants are pinned to rloop-bash's source, its two literal
+# Reviewer loops in do_round and its probe reading (RUN-21), and to no other Implementation's, so
+# the argument must be the rloop-bash script. Mutants are made only in scratch space; neither the
 # executable nor its checkout is modified. The normal Conformance Suite remains
 # implementation-independent. No expected scenario is edited here.
 set -u
@@ -116,7 +116,50 @@ probe_writes 2 fable > "$work/probe/fable-2"
 cmp -s "$work/probe/fable-1" "$work/probe/clear" && die 'Round 1 of fable writes clear'
 cmp -s "$work/probe/fable-2" "$work/probe/clear" \
   || die 'Round 2 of a fable-only probe script: not the bytes of clear'
+# A longer script too: a fake that repeated the script's last shape would pass the check above.
+probe_writes 1 opus > "$work/probe/opus-1"
+probe_writes 3 'fable|opus' > "$work/probe/late-3"
+cmp -s "$work/probe/late-3" "$work/probe/clear" \
+  || die 'Round 3 of a two-shape probe script: not the bytes of clear'
+cmp -s "$work/probe/late-3" "$work/probe/opus-1" && die "Round 3 repeats the script's last shape"
 echo "PASS: a Round past the probe script's last shape gets clear"
+
+# Past a script's last Round the fake fails in all three roles, which is what the model reads
+# there (`getD false`, `getD .none` and the `fail` judge in Scenarios.lean's behaviour). Round 1 of
+# the same one-Round script must differ, or a fake that failed in every Round would pass too.
+rounds_dir="$work/rounds"; mkdir -p "$rounds_dir"
+rounds_exit() { # rounds_exit <fake> <role> <round> [reviewer]; echoes the exit status
+  local st=0
+  rm -f "$rounds_dir/finished.md"
+  RLOOP_ROLE="$2" RLOOP_RUN=1 RLOOP_ROUND="$3" RLOOP_REVIEWER="${4:-}" \
+    RLOOP_RUN_DIR="$rounds_dir" RLOOP_FAKE_ROUNDS='impl=ok;panel=all;judge=done' \
+    RLOOP_FAKE_RECORD="$rounds_dir" "$1" </dev/null >/dev/null 2>&1 || st=$?
+  echo "$st"
+}
+rounds_case() { # rounds_case <fake>; the assertions alone, so the control can run them and fail
+  assert_equal "$(rounds_exit "$1" implementer 2)" 1 'Round 2 Implementer'
+  assert_equal "$(rounds_exit "$1" reviewer 2 fable)" 7 'Round 2 Reviewer'
+  assert_equal "$(rounds_exit "$1" manager 2)" 1 'Round 2 judge'
+  [ -e "$rounds_dir/finished.md" ] && die 'Round 2 judge wrote a Finished File'
+  assert_equal "$(rounds_exit "$1" implementer 1)" 0 'Round 1 Implementer'
+  assert_equal "$(rounds_exit "$1" reviewer 1 fable)" 0 'Round 1 Reviewer'
+  assert_equal "$(rounds_exit "$1" manager 1)" 0 'Round 1 judge'
+  [ -e "$rounds_dir/finished.md" ] || die 'Round 1 judge wrote no Finished File'
+}
+rounds_case "$fakes/claude"
+# The control (F5): a scratch copy with the old succeeding defaults restored must be red. Each
+# site must exist exactly once, or the restoration proves nothing.
+for site in 'o:-fail' 'p:-none' '; judge="${judge:-fail}"'; do
+  assert_equal "$(grep -cF -- "$site" "$fakes/claude")" 1 "old-defaults control: site $site"
+done
+sed -e 's/o:-fail/o:-ok/' -e 's/p:-none/p:-all/' -e 's/; judge="${judge:-fail}"//' \
+  "$fakes/claude" > "$work/old-defaults"
+chmod +x "$work/old-defaults"
+cmp -s "$fakes/claude" "$work/old-defaults" && die 'old-defaults control: restored nothing'
+( rounds_case "$work/old-defaults" ) 2>/dev/null \
+  && die 'old-defaults control: the succeeding defaults passed the new assertions'
+echo "PASS: a Round past the script's last one fails in all three roles;" \
+  'the old succeeding defaults are red'
 # Everything below needs an executable; without one, say so in a line no CI log hides.
 if [ -z "$original" ]; then
   echo 'NOT RUN: no executable given, so the fake-agent timeout, the positive scenario' \

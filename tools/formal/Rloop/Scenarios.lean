@@ -104,9 +104,9 @@ def RoundChoice.name (c : RoundChoice) : String :=
   s!"impl={c.impl.1};panel={c.panel.1};judge={judgeName c.judge.1}"
 
 /-- The Behaviour a script denotes: Round `k` reads the `k`-th choice; beyond the script (never
-reached, since the enumeration stops where the Run stops) the agents fail. A Round past the probe
-script's last shape reads `-`, every Reviewer available, and `conformance/fakes/agent` writes
-`clear` there so the two agree. -/
+reached, since the enumeration stops where the Run stops) the agents fail, and
+`conformance/fakes/agent` fails there too. A Round past the probe script's last shape reads `-`,
+every Reviewer available, and `conformance/fakes/agent` writes `clear` there so the two agree. -/
 def behaviour (pick : String × (Nat → ManagerResult)) (rounds : List RoundChoice)
     (interf : Option (Nat × Point × Interference)) (probes : List String) (seats : Seats := {}) :
     Behaviour :=

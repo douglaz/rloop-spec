@@ -8,7 +8,11 @@
 #   RLOOP_FAKE_PICK          ok:task | ok:done | ok:blocked | ok:idle | ok:other | ok:nul | ok:nothing | fail
 #                            (ok:other writes STATUS: maybe; ok:nul writes STATUS: done with a NUL byte
 #                            between do and ne, which a reader that drops NUL bytes sees as done, RUN-9)
-#   RLOOP_FAKE_ROUNDS        impl=<ok|fail>;panel=<all|some|none>;judge=<...>  joined by |, one per Round
+#   RLOOP_FAKE_ROUNDS        impl=<ok|fail>;panel=<all|some|none>;judge=<...>  joined by |, one per
+#                            Round (a Round past the last group, and a field its group omits,
+#                            gives a failing Implementer, a Panel no Reviewer passes and a judge
+#                            that exits non-zero having written neither file, which is what
+#                            Scenarios.lean's behaviour defaults to there)
 #   RLOOP_FAKE_INTERFERENCE  - | <round>:<afterImplementer|afterPanel>:<editTask|writeFinished|both>
 #   RLOOP_FAKE_RUNS          for a Sequence: pick outcomes per Run, comma-separated (done,done,idle);
 #                            each Run's Rounds are then RLOOP_FAKE_ROUNDS. Any word after ok: in
@@ -146,7 +150,7 @@ case "$role" in
       esac
       outcome="$pick"
     else
-      judge=$(round_field "$round" judge)
+      judge=$(round_field "$round" judge); judge="${judge:-fail}"
       case "$judge" in
         fail) status=1 ;;
         rewrite) printf 'brief %s (run %s)\n' "$(( round + 1 ))" "$run" > "$run_dir/task.md" ;;
@@ -161,7 +165,7 @@ case "$role" in
     echo "manager output, round $round"
     ;;
   implementer)
-    o=$(round_field "$round" impl); o="${o:-ok}"
+    o=$(round_field "$round" impl); o="${o:-fail}"
     if [ "${RLOOP_FAKE_COMMIT:-0}" = 1 ]; then
       echo "work $round" > "work-$round.txt" && git add "work-$round.txt" && git -c user.email=f@f -c user.name=fake commit -q -m "fake work $round"
     fi
@@ -171,7 +175,7 @@ case "$role" in
     outcome="$o"
     ;;
   reviewer)
-    p=$(round_field "$round" panel); p="${p:-all}"
+    p=$(round_field "$round" panel); p="${p:-none}"
     case "$p" in
       all) o=ok ;;
       none) o=fail ;;

@@ -25,7 +25,7 @@ on every push:
 | `tools/check_regions.py` | A marked region — the decision table in `01-run-lifecycle.md` — that is not what its Lean declaration emits |
 | `tools/check_fixtures.py` | A prompt or command-line fixture in `conformance/fixtures/` that differs from its block in `02-agents.md` or `03-prompts.md`; the Markdown is the home (`ADR-0001`) |
 | `tools/check_scenarios.py` | A committed `conformance/scenarios.tsv` that is not what the model enumerates; it prints the count so growth shows in review |
-| `conformance/test-panel-trace` | A regression in the suite's Panel-membership comparator, `observed_trace` in `conformance/scenario-lib.sh`, caught on hand-written traces — such as a comparator that observes only `end` records and so loses a Reviewer that started and never finished — and a fake whose probe, in a Round past a probe script's last shape, writes anything but `clear`. The checks that need an executable — a real fake-agent timeout, the positive scenario replays and the mutants of `rloop-bash` — are not run here, and the gate says so in one `NOT RUN:` line; an Implementation that is `rloop-bash` runs them in its CI with `spec/conformance/test-panel-trace ./result/bin/rloop` |
+| `conformance/test-panel-trace` | A regression in the suite's Panel-membership comparator, `observed_trace` in `conformance/scenario-lib.sh`, caught on hand-written traces — such as a comparator that observes only `end` records and so loses a Reviewer that started and never finished — and a fake that, past its script's last entry, writes anything but `clear` for the probe or does not fail as Implementer, Panel and judge. The checks that need an executable — a real fake-agent timeout, the positive scenario replays and the mutants of `rloop-bash` — are not run here, and the gate says so in one `NOT RUN:` line; an Implementation that is `rloop-bash` runs them in its CI with `spec/conformance/test-panel-trace ./result/bin/rloop` |
 
 The workflow also breaks a document deliberately on every run and asserts each gate that has a
 negative control rejects it, so that green is evidence.
@@ -49,7 +49,7 @@ identifier failures still fail the build alongside advisories.
 | `07-open-findings.md` | What was deferred or left open, so it is not re-raised from scratch |
 | `CONTEXT.md` | Glossary: which word means what, and which words are avoided |
 | `docs/adr/` | The decisions, and what was rejected to reach them |
-| `conformance/` | The suite: `run`, the fakes, the fixtures, `scenarios.tsv`; and `test-panel-trace`, the regression checks for the suite's Panel-membership comparator |
+| `conformance/` | The suite: `run`, the fakes, the fixtures, `scenarios.tsv`; and `test-panel-trace`, the regression checks for the suite's Panel-membership comparator and for the fake past its script's last entry |
 
 Read `00`, `01` and `04` first. `01` is the heart: rloop is the decision table and the Round
 around it, and everything else is what the agents are told and given.
