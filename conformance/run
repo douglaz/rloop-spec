@@ -500,7 +500,11 @@ done
 # reap that blocks has SIGKILLed the child before the Checkpoint renames anything, so the file
 # exists at no instant the child is alive and no poll interval can produce a false red, while a
 # Checkpoint that runs first leaves the SIGTERM-ignoring child the whole --kill-after second to see
-# it. The readiness marker is read too, for the same reason the judge's CALLS_ALIVE line is.
+# it. The readiness marker is read too, for the same reason the judge's CALLS_ALIVE line is, and
+# with it the fake's WATCH_NOT_READY record of a bounded wait that fell through: a child that
+# published after its fake exited watched no boundary. The child's own pid is read once the
+# executable has returned, as the arms above read every recorded pid, since a child left alive but
+# unable to run finds the file no more than a reaped one does.
 repo="$(new_repo)"; rec="$work/rec-reap-checkpoint"
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_INTERFERENCE=1:afterImplementer:editTask \
   RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=implementer RLOOP_FAKE_WATCH=implementer:rejected-1-task.md \
@@ -508,7 +512,10 @@ e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLO
 [ "$e" = 0 ] || { ok=0; detail="$detail [checkpoint: exit $e]"; }
 [ -f "$repo/run/rejected-1-task.md" ] || { ok=0; detail="$detail [checkpoint: no rejected-1-task.md, so the Checkpoint had nothing to witness]"; }
 ls "$rec"/*-implementer-1.watching >/dev/null 2>&1 || { ok=0; detail="$detail [checkpoint: the Implementer's child never published that it was watching]"; }
+grep -q '^WATCH_NOT_READY=' "$rec"/*.env 2>/dev/null && { ok=0; detail="$detail [checkpoint: the Implementer's fake exited before its child published that it was watching]"; }
 ls "$rec"/*.seen >/dev/null 2>&1 && { ok=0; detail="$detail [checkpoint: the Implementer's child saw rejected-1-task.md, so its group outlived the call and ran through the Checkpoint]"; }
+gc=$(sed -n 's/^GRANDCHILD=//p' "$rec"/*-implementer-1.env 2>/dev/null)
+{ [ -n "$gc" ] && ! kill -0 "$gc" 2>/dev/null; } || { ok=0; detail="$detail [checkpoint: the Implementer's child ${gc:-(unrecorded)} is alive once the executable has returned]"; }
 kill_recorded "$rec"
 if [ "$ok" = 1 ]; then verdict CNF-34 ok "a call that exits 0 leaves neither its own process nor anything in its group, for a Manager call and for the Implementer, and the Implementer's group is gone before the Checkpoint that follows it"; else verdict CNF-34 fail "$detail"; fi
 

@@ -464,27 +464,42 @@ the Round's accepted work stays uncommitted and the Sequence stops.
 equality, never for quality`. **Open** until a Run on an Implementation carrying the amended
 prompts shows an Implementer, a claude Reviewer and the judge running a long check to completion.
 
-## F17 — What `CNF-34` cannot separate, and the arm no mutant reddens (open 2026-09-26)
+## F17 — A claim about `CNF-24` withdrawn, and the arm no mutant reddens (open 2026-09-26)
 
-Two residuals of `rl-cnf34-step-not-call-nfy`, the change that gave `CNF-34` a witness of the
-Checkpoint boundary. Both had lived only in commit messages until now.
+Residuals of `rl-cnf34-step-not-call-nfy`, the change that gave `CNF-34` a witness of the
+Checkpoint boundary, and the claim that change carried and this one withdraws. They had lived only
+in commit messages until now.
 
-*`CNF-34`'s own-process assertion and `CNF-24` cannot be separated by any mutant.* `CNF-24` orders
-a Run's calls by the `NNN-` prefix each fake writes as it **starts**, so it cannot see whether an
-earlier call's process had **exited**; and an Implementation that holds a call's own process past
-the next call necessarily overlaps the two calls' starts. Every mutant that reddens the own-process
-assertion at a *call* boundary therefore reddens `CNF-24` beside it, which is what the early-probe
-mutant did. This is reasoning, not measurement: nothing was searched exhaustively, and the claim is
-that no separating mutant exists, not that one was built and found wanting. The Checkpoint arm is
-outside the argument — its boundary is a step and no call, and the Checkpoint-before-reap mutant
-reddens `CNF-34` alone, `CNF-24` green beside it.
+*`CNF-34`'s own-process assertion at a call boundary is separable from `CNF-24`, and a mutant
+separates it.* `CNF-24` orders a Run's calls by the `NNN-` prefix each fake writes as it
+**starts** — it has every Round run the probe `after that Round's Implementer and before any of
+its Reviewers starts` — so it cannot see whether an earlier call's process had **exited**, and an
+Implementer still alive when the probe starts leaves it green. The own-process assertion of
+`CNF-34` carries that boundary alone. The mutant was built and measured this Round, by the `opus`
+Reviewer and reproduced by `astra`: the reaping scratch copy of rloop-bash with the Checkpoint and
+the probe's spawn moved ahead of the Implementer's reap — the plain `AGT-15` violation at a call
+boundary — gives a red `CNF-34` naming `implementer-1` alive when a later call started, `CNF-24`
+green beside it and every other verdict line as in the unmutated run. `3e334bb`'s commit message
+argued that no such mutant exists and `eb4936f` carried the claim into this finding; it was
+reasoning rather than measurement, and it is **withdrawn as unsound**. It is recorded here rather
+than edited out of history so that it is not argued a third time. The Checkpoint arm was never
+inside that argument — its boundary is a step and no call, and the Checkpoint-before-reap mutant
+reddens `CNF-34` alone.
 
-*The `manager-0` arm of the own-process loop has no mutant behind it.* Both mutants built for this
-work redden the `implementer-1` arm: the probe started before the Implementer's group is reaped,
-and the Checkpoint run before it. The `manager-0` arm is the same predicate over a pid that later
-records do carry, so it is live code and not dead, and it is exercised green on every run — but
-nothing demonstrates it red, which is the standard `AGENTS.md` sets when it says *a guard without
-one is decoration*.
+*The `manager-0` arm of the own-process loop has no mutant behind it.* Of the mutants built for
+this work, the one that reddens the own-process loop's `implementer-1` arm is the probe started
+before the Implementer's group is reaped; the Checkpoint run before that reap reddens the new
+Checkpoint witness alone, since it still waits for the Implementer's own process and leaves
+`CALLS_ALIVE` clean. The `manager-0` arm is the same predicate over a pid that later records do
+carry, so it is live code and not dead, and it is exercised green on every run — but nothing
+demonstrates it red, which is the standard `AGENTS.md` sets when it says *a guard without one is
+decoration*. Those demonstrations leave the arm's interference knob unexercised besides: rloop-bash
+`02c6206`'s Checkpoint compares with `cmp -s` (`bin/rloop:286`), and of `cmp` and `find` `CNF-2`
+says they `are the suite's own and are not on the executable's PATH`, so that executable sets
+`task.md` aside whether or not the Implementer ticked it — the arm re-run with
+`RLOOP_FAKE_INTERFERENCE` removed gave the same green and the same red, so the flip is the reap
+boundary's alone, but neither `RLOOP_FAKE_INTERFERENCE=1:afterImplementer:editTask` nor the guard
+against a missing `rejected-1-task.md` is demonstrated by that executable.
 
 *What `CNF-34` still reads at the next call alone.* The Checkpoint after the Implementer is the one
 step boundary the item now observes, and it is the boundary whose files a straggler races

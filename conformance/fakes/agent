@@ -58,8 +58,10 @@
 #                            still says which calls get one; this one only changes what it does,
 #                            which is how a step that is no agent call can be witnessed at all. The
 #                            child writes <tag>.watching before its first poll and the fake waits
-#                            for it, so a child that never polled cannot leave the witness absent by
-#                            silence. Both files go under RLOOP_FAKE_RECORD and never into the
+#                            for it under a bound, recording WATCH_NOT_READY=1 in its .env record
+#                            when that wait falls through, so neither a child that never polled nor
+#                            one that published after its fake exited can leave the witness absent
+#                            by silence. Both files go under RLOOP_FAKE_RECORD and never into the
 #                            working tree, which RLOOP_FAKE_DIRTY_AT_DONE is the knob for
 #   RLOOP_FAKE_DIRTY_AT_DONE 1 = the Manager leaves an untracked file in the tree when it writes done
 #   RLOOP_FAKE_COMMIT        1 = the Implementer commits a file during its call
@@ -113,15 +115,18 @@ if { [ "$gc_ignore_term" = 1 ] && [ "$sleep_for" != 0 ]; } || [ "$gc_ignore_term
   # A subshell, not a bare sleep: the ignored disposition is set here and inherited by sleep, so
   # the group's SIGTERM ends neither; only the group's SIGKILL does.
   if [ "${watch%%:*}" = "$role" ]; then
-    # The same child, polling rather than sleeping, for the same 30 seconds in fiftieths.
+    # The same child, polling rather than sleeping, for the same 30 seconds in twentieths.
     ( trap '' TERM; : > "$rec/$tag.watching"; i=0
       while [ "$i" -lt 600 ]; do
         [ -e "$run_dir/${watch#*:}" ] && { : > "$rec/$tag.seen"; break; }
         sleep 0.05; i=$(( i + 1 ))
       done ) & echo "GRANDCHILD=$!" >> "$rec/$tag.env"
     # Wait for the child to be watching before this fake exits: a child SIGKILLed before its first
-    # poll would leave the witness absent whatever the Implementation did.
+    # poll would leave the witness absent whatever the Implementation did. The wait stays bounded,
+    # so a starved child reports instead of hanging the suite, and the fall-through is recorded:
+    # publishing after the fake exited is a red item, not a witness that was never watching.
     i=0; while [ ! -e "$rec/$tag.watching" ] && [ "$i" -lt 200 ]; do sleep 0.05; i=$(( i + 1 )); done
+    [ -e "$rec/$tag.watching" ] || echo "WATCH_NOT_READY=1" >> "$rec/$tag.env"
   else
     ( trap '' TERM; sleep 30 ) & echo "GRANDCHILD=$!" >> "$rec/$tag.env"
   fi
