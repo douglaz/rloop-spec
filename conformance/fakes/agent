@@ -46,11 +46,9 @@
 #                            name in place of 1 (manager|implementer|reviewer|probe) gives every
 #                            fake of that role such a child, sleeping or not, and no fake of
 #                            another role: a healthy call that exits 0 leaving one behind.
-#                            Every fake's .env record also carries GRANDCHILDREN_ALIVE=<pids> and
-#                            CALLS_ALIVE=<pids>, both written before it sleeps, spawns or traces:
-#                            the previously recorded GRANDCHILD pids, and the previously recorded
-#                            PID pids other than this call's own, still running when this call
-#                            started (empty when none)
+#                            Every fake's .env record also carries GRANDCHILDREN_ALIVE=<pids>,
+#                            written before it sleeps, spawns or traces: the previously recorded
+#                            GRANDCHILD pids still running when this call started (empty when none)
 #   RLOOP_FAKE_WATCH         <role>:<name> = what that role's SIGTERM-ignoring child does instead of
 #                            sleeping: poll for <name> under RLOOP_RUN_DIR and, when it appears,
 #                            write <tag>.seen into RLOOP_FAKE_RECORD. It is the same child
@@ -68,6 +66,10 @@
 #   RLOOP_FAKE_THREAD_ID     the thread_id a codex Manager pick reports (default: …cafe)
 #   RLOOP_FAKE_NO_THREAD_ID  1 = a codex Manager pick reports no thread.started event
 #   RLOOP_FAKE_RECORD        directory the fake records into (required)
+#
+# No knob turns it on: every fake of every Run also carries CALLS_ALIVE=<pids> in its .env record,
+# written before it sleeps, spawns or traces — the previously recorded PID pids other than this
+# call's own, still running when this call started (empty when none).
 set -u
 
 rec="${RLOOP_FAKE_RECORD:?}"

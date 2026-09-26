@@ -171,13 +171,16 @@ its call, and not only before the next call.
 *A call that exits 0 is what `AGT-14`'s `At the limit` never reaches, and leaving a check running is
 a habit `07-open-findings.md`'s `F16` records: the child of a healthy Implementer writes into the
 working tree through the whole Panel and the Manager's commit. `CNF-17` reads the same record for
-the reaping after a timeout. The pick and the Implementer are the calls whose own process a later
-call's record can speak for: `RUN-8` has the Panel's Reviewers spawned so that `none waits for
-another to finish`, so a Reviewer that finds a sibling's process alive has found that working. The
-Checkpoint starts no call, so no record of a later one speaks for that boundary and the straggler
-is the witness; the appended Task File is what makes `DIR-6` `move task.md to rejected-<r>-task.md`
-there, and the child's recorded readiness is what keeps its silence from passing for compliance.
-`F17` names the boundaries this item still reads at the next call alone.*
+the reaping after a timeout. Of the calls whose own process a later call's record can speak for,
+this item names the pick and the Implementer: a Reviewer's is out because `RUN-8` has the Panel's
+Reviewers spawned so that `none waits for another to finish`, so a Reviewer that finds a sibling's
+process alive has found that working, and the Probe's is out for scope — `RUN-21` runs it
+`once before the pick` and `once immediately before each Round's Panel`, as sequential as the two
+named, and no item drives it yet. The Checkpoint starts no call, so no record of a later one speaks
+for that boundary and the straggler is the witness; the appended Task File is what makes `DIR-6`
+`move task.md to rejected-<r>-task.md` there, and the child's recorded readiness is what keeps its
+silence from passing for compliance. `F17` names the boundaries this item still reads at the next
+call alone.*
 (`AGT-15`, `AGT-16`, `DIR-6`)
 
 **CNF-18** SIGINT sent to the executable while an Implementer fake sleeps, having spawned a child
