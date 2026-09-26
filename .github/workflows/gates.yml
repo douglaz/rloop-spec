@@ -152,11 +152,11 @@ jobs:
 
       # Narrowed rather than deleted: the whole normalisation gone reddens the sed read this
       # group had before 6dc3326 as well, so that mutant re-proves the old read. This one leaves
-      # every link relative but the names executable_path_needs holds, so restrict_path's
-      # refusal, which walks that list alone, still returns 0 and only the cat read catches it.
+      # every link relative but the names executable_path_needs holds, so restrict_path, whose
+      # refusal walks that list alone, still returns 0 and only the cat read catches it.
       # It reddens on everything a deletion reddened on, so it replaces that control rather than
       # joining it -- a second step is another scratch copy and another gate run for no read.
-      - name: Prove the panel-trace gate can fail on a normalisation narrowed to the names the refusal guards
+      - name: Prove the panel-trace gate can fail on a normalisation narrowed to executable_path_needs
         run: |
           set -euo pipefail
           tmp="$(mktemp -d)"; cp -r . "$tmp/repo"; cd "$tmp/repo"
