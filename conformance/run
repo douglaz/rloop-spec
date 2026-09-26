@@ -451,6 +451,33 @@ done
 kill_recorded "$rec"
 if [ "$ok" = 1 ]; then verdict CNF-17 ok "timeouts kill the group, the child that ignores SIGTERM included, and the Run goes on or ends as the role says"; else verdict CNF-17 fail "$detail"; fi
 
+# --- CNF-34: a call that exits 0 leaves nothing in its group ------------------------------------
+# Nothing sleeps and nothing times out here: every fake of one role exits 0 having spawned a child
+# that ignores SIGTERM, so only reaping after the call itself can end it (AGT-15). The children
+# alive at each call's start are the record's own (GRANDCHILDREN_ALIVE), so "gone before the step
+# that follows" is read from the calls that came after, not measured by the suite.
+ok=1; detail=""
+for spawner in manager implementer; do
+  repo="$(new_repo)"; rec="$work/rec-reap-$spawner"
+  e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_GRANDCHILD_IGNORE_TERM="$spawner" run_rloop "$repo" "$rec" --run-dir "$repo/run" --kill-after 1)
+  [ "$e" = 0 ] || { ok=0; detail="$detail [$spawner: exit $e]"; }
+  gcs=$(sed -n 's/^GRANDCHILD=//p' "$rec"/*.env 2>/dev/null)
+  [ -n "$gcs" ] || { ok=0; detail="$detail [$spawner: no fake recorded a grandchild]"; }
+  alive=$(sed -n 's/^GRANDCHILDREN_ALIVE=//p' "$rec"/*.env 2>/dev/null | tr '\n' ' ')
+  for p in $gcs; do
+    pid_in "$p" "$alive" && { ok=0; detail="$detail [$spawner: child $p alive when a later call started]"; }
+  done
+  for f in "$rec"/*.env; do
+    grep -q '^GRANDCHILD=' "$f" || continue
+    for key in PID GRANDCHILD; do
+      p=$(sed -n "s/^$key=//p" "$f")
+      [ -n "$p" ] && kill -0 "$p" 2>/dev/null && { ok=0; detail="$detail [$spawner: $(basename "$f") $key $p survived the Run]"; }
+    done
+  done
+  kill_recorded "$rec"
+done
+if [ "$ok" = 1 ]; then verdict CNF-34 ok "a call that exits 0 leaves no process in its group, for a Manager call and for the Implementer"; else verdict CNF-34 fail "$detail"; fi
+
 # --- CNF-18: interruption ------------------------------------------------------------------------------
 ok=1; detail=""
 for sig in INT TERM; do

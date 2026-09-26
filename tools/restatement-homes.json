@@ -280,6 +280,11 @@
     "reason": "Owns required live observations and evidence per Implementation release; cited requirements identify the observed behaviors, not observation duties."
   },
   {
+    "owner": "AGT-15",
+    "sha256": "60bcec508015bd54443f8cc3e205134c7a76c8a3b9cff80a1e4089150e027d28",
+    "reason": "Owns reaping a call's process group after the call, the bound on that wait and its place before the next step; AGT-18 names the included Probe and AGT-14 separately owns the timeout that reaps at the limit."
+  },
+  {
     "owner": "RUN-18",
     "sha256": "9c6652dbcf989ea28be646244b2a294ae0fd9355acb736348b2e5514ddf61a3d",
     "reason": "Owns leaving the Implementer commit choice to repository instructions; OVR-3 supplies the git-mutation prohibition and SEQ-8 separately governs Manager commits."

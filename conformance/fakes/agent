@@ -42,7 +42,10 @@
 #                            records it the same way; no other fake of the Run spawns one, so the
 #                            child is the timed-out call's alone. RLOOP_FAKE_SLEEP_REVIEWER=30
 #                            RLOOP_FAKE_SLEEP_ONLY=fable RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=1 is
-#                            one slow Reviewer with such a child and three that answer.
+#                            one slow Reviewer with such a child and three that answer. A role
+#                            name in place of 1 (manager|implementer|reviewer|probe) gives every
+#                            fake of that role such a child, sleeping or not, and no fake of
+#                            another role: a healthy call that exits 0 leaving one behind.
 #                            Every fake's .env record also carries GRANDCHILDREN_ALIVE=<pids>,
 #                            written before it sleeps, spawns or traces: the previously recorded
 #                            GRANDCHILD pids still running when this call started (empty when none)
@@ -85,7 +88,8 @@ sleep_for="${!sleep_var:-0}"
 if [ "$role" = reviewer ] && [ -n "${RLOOP_FAKE_SLEEP_ONLY:-}" ] && [ "$reviewer" != "$RLOOP_FAKE_SLEEP_ONLY" ]; then sleep_for=0; fi
 
 if [ "${RLOOP_FAKE_IGNORE_TERM:-0}" = 1 ]; then trap '' TERM; else trap 'echo "SIGTERM" >> "$rec/$tag.env"; exit 143' TERM; fi
-if [ "${RLOOP_FAKE_GRANDCHILD_IGNORE_TERM:-0}" = 1 ] && [ "$sleep_for" != 0 ]; then
+gc_ignore_term="${RLOOP_FAKE_GRANDCHILD_IGNORE_TERM:-0}"
+if { [ "$gc_ignore_term" = 1 ] && [ "$sleep_for" != 0 ]; } || [ "$gc_ignore_term" = "$role" ]; then
   # A subshell, not a bare sleep: the ignored disposition is set here and inherited by sleep, so
   # the group's SIGTERM ends neither; only the group's SIGKILL does.
   ( trap '' TERM; sleep 30 ) & echo "GRANDCHILD=$!" >> "$rec/$tag.env"

@@ -222,9 +222,23 @@ role is: judged by the Manager for an Implementer (`RUN-14`), a failure note for
 subprocesses, and a killed parent leaves them orphaned and still writing.*
 
 **AGT-15** rloop MUST NOT exit while any agent process it started, or the **Probe** (`AGT-18`), is
-running. On SIGINT or SIGTERM it MUST send SIGTERM to every live group, wait for them (with `--kill-after`, then
-SIGKILL), and exit 2 with `interrupted` on standard error. A second SIGINT during that wait MUST
-send SIGKILL at once. The Run Directory is left as it is (`RUN-17`).
+running. After every agent call and every **Probe**, once the process rloop started has exited,
+rloop MUST send SIGTERM to that call's process group, wait up to `--kill-after` seconds for the
+group to empty, then send SIGKILL to what remains, before the step that follows the call. The
+reaping leaves the call's exit status the spawned process's. A group that is already empty costs
+nothing: the wait ends as soon as the group does, where `AGT-14`'s `wait --kill-after seconds` at
+the limit is the whole grace. Reviewers run concurrently (`RUN-8`), so each Reviewer's group is
+reaped as that Reviewer exits. On SIGINT or SIGTERM it MUST send SIGTERM to every live group, wait
+for them (with `--kill-after`, then SIGKILL), and exit 2 with `interrupted` on standard error. A
+second SIGINT during that wait MUST send SIGKILL at once. The Run Directory is left as it is
+(`RUN-17`).
+
+*Amended 2026-09-26 (`rl-agt15-normal-exit-stragglers-e6g`): reaping after a call that exits 0 is
+new; `AGT-14`'s `At the limit rloop MUST send SIGTERM to that process group` was the only place a
+group was reaped before. An agent that exits 0 having left a build, a server or a check running in
+the background — the habit `07-open-findings.md`'s `F16` records — left that process writing into
+the working tree while the Panel reviews and the Manager commits, and able to outlive the
+Sequence.*
 
 **AGT-16** Each agent process, and the **Probe** (`AGT-18`), MUST be started in its own process group, so that `AGT-14` and
 `AGT-15` reach every descendant. A new session (`setsid`) satisfies this; so does what
