@@ -46,9 +46,11 @@
 #                            name in place of 1 (manager|implementer|reviewer|probe) gives every
 #                            fake of that role such a child, sleeping or not, and no fake of
 #                            another role: a healthy call that exits 0 leaving one behind.
-#                            Every fake's .env record also carries GRANDCHILDREN_ALIVE=<pids>,
-#                            written before it sleeps, spawns or traces: the previously recorded
-#                            GRANDCHILD pids still running when this call started (empty when none)
+#                            Every fake's .env record also carries GRANDCHILDREN_ALIVE=<pids> and
+#                            CALLS_ALIVE=<pids>, both written before it sleeps, spawns or traces:
+#                            the previously recorded GRANDCHILD pids, and the previously recorded
+#                            PID pids other than this call's own, still running when this call
+#                            started (empty when none)
 #   RLOOP_FAKE_DIRTY_AT_DONE 1 = the Manager leaves an untracked file in the tree when it writes done
 #   RLOOP_FAKE_COMMIT        1 = the Implementer commits a file during its call
 #   RLOOP_FAKE_THREAD_ID     the thread_id a codex Manager pick reports (default: …cafe)
@@ -75,10 +77,17 @@ printf '%s\0' "$(basename "$0")" "$@" > "$rec/$tag.argv"
 # stdin: at EOF now, or open? A read that returns instantly with no data is EOF (AGT-12).
 if timeout 1 head -c1 </dev/stdin >/dev/null 2>&1; then echo "STDIN=eof" >> "$rec/$tag.env"; else echo "STDIN=open" >> "$rec/$tag.env"; fi
 # Which earlier calls' children are still running as this call starts: what CNF-17 reads from the
-# judge's record. Before the sleep, before this fake's own child, before the trace start line.
+# judge's record and CNF-34 from every call's. Before the sleep, before this fake's own child,
+# before the trace start line.
 alive=""
 for p in $(sed -n 's/^GRANDCHILD=//p' "$rec"/*.env 2>/dev/null); do kill -0 "$p" 2>/dev/null && alive="$alive${alive:+ }$p"; done
 echo "GRANDCHILDREN_ALIVE=$alive" >> "$rec/$tag.env"
+# And which earlier calls' own processes are, read the same way at the same point: the other half
+# of what CNF-34 reads. This call's own pid is left out, and a Reviewer finds its Panel's siblings
+# here (RUN-8), so the item names whose pid it expects gone rather than reading the whole list.
+alive=""
+for p in $(sed -n 's/^PID=//p' "$rec"/*.env 2>/dev/null); do [ "$p" = "$$" ] || { kill -0 "$p" 2>/dev/null && alive="$alive${alive:+ }$p"; }; done
+echo "CALLS_ALIVE=$alive" >> "$rec/$tag.env"
 now() { date +%s%N; }
 
 # --- the scripted part ----------------------------------------------------------------------------

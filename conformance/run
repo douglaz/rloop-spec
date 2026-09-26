@@ -453,9 +453,9 @@ if [ "$ok" = 1 ]; then verdict CNF-17 ok "timeouts kill the group, the child tha
 
 # --- CNF-34: a call that exits 0 leaves nothing in its group ------------------------------------
 # Nothing sleeps and nothing times out here: every fake of one role exits 0 having spawned a child
-# that ignores SIGTERM, so only reaping after the call itself can end it (AGT-15). The children
-# alive at each call's start are the record's own (GRANDCHILDREN_ALIVE), so "gone before the step
-# that follows" is read from the calls that came after, not measured by the suite.
+# that ignores SIGTERM, so only reaping after the call itself can end it (AGT-15). What was alive
+# at each call's start is the record's own (GRANDCHILDREN_ALIVE, CALLS_ALIVE), so "gone before the
+# step that follows" is read from the calls that came after, not measured by the suite.
 ok=1; detail=""
 for spawner in manager implementer; do
   repo="$(new_repo)"; rec="$work/rec-reap-$spawner"
@@ -467,6 +467,19 @@ for spawner in manager implementer; do
   for p in $gcs; do
     pid_in "$p" "$alive" && { ok=0; detail="$detail [$spawner: child $p alive when a later call started]"; }
   done
+  # And each sequential call's own process, before the step that follows it: the pick, which RUN-6
+  # follows `After the pick`, and the Implementer, RUN-7's first step. Never a Reviewer's: RUN-8 has
+  # the Panel spawned so that `none waits for another to finish`, so a sibling alive in a Reviewer's
+  # snapshot is no defect. The judge's line is read too: an unwritten snapshot is a red item, not a
+  # vacuous pass.
+  calls=$(sed -n 's/^CALLS_ALIVE=//p' "$rec"/*.env 2>/dev/null | tr '\n' ' ')
+  judge_env=$(ls "$rec"/*-manager-1.env 2>/dev/null | head -1)
+  [ -n "$judge_env" ] && grep -q '^CALLS_ALIVE=' "$judge_env" || { ok=0; detail="$detail [$spawner: the judge's record has no CALLS_ALIVE line]"; }
+  for own_tag in manager-0 implementer-1; do
+    p=$(sed -n 's/^PID=//p' "$rec"/*-$own_tag.env 2>/dev/null)
+    if [ -z "$p" ]; then ok=0; detail="$detail [$spawner: $own_tag recorded no PID]"
+    elif pid_in "$p" "$calls"; then ok=0; detail="$detail [$spawner: $own_tag $p alive when a later call started]"; fi
+  done
   for f in "$rec"/*.env; do
     grep -q '^GRANDCHILD=' "$f" || continue
     for key in PID GRANDCHILD; do
@@ -476,7 +489,7 @@ for spawner in manager implementer; do
   done
   kill_recorded "$rec"
 done
-if [ "$ok" = 1 ]; then verdict CNF-34 ok "a call that exits 0 leaves no process in its group, for a Manager call and for the Implementer"; else verdict CNF-34 fail "$detail"; fi
+if [ "$ok" = 1 ]; then verdict CNF-34 ok "a call that exits 0 leaves neither its own process nor anything in its group, for a Manager call and for the Implementer"; else verdict CNF-34 fail "$detail"; fi
 
 # --- CNF-18: interruption ------------------------------------------------------------------------------
 ok=1; detail=""

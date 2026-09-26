@@ -233,12 +233,13 @@ for them (with `--kill-after`, then SIGKILL), and exit 2 with `interrupted` on s
 second SIGINT during that wait MUST send SIGKILL at once. The Run Directory is left as it is
 (`RUN-17`).
 
-*Amended 2026-09-26 (`rl-agt15-normal-exit-stragglers-e6g`): reaping after a call that exits 0 is
-new; `AGT-14`'s `At the limit rloop MUST send SIGTERM to that process group` was the only place a
-group was reaped before. An agent that exits 0 having left a build, a server or a check running in
-the background — the habit `07-open-findings.md`'s `F16` records — left that process writing into
-the working tree while the Panel reviews and the Manager commits, and able to outlive the
-Sequence.*
+*Amended 2026-09-26 (`rl-agt15-normal-exit-stragglers-e6g`): reaping after a call that completes
+normally is new; before it a group was reaped only where the call did not complete — at the limit
+(`AGT-14`'s `At the limit rloop MUST send SIGTERM to that process group`) or on an interruption
+(this requirement's own `send SIGTERM to every live group`). An agent that exits 0 having left a
+build, a server or a check running in the background — the habit `07-open-findings.md`'s `F16`
+records — left that process writing into the working tree while the Panel reviews and the Manager
+commits, and able to outlive the Sequence.*
 
 **AGT-16** Each agent process, and the **Probe** (`AGT-18`), MUST be started in its own process group, so that `AGT-14` and
 `AGT-15` reach every descendant. A new session (`setsid`) satisfies this; so does what
