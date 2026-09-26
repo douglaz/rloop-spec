@@ -51,6 +51,16 @@
 #                            the previously recorded GRANDCHILD pids, and the previously recorded
 #                            PID pids other than this call's own, still running when this call
 #                            started (empty when none)
+#   RLOOP_FAKE_WATCH         <role>:<name> = what that role's SIGTERM-ignoring child does instead of
+#                            sleeping: poll for <name> under RLOOP_RUN_DIR and, when it appears,
+#                            write <tag>.seen into RLOOP_FAKE_RECORD. It is the same child
+#                            RLOOP_FAKE_GRANDCHILD_IGNORE_TERM spawns and records, so that knob
+#                            still says which calls get one; this one only changes what it does,
+#                            which is how a step that is no agent call can be witnessed at all. The
+#                            child writes <tag>.watching before its first poll and the fake waits
+#                            for it, so a child that never polled cannot leave the witness absent by
+#                            silence. Both files go under RLOOP_FAKE_RECORD and never into the
+#                            working tree, which RLOOP_FAKE_DIRTY_AT_DONE is the knob for
 #   RLOOP_FAKE_DIRTY_AT_DONE 1 = the Manager leaves an untracked file in the tree when it writes done
 #   RLOOP_FAKE_COMMIT        1 = the Implementer commits a file during its call
 #   RLOOP_FAKE_THREAD_ID     the thread_id a codex Manager pick reports (default: …cafe)
@@ -98,10 +108,23 @@ if [ "$role" = reviewer ] && [ -n "${RLOOP_FAKE_SLEEP_ONLY:-}" ] && [ "$reviewer
 
 if [ "${RLOOP_FAKE_IGNORE_TERM:-0}" = 1 ]; then trap '' TERM; else trap 'echo "SIGTERM" >> "$rec/$tag.env"; exit 143' TERM; fi
 gc_ignore_term="${RLOOP_FAKE_GRANDCHILD_IGNORE_TERM:-0}"
+watch="${RLOOP_FAKE_WATCH:-}"
 if { [ "$gc_ignore_term" = 1 ] && [ "$sleep_for" != 0 ]; } || [ "$gc_ignore_term" = "$role" ]; then
   # A subshell, not a bare sleep: the ignored disposition is set here and inherited by sleep, so
   # the group's SIGTERM ends neither; only the group's SIGKILL does.
-  ( trap '' TERM; sleep 30 ) & echo "GRANDCHILD=$!" >> "$rec/$tag.env"
+  if [ "${watch%%:*}" = "$role" ]; then
+    # The same child, polling rather than sleeping, for the same 30 seconds in fiftieths.
+    ( trap '' TERM; : > "$rec/$tag.watching"; i=0
+      while [ "$i" -lt 600 ]; do
+        [ -e "$run_dir/${watch#*:}" ] && { : > "$rec/$tag.seen"; break; }
+        sleep 0.05; i=$(( i + 1 ))
+      done ) & echo "GRANDCHILD=$!" >> "$rec/$tag.env"
+    # Wait for the child to be watching before this fake exits: a child SIGKILLed before its first
+    # poll would leave the witness absent whatever the Implementation did.
+    i=0; while [ ! -e "$rec/$tag.watching" ] && [ "$i" -lt 200 ]; do sleep 0.05; i=$(( i + 1 )); done
+  else
+    ( trap '' TERM; sleep 30 ) & echo "GRANDCHILD=$!" >> "$rec/$tag.env"
+  fi
 elif [ "${RLOOP_FAKE_GRANDCHILD:-0}" = 1 ]; then sleep 300 & echo "GRANDCHILD=$!" >> "$rec/$tag.env"; fi
 
 pick="${RLOOP_FAKE_PICK:-ok:task}"

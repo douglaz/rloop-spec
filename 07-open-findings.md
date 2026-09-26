@@ -463,3 +463,33 @@ the Round's accepted work stays uncommitted and the Sequence stops.
 `--implementer codex` or from a codex Reviewer. `00-overview.md` says the prompts are `checked for
 equality, never for quality`. **Open** until a Run on an Implementation carrying the amended
 prompts shows an Implementer, a claude Reviewer and the judge running a long check to completion.
+
+## F17 — What `CNF-34` cannot separate, and the arm no mutant reddens (open 2026-09-26)
+
+Two residuals of `rl-cnf34-step-not-call-nfy`, the change that gave `CNF-34` a witness of the
+Checkpoint boundary. Both had lived only in commit messages until now.
+
+*`CNF-34`'s own-process assertion and `CNF-24` cannot be separated by any mutant.* `CNF-24` orders
+a Run's calls by the `NNN-` prefix each fake writes as it **starts**, so it cannot see whether an
+earlier call's process had **exited**; and an Implementation that holds a call's own process past
+the next call necessarily overlaps the two calls' starts. Every mutant that reddens the own-process
+assertion at a *call* boundary therefore reddens `CNF-24` beside it, which is what the early-probe
+mutant did. This is reasoning, not measurement: nothing was searched exhaustively, and the claim is
+that no separating mutant exists, not that one was built and found wanting. The Checkpoint arm is
+outside the argument — its boundary is a step and no call, and the Checkpoint-before-reap mutant
+reddens `CNF-34` alone, `CNF-24` green beside it.
+
+*The `manager-0` arm of the own-process loop has no mutant behind it.* Both mutants built for this
+work redden the `implementer-1` arm: the probe started before the Implementer's group is reaped,
+and the Checkpoint run before it. The `manager-0` arm is the same predicate over a pid that later
+records do carry, so it is live code and not dead, and it is exercised green on every run — but
+nothing demonstrates it red, which is the standard `AGENTS.md` sets when it says *a guard without
+one is decoration*.
+
+*What `CNF-34` still reads at the next call alone.* The Checkpoint after the Implementer is the one
+step boundary the item now observes, and it is the boundary whose files a straggler races
+(`DIR-6`). Three are still observed only at the call that follows: the pick's, where the next step
+is `RUN-6`'s `copy the Task File to` `task-1.md`; the Panel's, where `RUN-7` has `the Checkpoint
+again`; and the judge's, where `RUN-7` has `the decision` — and in a Run of one Round no later call
+exists at all, so the judge's own snapshot is read only to keep an unwritten one from passing. The
+same watching straggler would witness each of them; none is witnessed today.

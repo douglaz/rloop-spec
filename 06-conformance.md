@@ -162,14 +162,23 @@ writes a Task File, the Implementer and all four Reviewers succeed and the judge
 exits 0; no call of the Run records any of those children among the children alive when it
 started, nor the pick's or the Implementer's own process among the calls alive when it started;
 and once the executable has returned, neither a fake that spawned one nor any of the children is
-running. The same Run with the Implementer fake spawning that child instead of the Manager's.
+running. The same Run with the Implementer fake spawning that child instead of the Manager's. A
+third Run of that second shape, the Implementer fake also appending to the Task File and its child
+polling for `rejected-1-task.md` under the Run Directory rather than sleeping: the Run exits 0,
+`rejected-1-task.md` is there, the child recorded that it was watching before its fake exited, and
+it never found the file — so the Implementer's group was gone before the Checkpoint that follows
+its call, and not only before the next call.
 *A call that exits 0 is what `AGT-14`'s `At the limit` never reaches, and leaving a check running is
 a habit `07-open-findings.md`'s `F16` records: the child of a healthy Implementer writes into the
 working tree through the whole Panel and the Manager's commit. `CNF-17` reads the same record for
 the reaping after a timeout. The pick and the Implementer are the calls whose own process a later
 call's record can speak for: `RUN-8` has the Panel's Reviewers spawned so that `none waits for
-another to finish`, so a Reviewer that finds a sibling's process alive has found that working.*
-(`AGT-15`, `AGT-16`)
+another to finish`, so a Reviewer that finds a sibling's process alive has found that working. The
+Checkpoint starts no call, so no record of a later one speaks for that boundary and the straggler
+is the witness; the appended Task File is what makes `DIR-6` `move task.md to rejected-<r>-task.md`
+there, and the child's recorded readiness is what keeps its silence from passing for compliance.
+`F17` names the boundaries this item still reads at the next call alone.*
+(`AGT-15`, `AGT-16`, `DIR-6`)
 
 **CNF-18** SIGINT sent to the executable while an Implementer fake sleeps, having spawned a child
 that ignores SIGTERM: the fake records SIGTERM, the executable exits 2 with `interrupted` on
