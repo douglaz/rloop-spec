@@ -172,12 +172,14 @@ its call, and not only before the next call.
 a habit `07-open-findings.md`'s `F16` records: the child of a healthy Implementer writes into the
 working tree through the whole Panel and the Manager's commit. `CNF-17` reads the same record for
 the reaping after a timeout. Of the calls whose own process a later call's record can speak for,
-this item names the pick and the Implementer: a Reviewer's is out because `RUN-8` has the Panel's
-Reviewers spawned so that `none waits for another to finish`, so a Reviewer that finds a sibling's
-process alive has found that working, and the Probe's is out for scope — `RUN-21` runs it
-`once before the pick` and `once immediately before each Round's Panel`, as sequential as the two
-named, and no item drives it yet. The Checkpoint starts no call, so no record of a later one speaks
-for that boundary and the straggler is the witness; the appended Task File is what makes `DIR-6`
+this item names the pick and the Implementer: no sibling Reviewer's record can speak for another,
+since `RUN-8` has the Panel's Reviewers spawned so that `none waits for another to finish`, so a
+Reviewer that finds a sibling's process alive has found that working. The Reviewer's own process,
+which the judge's record could speak for, and the Probe's — `RUN-21` runs it `once before the pick`
+and `once immediately before each Round's Panel`, and `RUN-7` has the Round's probe
+`waited for before the Panel starts`, as sequential as the two named — are out for scope: no item
+drives either yet. The Checkpoint starts no call, so no record of a later one speaks for that
+boundary and the straggler is the witness; the appended Task File is what makes `DIR-6`
 `move task.md to rejected-<r>-task.md` there, and the child's recorded readiness is what keeps its
 silence from passing for compliance. `F17` names the boundaries this item still reads at the next
 call alone.*

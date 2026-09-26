@@ -468,9 +468,9 @@ for spawner in manager implementer; do
     pid_in "$p" "$alive" && { ok=0; detail="$detail [$spawner: child $p alive when a later call started]"; }
   done
   # And two calls' own processes, each before the step that follows it: the pick, which RUN-6
-  # follows `After the pick`, and the Implementer, RUN-7's first step. Not a Reviewer's, which
-  # RUN-8 puts out of reach, and not the Probe's, which is out for scope — CNF-34's note owns both
-  # reasons. The judge's line is read too: an unwritten snapshot is a red item, not a vacuous pass.
+  # follows `After the pick`, and the Implementer, RUN-7's first step. Not a Reviewer's own process
+  # and not the Probe's: both are out for scope, and CNF-34's note owns the reason. The judge's
+  # line is read too: an unwritten snapshot is a red item, not a vacuous pass.
   calls=$(sed -n 's/^CALLS_ALIVE=//p' "$rec"/*.env 2>/dev/null | tr '\n' ' ')
   judge_env=$(ls "$rec"/*-manager-1.env 2>/dev/null | head -1)
   [ -n "$judge_env" ] && grep -q '^CALLS_ALIVE=' "$judge_env" || { ok=0; detail="$detail [$spawner: the judge's record has no CALLS_ALIVE line]"; }
