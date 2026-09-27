@@ -548,3 +548,17 @@ readings that lead to different behaviour`, filed as `rl-agt15-probe-record-step
 specification owner's to settle, so whether the Probe row's two boundaries belong in the list above
 is open with it and this finding does not say. The same watching straggler would witness each
 boundary the list names; none is witnessed today.
+
+## F18 — `conformance/run` is not newline-safe (deferred 2026-09-27)
+
+A newline is whitespace, and two of the suite's line-delimited path reads do not survive one.
+`record_of` (`conformance/run:467`) selects a record with `ls` into `head -1`, which truncates the
+path at the newline and reports no record of a tag that has one; `spawn_count`
+(`conformance/run:32`) counts `.argv` files with `ls` into `wc -l` and counted one file as two. A
+space and a tab are safe in both, because neither terminates a line. The choice was to narrow
+`CNF-1` to what was measured — `a space or a tab in that path MUST NOT change any item's verdict or
+detail` (`06-conformance.md`) — rather than convert the suite: the rest of that class is about 25
+reads inside the artifact every Implementation is judged by, each one a chance to turn a red row
+green or a green row red, for a `TMPDIR` shape no user is known to want. Settled by Consultation,
+two advisers agreeing independently. `rl-suite-newline-paths-deferred-mzc` holds the measurements,
+the sites and what a conversion would have to demonstrate.
