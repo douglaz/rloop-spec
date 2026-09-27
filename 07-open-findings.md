@@ -501,13 +501,42 @@ says they `are the suite's own and are not on the executable's PATH`, so that ex
 boundary's alone, but neither `RLOOP_FAKE_INTERFERENCE=1:afterImplementer:editTask` nor the guard
 against a missing `rejected-1-task.md` is demonstrated by that executable.
 
+*Which of `CNF-34`'s own-process reads a mutant reddens.* The Reviewer and Probe rows the item
+gained after this finding opened (`rl-cnf34-reviewer-probe-rows-2mv`) have mutants of their own,
+built against the same reaping scratch copy of rloop-bash `02c6206`, each mutation gated on
+`RLOOP_FAKE_GRANDCHILD_IGNORE_TERM` so that exactly one `CNF-34` Run is mutated and every other
+verdict line of the suite stays byte-identical. A Reviewer's own-process read is demonstrated only
+beside group brackets: no mutant reddened a Reviewer's own-process bracket with that Reviewer's
+group bracket green. The probe's read separates. The mutant that neither waits for nor reaps the
+probe until the next call has started gives `[probe-1: 004-probe-1.env PID … alive when
+004-reviewer-1-fable.env started]` beside a green group bracket, and no `probe-0` bracket at all —
+the probe's own process is gone before rloop reaches the pick, which is the row's own gap and is
+filed as `rl-cnf34-probe0-read-fast-fake-8et`. What the `probe-0` read needs is one further defect,
+and it then reddens that read alone: the same deferral with that one probe call's standard input
+left open — against `AGT-12`'s `started with standard input from the null device`, so that the call
+outlasts the record — gives `[probe-0: 001-probe-0.env PID … alive when 002-manager-0.env started]`
+beside a green group bracket, as the item's whole detail and with no other item's verdict moved.
+`manager-0`, the arm above, is then the only own-process read in the item that no mutant reddens.
+Both probe brackets come with a green group half for one reason: the fake writes
+`GRANDCHILDREN_ALIVE` (`conformance/fakes/agent:98`) before it spawns the child that ignores SIGTERM
+(`:133`), so a call that starts while the probe is still running finds no `GRANDCHILD=` line in the
+probe's record and has nothing to report. The group half can be green with the group alive, and it
+is the two halves together that caught these mutants.
+
 *What `CNF-34` still reads at the next call alone.* The Checkpoint after the Implementer is the one
 step boundary the item now observes, and it is the boundary whose files a straggler races (`DIR-6`).
-Three are still observed only at the call that follows: the pick's, where the next step is `RUN-6`'s
-`copy the Task File to` `task-1.md`; the Panel's, where `RUN-7` has `the Checkpoint again` and the
-judge's record is what the Reviewer row reads in its place; and the judge's, where `RUN-7` has
-`the decision` — and in a Run of one Round no later call exists at all, so the judge's own snapshot
-is read only to keep an unwritten one from passing. The Probe row's two boundaries are not among
-them: the step after each probe call is itself a call — the pick after the one before the pick, the
-Panel after the Round's (`RUN-21`, `RUN-7`) — so there the call that follows is the step that
-follows. The same watching straggler would witness each of the three; none is witnessed today.
+The boundaries observed only at the call that follows are the pick's, where the next step is
+`RUN-6`'s `copy the Task File to` `task-1.md`; the Panel's, where `RUN-7` has `the Checkpoint again`
+and the judge's record is what the Reviewer row reads in its place; and the judge's, where `RUN-7`
+has `the decision` — and in a Run of one Round no later call exists at all, so the judge's own
+snapshot is read only to keep an unwritten one from passing. Each probe's boundary is read at the
+call that follows it as well, and by then that probe's verdicts are recorded: `RUN-21` has `After
+each call it MUST record for every Seat exactly one verdict`, `before the pick` for the probe before
+the pick and in Round `r` for the Round's. A straggler of the probe's group that races that record
+is therefore unwitnessed, and the `sol` Reviewer of this Round measured the gap — a mutant that
+writes the availability record while the probe's child is still alive and reaps the group before the
+next call starts leaves `CNF-34` green. Whether `AGT-15`'s `before the step that follows the call`
+reaches that record is `RUN-19`'s `two readings that lead to different behaviour`, filed as
+`rl-agt15-probe-record-step-taf` and the specification owner's to settle, so whether the Probe row's
+two boundaries belong in the list above is open with it and this finding does not say. The same
+watching straggler would witness each boundary the list names; none is witnessed today.
