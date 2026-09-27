@@ -136,7 +136,7 @@ jobs:
       # anyway and the relative-entry control normalises only the names executable_path_needs
       # holds, each breaking its half of the function; the refusal controls shrink a name list a
       # refusal walks, which is what those groups pin -- a refusal that only ever covers cmp says
-      # nothing about find.
+      # nothing about find. Both arguments' owner is conformance/test-panel-trace.
       - name: Prove the panel-trace gate can fail on a skipped name linked anyway
         run: |
           set -euo pipefail
@@ -153,9 +153,10 @@ jobs:
       # Narrowed rather than deleted: the whole normalisation gone reddens the sed read this
       # group had before 6dc3326 as well, so that mutant re-proves the old read. This one leaves
       # every link relative but the names executable_path_needs holds, so restrict_path, whose
-      # refusal walks that list alone, still returns 0 and only the cat read catches it.
-      # It reddens on everything a deletion reddened on, so it replaces that control rather than
-      # joining it -- a second step is another scratch copy and another gate run for no read.
+      # refusal walks that list alone, still returns 0 and only the cat read catches it. The
+      # argument's owner is conformance/test-panel-trace. It reddens on everything a deletion
+      # reddened on, so it replaces that control rather than joining it -- a second step is
+      # another scratch copy and another gate run for no read.
       - name: Prove the panel-trace gate can fail on a normalisation narrowed to executable_path_needs
         run: |
           set -euo pipefail
