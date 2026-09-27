@@ -214,9 +214,9 @@ once the call has returned is `CNF-34`'s to witness, at both call sites; registe
 handler is this item's, and the Probe is the role whose call an Implementation is likeliest to write
 inline rather than through the machinery every agent call shares. The call site driven is `RUN-21`'s
 `once before the pick`, which the fake's one probe-sleep knob already lands on, so the Round's probe
-is never reached and the Run costs no new knob. That probe is the Run's first call, and `RUN-21`
-has it `after the Run Directory exists`, `RUN-4` owning the creation. Of the probe's captures
-`DIR-4` says `from the availability probe's stdout and stderr`, `before the pick` — their
+is never reached and the Run costs no new knob. The probe before the pick is the Run's first call,
+and `RUN-21` has it `after the Run Directory exists`, `RUN-4` owning the creation. Of the probe's
+captures `DIR-4` says `from the availability probe's stdout and stderr`, `before the pick` — their
 existence and not the moment they appear — so an Implementation may open them as it spawns the
 probe and another may write them only once the probe has returned, and an arm that read them there
 would hold every Implementation to one of the two. The Run-Directory clause of the Probe Run is
