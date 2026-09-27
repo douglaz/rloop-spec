@@ -29,6 +29,13 @@ the next commit reds; and on a tree whose output is already in the store it is a
 run is the slower one — it gets no incremental `lake` cache — which is why the dev-shell run stays
 the loop you iterate in.
 
+Neither command runs `.github/workflows/gates.yml`, whose steps mutate the tree and then require the
+message the red run prints with `grep -qF`, so a reworded message leaves those literals stale and CI
+red on a tree both commands call green — `6dc3326` reworded one and `37f8fce` brought the control
+back into line. Whoever rewords a message a gate or the suite prints greps the workflow for the old
+text first and updates every control that quotes it, in the same commit; that is a manual check and
+not a closed door, because whether a mutant still reaches the new wording only the CI run witnesses.
+
 A formalized clause's home is its Lean declaration in `tools/formal/`, tagged `@[req "RUN-13"]`
 (`ADR-0002`). Change the declaration and the Markdown together; a theorem that stops proving is
 the gate telling you the amendment contradicts a property the set claims — read the theorem before
