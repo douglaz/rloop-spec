@@ -414,18 +414,19 @@ nothing exhausted`, which is that item's control rather than a fail-open shape.*
 
 **CNF-32** The pick's prompt argument equals `PRM-1`'s fixture rendered as in `CNF-12`, with
 `{{UNAVAILABLE}}` as the Probe before the pick leaves it, compared byte for byte in four Runs of
-this item's own, each of which starts. With the default models and that Probe reporting `Opus` at
-100%, `{{UNAVAILABLE}}` is the one line `opus`. With both Seats' models off `RUN-21`'s table and
-`Fable` at 100%, it is the one line `fable`. With both Seats' models off the table and `Fable` and
-`Opus` both at 100%, it is `fable`, a newline and `opus`, in that order and nothing else. With the
-default models and a Probe reporting nothing exhausted, it is the empty string: the prompt is the
-fixture with the placeholder replaced by nothing. *The empty form is asserted here, and not left
-to `CNF-12`, because each form alone passes a wrong Implementation: one that renders the list
-whatever the Probe said passes the populated Runs, and one that never renders it passes the empty
-one. Each Seat has a Run of its own because one Run cannot tell a working render from one that
-hardcodes a Seat, the same argument `CNF-25` and `CNF-28` make of one row of the table. The Seats
-are chosen so that no Run is refused (`RUN-22`): on the default models a `Fable` report refuses
-the Run before any pick prompt exists, so the Runs that report it put both Seats off the table.*
+this item's own, each of which starts, calls the pick and ends 0. With the default models and that
+Probe reporting `Opus` at 100%, `{{UNAVAILABLE}}` is the one line `opus`. With both Seats' models
+off `RUN-21`'s table and `Fable` at 100%, it is the one line `fable`. With both Seats' models off
+the table and `Fable` and `Opus` both at 100%, it is `fable`, a newline and `opus`, in that order
+and nothing else. With the default models and a Probe reporting nothing exhausted, it is the empty
+string: the prompt is the fixture with the placeholder replaced by nothing. *The empty form is
+asserted here, and not left to `CNF-12`, because each form alone passes a wrong Implementation: one
+that renders the list whatever the Probe said passes the populated Runs, and one that never renders
+it passes the empty one. Each Seat has a Run of its own because no single Run can tell a working
+render from one that hardcodes a Seat, the same argument `CNF-25` and `CNF-28` make of one row of
+the table. The Seats are chosen so that no Run is refused (`RUN-22`): on the default models a
+`Fable` report refuses the Run before any pick prompt exists, so the Runs that report it put both
+Seats off the table.*
 (`PRM-1`, `PRM-6`, `RUN-21`, `RUN-20`, `RUN-22`)
 
 **CNF-33** With the default Manager preset a Run of two Rounds — Round 1 judges `rewrite`, Round 2
