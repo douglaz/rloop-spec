@@ -11,7 +11,8 @@ cannot be executed is in the last section, with the reason.
 executable and exit 0 only if every one passed, printing each item's identifier and verdict. It
 needs `bash`, `git`, GNU coreutils, `grep`, `sed`, `awk`, `cmp` (diffutils) and `find` (findutils)
 on `PATH` and nothing else — no Lean, no Python, no network — so that an Implementation repository
-in any language runs it from the submodule.
+in any language runs it from the submodule. It MUST run under a `TMPDIR` whose path holds
+whitespace, since that is where it makes its scratch tree.
 (`00-overview.md`)
 
 **CNF-2** The suite puts fake `claude` and `codex` executables first on `PATH`. A fake reads

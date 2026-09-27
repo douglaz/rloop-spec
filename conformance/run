@@ -130,7 +130,7 @@ if [ "$ok" = 1 ]; then verdict CNF-7 ok "existing or parentless run dir refused;
 # --- CNF-8: the default run directory ---------------------------------------------------------------
 repo="$(new_repo)"; rec="$work/rec-default"
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec")
-rd=$(ls -d "$repo"/.rloop/runs/*/ 2>/dev/null | head -1)
+rd=""; for d in "$repo"/.rloop/runs/*/; do [ -d "$d" ] && { rd="$d"; break; }; done
 status_out=$(cd "$repo" && git status --porcelain)
 ok=1; detail=""
 if [ "$e" = 0 ] && [ -n "$rd" ] && printf '*\n' | cmp -s - "$repo/.rloop/.gitignore" && [ -z "$status_out" ]; then :
@@ -230,23 +230,26 @@ P_DIRTY_AT_START=" M README
 P_UNAVAILABLE=""
 ok=1; detail=""; prompt_ok=1; prompt_detail=""
 [ "$e" = 0 ] || { ok=0; detail="$detail [run 1: exit $e]"; }
-check_call() { # check_call <recorded glob> <argv fixture> <prompt fixture> <session> <model> <label>
-  local recf prompt arg seen=0; recf=$(ls $1 2>/dev/null | head -1)
-  [ -n "$recf" ] || { ok=0; detail="$detail [$6: not spawned]"; prompt_ok=0; prompt_detail="$prompt_detail [$6: not spawned]"; return; }
-  prompt="$(render "$3")"
-  expected_argv "$2" "$prompt" "$4" "$5" > "$work/expected.argv"
-  argv_matches "$recf" "$work/expected.argv" || { ok=0; detail="$detail [$6: argv differs]"; }
+# The record directory and the tag, not one glob string: a glob passed as a parameter has to be
+# expanded unquoted, and that splits the directory part on whitespace as well as expanding it.
+check_call() { # check_call <record dir> <record tag> <argv fixture> <prompt fixture> <session> <model> <label>
+  local recf="" f prompt arg seen=0
+  for f in "$1"/*-"$2".argv; do [ -e "$f" ] || continue; recf="$f"; break; done
+  [ -n "$recf" ] || { ok=0; detail="$detail [$7: not spawned]"; prompt_ok=0; prompt_detail="$prompt_detail [$7: not spawned]"; return; }
+  prompt="$(render "$4")"
+  expected_argv "$3" "$prompt" "$5" "$6" > "$work/expected.argv"
+  argv_matches "$recf" "$work/expected.argv" || { ok=0; detail="$detail [$7: argv differs]"; }
   # CNF-12 reads the prompt argument alone; where it sits among the others is CNF-11's
   while IFS= read -r -d '' arg; do [ "$arg" = "$prompt" ] && seen=1; done < "$recf"
-  [ "$seen" = 1 ] || { prompt_ok=0; prompt_detail="$prompt_detail [$6: prompt differs]"; }
+  [ "$seen" = 1 ] || { prompt_ok=0; prompt_detail="$prompt_detail [$7: prompt differs]"; }
 }
-check_call "$rec/*-manager-0.argv" "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid" claude-fable-5-1 pick
-check_call "$rec/*-implementer-1.argv" "$fx/argv/AGT-5.txt" "$fx/prompts/PRM-3.txt" "$sid" claude-fable-5-1 implementer
-check_call "$rec/*-reviewer-1-fable.argv" "$fx/argv/AGT-7.txt" "$fx/prompts/PRM-4.txt" "$sid" x fable
-check_call "$rec/*-reviewer-1-opus.argv" "$fx/argv/AGT-8.txt" "$fx/prompts/PRM-4.txt" "$sid" x opus
-check_call "$rec/*-reviewer-1-astra.argv" "$fx/argv/AGT-10-1.txt" "$fx/prompts/PRM-4.txt" "$sid" x astra
-check_call "$rec/*-reviewer-1-sol.argv" "$fx/argv/AGT-10-2.txt" "$fx/prompts/PRM-4.txt" "$sid" x sol
-check_call "$rec/*-manager-1.argv" "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid" claude-fable-5-1 judge
+check_call "$rec" manager-0 "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid" claude-fable-5-1 pick
+check_call "$rec" implementer-1 "$fx/argv/AGT-5.txt" "$fx/prompts/PRM-3.txt" "$sid" claude-fable-5-1 implementer
+check_call "$rec" reviewer-1-fable "$fx/argv/AGT-7.txt" "$fx/prompts/PRM-4.txt" "$sid" x fable
+check_call "$rec" reviewer-1-opus "$fx/argv/AGT-8.txt" "$fx/prompts/PRM-4.txt" "$sid" x opus
+check_call "$rec" reviewer-1-astra "$fx/argv/AGT-10-1.txt" "$fx/prompts/PRM-4.txt" "$sid" x astra
+check_call "$rec" reviewer-1-sol "$fx/argv/AGT-10-2.txt" "$fx/prompts/PRM-4.txt" "$sid" x sol
+check_call "$rec" manager-1 "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid" claude-fable-5-1 judge
 argv_ok=$ok; argv_detail="$detail"
 # a second Run: clean tree, no instruction, codex implementer, another manager model
 repo="$(new_repo)"; rec="$work/rec-argv2"
@@ -261,9 +264,9 @@ $repo/run/feedback-1-astra.md
 $repo/run/feedback-1-sol.md"
 ok=1; detail=""
 [ "$e" = 0 ] || { ok=0; detail="$detail [run 2 (codex implementer): exit $e]"; }
-check_call "$rec/*-manager-0.argv" "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid" claude-opus-5 "pick (clean, no instruction)"
-check_call "$rec/*-implementer-1.argv" "$fx/argv/AGT-6.txt" "$fx/prompts/PRM-3.txt" "$sid" gpt-6-astra "codex implementer"
-check_call "$rec/*-manager-1.argv" "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid" claude-opus-5 "judge (clean)"
+check_call "$rec" manager-0 "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid" claude-opus-5 "pick (clean, no instruction)"
+check_call "$rec" implementer-1 "$fx/argv/AGT-6.txt" "$fx/prompts/PRM-3.txt" "$sid" gpt-6-astra "codex implementer"
+check_call "$rec" manager-1 "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid" claude-opus-5 "judge (clean)"
 argv2_ok=$ok; argv2_detail="$detail"
 # a third Run: the codex Manager preset, at its default model, resuming the id the pick reported,
 # over two Rounds (Round 1 sends the brief back, Round 2 finishes) so that CNF-23 reads more than
@@ -280,8 +283,8 @@ $repo/run/feedback-1-opus.md
 $repo/run/feedback-1-astra.md
 $repo/run/feedback-1-sol.md"
 ok=1; detail=""
-check_call "$rec/*-manager-0.argv" "$fx/argv/AGT-3-2.txt" "$fx/prompts/PRM-1.txt" "$sid" gpt-6-astra "codex pick"
-check_call "$rec/*-manager-1.argv" "$fx/argv/AGT-4-2.txt" "$fx/prompts/PRM-2.txt" "$sid" gpt-6-astra "codex judge"
+check_call "$rec" manager-0 "$fx/argv/AGT-3-2.txt" "$fx/prompts/PRM-1.txt" "$sid" gpt-6-astra "codex pick"
+check_call "$rec" manager-1 "$fx/argv/AGT-4-2.txt" "$fx/prompts/PRM-2.txt" "$sid" gpt-6-astra "codex judge"
 argv3_ok=$ok; argv3_detail="$detail"
 # a hostile Run: the instruction holds placeholder names and bytes a rescanning or unquoted
 # substitution would change, and the Run Directory path holds {{INSTRUCTION}} (the cyclic case);
@@ -302,9 +305,9 @@ $P_RUN_DIR/feedback-1-astra.md
 $P_RUN_DIR/feedback-1-sol.md"
 ok=1; detail=""
 [ "$e" = 0 ] || { ok=0; detail="$detail [hostile: exit $e]"; }
-check_call "$rec_h/*-manager-0.argv" "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid_h" claude-fable-5-1 "pick (hostile instruction, cyclic run dir)"
-check_call "$rec_h/*-implementer-1.argv" "$fx/argv/AGT-5.txt" "$fx/prompts/PRM-3.txt" "$sid_h" claude-fable-5-1 "implementer (cyclic run dir)"
-check_call "$rec_h/*-manager-1.argv" "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid_h" claude-fable-5-1 "judge (cyclic run dir)"
+check_call "$rec_h" manager-0 "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid_h" claude-fable-5-1 "pick (hostile instruction, cyclic run dir)"
+check_call "$rec_h" implementer-1 "$fx/argv/AGT-5.txt" "$fx/prompts/PRM-3.txt" "$sid_h" claude-fable-5-1 "implementer (cyclic run dir)"
+check_call "$rec_h" manager-1 "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid_h" claude-fable-5-1 "judge (cyclic run dir)"
 argv_hostile_ok=$ok; argv_hostile_detail="$detail"
 # a fourth Run: the Implementer on a model no Seat defaults to ($off_table_model, scenario-lib.sh);
 # every Seat is asserted, so a flag that moved the Manager's model (the claude preset's default
@@ -322,13 +325,13 @@ $repo/run/feedback-1-astra.md
 $repo/run/feedback-1-sol.md"
 ok=1; detail=""
 [ "$e" = 0 ] || { ok=0; detail="$detail [run 4 (implementer on a model no Seat defaults to): exit $e]"; }
-check_call "$rec4/*-manager-0.argv" "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid4" claude-fable-5-1 "pick (--implementer-model $off_table_model)"
-check_call "$rec4/*-implementer-1.argv" "$fx/argv/AGT-5.txt" "$fx/prompts/PRM-3.txt" x "$off_table_model" "implementer (--implementer-model $off_table_model)"
-check_call "$rec4/*-reviewer-1-fable.argv" "$fx/argv/AGT-7.txt" "$fx/prompts/PRM-4.txt" "$sid4" x "fable (--implementer-model $off_table_model)"
-check_call "$rec4/*-reviewer-1-opus.argv" "$fx/argv/AGT-8.txt" "$fx/prompts/PRM-4.txt" "$sid4" x "opus (--implementer-model $off_table_model)"
-check_call "$rec4/*-reviewer-1-astra.argv" "$fx/argv/AGT-10-1.txt" "$fx/prompts/PRM-4.txt" "$sid4" x "astra (--implementer-model $off_table_model)"
-check_call "$rec4/*-reviewer-1-sol.argv" "$fx/argv/AGT-10-2.txt" "$fx/prompts/PRM-4.txt" "$sid4" x "sol (--implementer-model $off_table_model)"
-check_call "$rec4/*-manager-1.argv" "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid4" claude-fable-5-1 "judge (--implementer-model $off_table_model)"
+check_call "$rec4" manager-0 "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid4" claude-fable-5-1 "pick (--implementer-model $off_table_model)"
+check_call "$rec4" implementer-1 "$fx/argv/AGT-5.txt" "$fx/prompts/PRM-3.txt" x "$off_table_model" "implementer (--implementer-model $off_table_model)"
+check_call "$rec4" reviewer-1-fable "$fx/argv/AGT-7.txt" "$fx/prompts/PRM-4.txt" "$sid4" x "fable (--implementer-model $off_table_model)"
+check_call "$rec4" reviewer-1-opus "$fx/argv/AGT-8.txt" "$fx/prompts/PRM-4.txt" "$sid4" x "opus (--implementer-model $off_table_model)"
+check_call "$rec4" reviewer-1-astra "$fx/argv/AGT-10-1.txt" "$fx/prompts/PRM-4.txt" "$sid4" x "astra (--implementer-model $off_table_model)"
+check_call "$rec4" reviewer-1-sol "$fx/argv/AGT-10-2.txt" "$fx/prompts/PRM-4.txt" "$sid4" x "sol (--implementer-model $off_table_model)"
+check_call "$rec4" manager-1 "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid4" claude-fable-5-1 "judge (--implementer-model $off_table_model)"
 prompts_ok=$prompt_ok; prompts_detail="$prompt_detail"
 if [ "$argv_ok" = 1 ] && [ "$argv2_ok" = 1 ] && [ "$argv3_ok" = 1 ] && [ "$argv_hostile_ok" = 1 ] && [ "$ok" = 1 ]; then verdict CNF-11 ok "every role's argv is its fixture with the placeholders filled, under both presets of the Manager and the Implementer, and a model given to each"; else verdict CNF-11 fail "$argv_detail $argv2_detail $argv3_detail $argv_hostile_detail $detail"; fi
 if [ "$prompts_ok" = 1 ]; then verdict CNF-12 ok "every prompt is its fixture rendered in one pass; placeholder names, backslash, & and %s in an instruction and {{INSTRUCTION}} in the Run Directory path survive"; else verdict CNF-12 fail "$prompts_detail"; fi
@@ -363,7 +366,8 @@ repo="$(new_repo)"; rec="$work/rec-base"
 older_hash=$(cd "$repo" && git rev-parse older)
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=done" RLOOP_FAKE_COMMIT=1 run_rloop "$repo" "$rec" --run-dir "$repo/run" --base older)
 ok=1; detail=""
-for f in $(ls "$rec"/*-reviewer-1-fable.argv "$rec"/*-reviewer-2-fable.argv "$rec"/*-manager-2.argv 2>/dev/null); do
+for f in "$rec"/*-reviewer-1-fable.argv "$rec"/*-reviewer-2-fable.argv "$rec"/*-manager-2.argv; do
+  [ -e "$f" ] || continue
   tr '\0' '\n' < "$f" | grep -q "since commit $older_hash" || { ok=0; detail="$detail [$(basename "$f") lacks $older_hash]"; }
 done
 [ "$e" = 0 ] || { ok=0; detail="$detail exit $e"; }
@@ -466,7 +470,8 @@ record_of() {
 # panel_records <label>: fills `panel` with the Panel's .env records, red unless there are the four
 # RUN-8 spawns, so the reads over them cannot pass on however many happen to exist.
 panel_records() {
-  panel=($(ls "$rec"/*-reviewer-1-*.env 2>/dev/null))
+  local f
+  panel=(); for f in "$rec"/*-reviewer-1-*.env; do [ -e "$f" ] && panel+=("$f"); done
   [ "${#panel[@]}" = 4 ] || { ok=0; detail="$detail [$1: ${#panel[@]} Reviewer records, not the Panel's four]"; }
 }
 # gone_by <label> <later record> <earlier record>: neither the earlier call's own process nor its
@@ -641,8 +646,7 @@ e=$(RLOOP_FAKE_RUNS="done,done,idle" run_rloop "$repo" "$rec" --auto "drain it")
 dirs=$(ls -d "$repo"/.rloop/runs/*/ 2>/dev/null | wc -l)
 [ "$e" = 0 ] && [ "$dirs" = 3 ] || { ok=0; detail="$detail [done,done,idle: exit $e, $dirs dirs]"; }
 expected_out=""
-for d in $(ls -d "$repo"/.rloop/runs/*/ | sort); do n=$(sed -n 's/^RUN=//p' "$rec"/*-manager-0.env | head -1); : "$n"; done
-i=0; for d in $(ls -d "$repo"/.rloop/runs/*/ | sort); do i=$((i + 1)); expected_out="$expected_out== run $i ==
+i=0; for d in "$repo"/.rloop/runs/*/; do [ -d "$d" ] || continue; i=$((i + 1)); expected_out="$expected_out== run $i ==
 $(cat "$d/finished.md")
 "; done
 [ "$(cat "$rec/stdout")" = "$(printf '%s' "$expected_out")" ] || { ok=0; detail="$detail [stdout format]"; }
@@ -971,7 +975,7 @@ opus"; seats=("${off[@]}"); model="$off_table_model" ;;
   e=$(RLOOP_FAKE_PICK=ok:done RLOOP_FAKE_PROBE_PICK="$shape" run_rloop "$repo" "$rec" --run-dir "$repo/run" ${seats[@]+"${seats[@]}"})
   started "$shape"; started_ok=$ok; started_detail="$detail"
   P_INSTRUCTION=""; P_TASK_FILE="$repo/run/task.md"; P_FINISHED_FILE="$repo/run/finished.md"; P_RUN_DIR="$repo/run"; P_DIRTY_AT_START=""
-  check_call "$rec/*-manager-0.argv" "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$(cat "$repo/run/session" 2>/dev/null)" "$model" "$shape"
+  check_call "$rec" manager-0 "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$(cat "$repo/run/session" 2>/dev/null)" "$model" "$shape"
   ok=$started_ok; detail="$started_detail"
 done
 if [ "$ok" = 1 ] && [ "$prompt_ok" = 1 ]; then verdict CNF-32 ok "the pick prompt lists the Reviewer Seats the Probe before the pick read unavailable: opus; fable; fable and opus; none"; else verdict CNF-32 fail "$detail $prompt_detail"; fi
