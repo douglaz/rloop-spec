@@ -613,6 +613,45 @@ for sig in INT TERM; do
   done
   kill_recorded "$rec"
 done
+# --- and the Probe, on the same path. `AGT-15` binds the interruption to `every live group`, and
+# `AGT-16` has `the Probe (AGT-18)` started `in its own process group` like every agent process, so an
+# Implementation that runs the Probe by a path of its own — retaining no group for the signal handler
+# to reach — passes both arms above and still leaves a straggler behind on a SIGINT during a probe.
+# Reaping a group once the call has returned and registering it with the handler are two obligations;
+# the first is `CNF-34`'s to witness at both of `RUN-21`'s call sites, and this arm is the second's.
+# The probe before the pick is the one driven: `RLOOP_FAKE_SLEEP_PROBE` makes every probe fake sleep
+# and the Run is interrupted at the first, so the Round's probe is never reached and the arm costs no
+# new knob. `--probe-timeout` is set well above the sleep so that `AGT-14`'s bound is not what ends
+# the call: what is measured is the interruption. What is read of the Run Directory is weaker than
+# the arms above and deliberately so — this is the Run's first call, so `RUN-4`'s `Run Directory`,
+# created `before the pick`, is all that exists at that instant, and `task-1.md` stays the
+# Implementer arm's witness of work left as it is (`RUN-17`). The second SIGINT stays on the
+# Implementer below: escalation is the handler's second-signal branch and not per-role.
+repo="$(new_repo)"; rec="$work/rec-sig-probe"; mkdir -p "$rec"
+( cd "$repo" && exec env --default-signal=INT,TERM PATH="$fakes:$private" RLOOP_FAKE_RECORD="$rec" RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_SLEEP_PROBE=60 RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=1 \
+    "$exe" --run-dir "$repo/run" --probe-timeout 300 --kill-after 1 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
+rpid=$!
+# The child is recorded after the .env record is opened and before the sleep, so the line, not the
+# file, is what says the fake is where this arm wants it.
+for _ in $(seq 1 50); do grep -q '^GRANDCHILD=' "$rec"/*-probe-0.env 2>/dev/null && break; sleep 0.2; done
+sleep 0.5; kill -INT "$rpid"
+wait "$rpid"; e=$?
+[ "$e" = 2 ] || { ok=0; detail="$detail [probe: exit $e]"; }
+grep -q interrupted "$rec/stderr" || { ok=0; detail="$detail [probe: no 'interrupted']"; }
+# The one record of the probe before the pick, counted rather than read through an unmatched glob:
+# no clause below may pass on absent evidence, and counting stays red under any later nullglob.
+probe0=(); for f in "$rec"/*-probe-0.env; do [ -e "$f" ] && probe0+=("$f"); done
+if [ "${#probe0[@]}" != 1 ]; then ok=0; detail="$detail [probe: ${#probe0[@]} records of the probe before the pick, not one]"
+else
+  grep -q SIGTERM "${probe0[0]}" || { ok=0; detail="$detail [probe: probe-0's fake got no SIGTERM]"; }
+  for key in PID GRANDCHILD; do
+    p=$(sed -n "s/^$key=//p" "${probe0[0]}" | head -1)
+    [ -n "$p" ] || { ok=0; detail="$detail [probe: probe-0 recorded no $key]"; continue; }
+    kill -0 "$p" 2>/dev/null && { ok=0; detail="$detail [probe: probe-0 $key $p survived]"; }
+  done
+fi
+[ -d "$repo/run" ] || { ok=0; detail="$detail [probe: run dir not intact]"; }
+kill_recorded "$rec"
 repo="$(new_repo)"; rec="$work/rec-sig2"; mkdir -p "$rec"
 ( cd "$repo" && exec env --default-signal=INT,TERM PATH="$fakes:$private" RLOOP_FAKE_RECORD="$rec" RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_SLEEP_IMPLEMENTER=60 RLOOP_FAKE_IGNORE_TERM=1 \
     "$exe" --run-dir "$repo/run" --kill-after 30 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
@@ -622,7 +661,7 @@ sleep 0.5; kill -INT "$rpid"; sleep 1; kill -INT "$rpid"
 t0=$(date +%s); wait "$rpid"; e=$?; t1=$(date +%s)
 [ $((t1 - t0)) -lt 10 ] || { ok=0; detail="$detail [second SIGINT did not kill at once]"; }
 for f in "$rec"/*.env; do ipid=$(sed -n 's/^PID=//p' "$f"); [ -n "$ipid" ] && kill -9 "$ipid" 2>/dev/null; done
-if [ "$ok" = 1 ]; then verdict CNF-18 ok "SIGINT/SIGTERM forwarded, exit 2 'interrupted', nothing survives, run dir intact"; else verdict CNF-18 fail "$detail"; fi
+if [ "$ok" = 1 ]; then verdict CNF-18 ok "SIGINT/SIGTERM forwarded, exit 2 'interrupted', nothing survives, run dir intact, for a sleeping Implementer and for the probe before the pick"; else verdict CNF-18 fail "$detail"; fi
 
 # --- CNF-19: git ------------------------------------------------------------------------------------------
 shim="$work/shim"; mkdir -p "$shim"; cp "$here/fakes/git-shim" "$shim/git"; chmod +x "$shim/git"

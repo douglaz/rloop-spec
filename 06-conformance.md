@@ -197,8 +197,31 @@ reads at the next call alone.*
 **CNF-18** SIGINT sent to the executable while an Implementer fake sleeps, having spawned a child
 that ignores SIGTERM: the fake records SIGTERM, the executable exits 2 with `interrupted` on
 standard error, neither the fake nor its child survives, and the Run Directory is intact. The
-same with SIGTERM. A second SIGINT while a fake ignores SIGTERM ends it at once. (`AGT-15`,
-`OVR-4`, `RUN-17`)
+same with SIGTERM. The same once more with a **Probe** (`AGT-18`) in the Implementer's place: SIGINT
+while the probe `RUN-21` runs `once before the pick` sleeps, having spawned such a child, under a
+`--probe-timeout` well above the sleep so that `AGT-14`'s `At the limit` is not what ends the call —
+the probe's record carries SIGTERM, the executable exits 2 with `interrupted` on standard error,
+neither the process it recorded nor the child it recorded survives, and the Run Directory is still
+there. No clause of that Run passes on absent evidence: its record is found by counting what matched
+rather than by reading an unmatched glob, and a missing record, an unrecorded process and an
+unrecorded child are each a failure. A second SIGINT while a fake ignores SIGTERM ends it at once.
+(`AGT-15`, `AGT-16`, `AGT-18`, `OVR-4`, `RUN-4`, `RUN-17`, `RUN-21`)
+*The Probe Run is here because `AGT-15` binds the interruption to `every live group`, and `AGT-16` has
+the Probe started `in its own process group` as every agent process is: an Implementation that runs
+the Probe by a path of its own, keeping no group for the handler to reach, passes the two Implementer
+Runs and still leaves a straggler behind on a SIGINT during a probe. Reaping a group once the call
+has returned is `CNF-34`'s to witness, at both call sites; registering it with the handler is this
+item's, and the Probe is the role whose call an Implementation is likeliest to write inline rather
+than through the machinery every agent call shares. The call site driven is `RUN-21`'s `once before
+the pick`, which the fake's one probe-sleep knob already lands on, so the Round's probe is never
+reached and the Run costs no new knob. Its Run-Directory clause is the weaker one deliberately: that
+probe is the Run's first call, and `RUN-21` has it `after the Run Directory exists`, `RUN-4` owning
+the creation, so the directory is the whole of what exists at that instant and `RUN-17`'s `no
+cleanup, no deletion` is what forbids removing it on the way out; `task-1.md`, the witness of work
+left as it is, stays the Implementer Runs'. The second SIGINT stays on an Implementer fake:
+escalation is the handler's second-signal branch and not per-role, and no mutant reddens a Probe copy
+of that clause without reddening this one — `07-open-findings.md`'s `F17` is on record about what an
+arm no mutant reddens costs.*
 
 ## Git
 
