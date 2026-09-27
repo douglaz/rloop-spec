@@ -366,11 +366,14 @@ repo="$(new_repo)"; rec="$work/rec-base"
 older_hash=$(cd "$repo" && git rev-parse older)
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=done" RLOOP_FAKE_COMMIT=1 run_rloop "$repo" "$rec" --run-dir "$repo/run" --base older)
 ok=1; detail=""
-# a glob matching nothing leaves $f the pattern itself: red naming it, since every read below needs
-# its record and a Run that recorded none of them was passing on the exit status alone
-for f in "$rec"/*-reviewer-1-fable.argv "$rec"/*-reviewer-2-fable.argv "$rec"/*-manager-2.argv; do
-  [ -e "$f" ] || { ok=0; detail="$detail [no record matching $(basename "$f")]"; continue; }
-  tr '\0' '\n' < "$f" | grep -q "since commit $older_hash" || { ok=0; detail="$detail [$(basename "$f") lacks $older_hash]"; }
+# each record resolved the way check_call resolves one, so that a glob matching nothing leaves $recf
+# empty whatever globbing is set and never stands in for a path: red naming the tag, since every read
+# below needs its record and a Run that recorded none of them was passing on the exit status alone
+for tag in reviewer-1-fable reviewer-2-fable manager-2; do
+  recf=""
+  for f in "$rec"/*-"$tag".argv; do [ -e "$f" ] || continue; recf="$f"; break; done
+  [ -n "$recf" ] || { ok=0; detail="$detail [no $tag record]"; continue; }
+  tr '\0' '\n' < "$recf" | grep -q "since commit $older_hash" || { ok=0; detail="$detail [$(basename "$recf") lacks $older_hash]"; }
 done
 [ "$e" = 0 ] || { ok=0; detail="$detail exit $e"; }
 if [ "$ok" = 1 ]; then verdict CNF-13 ok "--base ref rendered as its hash and stable across Rounds"; else verdict CNF-13 fail "$detail"; fi
