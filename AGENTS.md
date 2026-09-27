@@ -30,12 +30,12 @@ run is the slower one — it gets no incremental `lake` cache — which is why t
 the loop you iterate in.
 
 Neither command runs `.github/workflows/gates.yml`, whose negative controls (`README.md`, *Gates*)
-require the message each mutation makes the gate print, so a reworded message leaves every quoting
-control's `grep -qF` literal stale and CI red on a tree both commands call green — `6dc3326`
-reworded one message and `37f8fce` brought the control back into line. Whoever rewords a message a
-gate or the suite prints greps the workflow for the old text first and updates every control that
-quotes it, in the same commit; that is a manual check and not a closed door, because whether a
-mutant still reaches the new wording only the CI run witnesses.
+require the message each mutation makes the gate print, so a reworded message can leave every
+quoting control's `grep -qF` literal stale and CI red on a tree both commands call green —
+`6dc3326` reworded a message a control quoted and `37f8fce` brought the control back into line.
+Whoever rewords a message a gate or the suite prints greps the workflow for the old text first and
+updates every control that quotes it, in the same commit; that is a manual check and not a closed
+door, because whether a mutant still reaches the new wording only the CI run witnesses.
 
 A formalized clause's home is its Lean declaration in `tools/formal/`, tagged `@[req "RUN-13"]`
 (`ADR-0002`). Change the declaration and the Markdown together; a theorem that stops proving is
