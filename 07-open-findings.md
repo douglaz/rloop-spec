@@ -526,7 +526,7 @@ reads `PID` beside `GRANDCHILD` — and no mutant of either Round reddens that h
 reason its own comment gives: `Every ancestor is gone by then, so neither can be a zombie`
 (`conformance/run:489-490`). Both own-process brackets come with a green group half for one reason:
 the fake writes `GRANDCHILDREN_ALIVE` (`conformance/fakes/agent:98`) before it spawns the child that
-ignores SIGTERM (`:133`), so a call that starts while the probe is still running finds no
+ignores SIGTERM (`:140`), so a call that starts while the probe is still running finds no
 `GRANDCHILD=` line in the probe's record and has nothing to report. The group half can be green with
 the group alive, and it is the two halves together that caught these mutants.
 

@@ -113,13 +113,20 @@ if [ "$role" = reviewer ] && [ -n "${RLOOP_FAKE_SLEEP_ONLY:-}" ] && [ "$reviewer
 if [ "${RLOOP_FAKE_IGNORE_TERM:-0}" = 1 ]; then trap '' TERM; else trap 'echo "SIGTERM" >> "$rec/$tag.env"; exit 143' TERM; fi
 gc_ignore_term="${RLOOP_FAKE_GRANDCHILD_IGNORE_TERM:-0}"
 watch="${RLOOP_FAKE_WATCH:-}"
+# How long a child lives, and the invariant the items that read one rest on: it outlasts the
+# longest RLOOP_FAKE_SLEEP_<ROLE> any row of conformance/run gives a fake that spawns one, so that a
+# child still running when an item reads it is evidence about the Implementation and not about the
+# clock — a child that had exited on its own reads exactly like a group the Implementation reaped.
+# A row whose fake sleeps longer than this re-opens that gap, and nothing else here would catch it:
+# raise this number with that sleep.
+gc_life=300
 if { [ "$gc_ignore_term" = 1 ] && [ "$sleep_for" != 0 ]; } || [ "$gc_ignore_term" = "$role" ]; then
   # A subshell, not a bare sleep: the ignored disposition is set here and inherited by sleep, so
   # the group's SIGTERM ends neither; only the group's SIGKILL does.
   if [ "${watch%%:*}" = "$role" ]; then
-    # The same child, polling rather than sleeping, for the same 30 seconds in twentieths.
+    # The same child, polling rather than sleeping, for the same gc_life seconds in twentieths.
     ( trap '' TERM; : > "$rec/$tag.watching"; i=0
-      while [ "$i" -lt 600 ]; do
+      while [ "$i" -lt $(( gc_life * 20 )) ]; do
         [ -e "$run_dir/${watch#*:}" ] && { : > "$rec/$tag.seen"; break; }
         sleep 0.05; i=$(( i + 1 ))
       done ) & echo "GRANDCHILD=$!" >> "$rec/$tag.env"
@@ -130,9 +137,9 @@ if { [ "$gc_ignore_term" = 1 ] && [ "$sleep_for" != 0 ]; } || [ "$gc_ignore_term
     i=0; while [ ! -e "$rec/$tag.watching" ] && [ "$i" -lt 200 ]; do sleep 0.05; i=$(( i + 1 )); done
     [ -e "$rec/$tag.watching" ] || echo "WATCH_NOT_READY=1" >> "$rec/$tag.env"
   else
-    ( trap '' TERM; sleep 30 ) & echo "GRANDCHILD=$!" >> "$rec/$tag.env"
+    ( trap '' TERM; sleep "$gc_life" ) & echo "GRANDCHILD=$!" >> "$rec/$tag.env"
   fi
-elif [ "${RLOOP_FAKE_GRANDCHILD:-0}" = 1 ]; then sleep 300 & echo "GRANDCHILD=$!" >> "$rec/$tag.env"; fi
+elif [ "${RLOOP_FAKE_GRANDCHILD:-0}" = 1 ]; then sleep "$gc_life" & echo "GRANDCHILD=$!" >> "$rec/$tag.env"; fi
 
 pick="${RLOOP_FAKE_PICK:-ok:task}"
 if [ -n "${RLOOP_FAKE_RUNS:-}" ] && [ "$run" != unset ]; then
