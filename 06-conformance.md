@@ -206,22 +206,24 @@ there. No clause of that Run passes on absent evidence: its record is found by c
 rather than by reading an unmatched glob, and a missing record, an unrecorded process and an
 unrecorded child are each a failure. A second SIGINT while a fake ignores SIGTERM ends it at once.
 (`AGT-15`, `AGT-16`, `AGT-18`, `OVR-4`, `RUN-4`, `RUN-17`, `RUN-21`)
-*The Probe Run is here because `AGT-15` binds the interruption to `every live group`, and `AGT-16` has
-the Probe started `in its own process group` as every agent process is: an Implementation that runs
-the Probe by a path of its own, keeping no group for the handler to reach, passes the two Implementer
-Runs and still leaves a straggler behind on a SIGINT during a probe. Reaping a group once the call
-has returned is `CNF-34`'s to witness, at both call sites; registering it with the handler is this
-item's, and the Probe is the role whose call an Implementation is likeliest to write inline rather
-than through the machinery every agent call shares. The call site driven is `RUN-21`'s `once before
-the pick`, which the fake's one probe-sleep knob already lands on, so the Round's probe is never
-reached and the Run costs no new knob. Its Run-Directory clause is the weaker one deliberately: that
-probe is the Run's first call, and `RUN-21` has it `after the Run Directory exists`, `RUN-4` owning
-the creation, so the directory is the whole of what exists at that instant and `RUN-17`'s `no
-cleanup, no deletion` is what forbids removing it on the way out; `task-1.md`, the witness of work
-left as it is, stays the Implementer Runs'. The second SIGINT stays on an Implementer fake:
-escalation is the handler's second-signal branch and not per-role, and no mutant reddens a Probe copy
-of that clause without reddening this one — `07-open-findings.md`'s `F17` is on record about what an
-arm no mutant reddens costs.*
+*The Probe Run is here because `AGT-15` binds the interruption to `every live group`, and `AGT-16`
+has the Probe started `in its own process group` as every agent process is: an Implementation that
+runs the Probe by a path of its own, keeping no group for the handler to reach, passes the two
+Implementer Runs and still leaves a straggler behind on a SIGINT during a probe. Reaping a group
+once the call has returned is `CNF-34`'s to witness, at both call sites; registering it with the
+handler is this item's, and the Probe is the role whose call an Implementation is likeliest to write
+inline rather than through the machinery every agent call shares. The call site driven is `RUN-21`'s
+`once before the pick`, which the fake's one probe-sleep knob already lands on, so the Round's probe
+is never reached and the Run costs no new knob. Its Run-Directory clause is the weaker one
+deliberately: that probe is the Run's first call, and `RUN-21` has it `after the Run Directory
+exists`, `RUN-4` owning the creation, so the directory itself is all the suite can portably read at
+that instant. What `DIR-4` says of the probe's captures is `from the availability probe's stdout and
+stderr`, `before the pick` — their existence and not the moment they appear — so an Implementation
+may open them as it spawns the probe and another may write them only once the probe has returned,
+and an arm that read them there would hold every Implementation to one of the two. `RUN-17`'s `no
+cleanup, no deletion` is what forbids removing the directory on the way out; `task-1.md`, the
+witness of work left as it is, stays the Implementer Runs'. The second SIGINT stays on an
+Implementer fake: escalation is the handler's second-signal branch and not per-role.*
 
 ## Git
 
