@@ -11,9 +11,9 @@ cannot be executed is in the last section, with the reason.
 executable and exit 0 only if every one passed, printing each item's identifier and verdict. It
 needs `bash`, `git`, GNU coreutils, `grep`, `sed`, `awk`, `cmp` (diffutils) and `find` (findutils)
 on `PATH` and nothing else — no Lean, no Python, no network — so that an Implementation repository
-in any language runs it from the submodule. `TMPDIR` is where it makes its scratch tree, and a
-space or a tab in that path MUST NOT change any item's verdict or detail. A newline in it is not
-supported; `07-open-findings.md` records why.
+in any language runs it from the submodule. `TMPDIR` is where it makes its scratch tree, and the
+suite MUST expand every path it reads without splitting it on a space or a tab. A newline in it is
+not supported; `07-open-findings.md` records why.
 (`00-overview.md`)
 
 **CNF-2** The suite puts fake `claude` and `codex` executables first on `PATH`. A fake reads

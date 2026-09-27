@@ -552,13 +552,20 @@ boundary the list names; none is witnessed today.
 ## F18 — `conformance/run` is not newline-safe (deferred 2026-09-27)
 
 A newline is whitespace, and two of the suite's line-delimited path reads do not survive one.
-`record_of` (`conformance/run:467`) selects a record with `ls` into `head -1`, which truncates the
-path at the newline and reports no record of a tag that has one; `spawn_count`
+`record_of` (`conformance/run:467-468`) selects a record with `ls` into `head -1`, which truncates
+the path at the newline. The prefix that survives is non-empty, so `record_of`'s own guard never
+fires and no run of the suite prints that it has no record of the tag; the truncated path travels on
+to the reads that open it, and they report the records they cannot find as unwritten. Measured under
+`TMPDIR=$'/tmp/rv-nl\ndir'`, `CNF-34`'s detail reads `[probe-0: rv-nl recorded no PID]` and three
+further brackets, each naming the truncated prefix in place of a record. `spawn_count`
 (`conformance/run:32`) counts `.argv` files with `ls` into `wc -l` and counted one file as two. A
-space and a tab are safe in both, because neither terminates a line. The choice was to narrow
-`CNF-1` to what was measured — `a space or a tab in that path MUST NOT change any item's verdict or
-detail` (`06-conformance.md`) — rather than convert the suite: the rest of that class is about 25
-reads inside the artifact every Implementation is judged by, each one a chance to turn a red row
-green or a green row red, for a `TMPDIR` shape no user is known to want. Settled by Consultation,
-two advisers agreeing independently. `rl-suite-newline-paths-deferred-mzc` holds the measurements,
-the sites and what a conversion would have to demonstrate.
+space and a tab are safe in both, because neither terminates a line. The choice was to put `CNF-1`'s
+whitespace obligation on how the suite reads a path — the suite `MUST expand every path it reads
+without splitting it on a space or a tab` (`06-conformance.md`) — and to exclude a newline there
+rather than convert the suite: the rest of that class is about 25 reads inside the artifact every
+Implementation is judged by, each one a chance to turn a red row green or a green row red, for a
+`TMPDIR` shape no user is known to want. Settled by Consultation, two advisers agreeing
+independently. `rl-suite-newline-paths-deferred-mzc` holds the measurements, the sites and what a
+conversion would have to demonstrate. `3744925`'s commit message carries the same wrong symptom this
+finding carried as first written — that the truncation reports no record of a tag that has a
+newline — and history is not rewritten here, so this paragraph is the correction.
