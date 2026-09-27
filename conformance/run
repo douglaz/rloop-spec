@@ -366,8 +366,10 @@ repo="$(new_repo)"; rec="$work/rec-base"
 older_hash=$(cd "$repo" && git rev-parse older)
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=done" RLOOP_FAKE_COMMIT=1 run_rloop "$repo" "$rec" --run-dir "$repo/run" --base older)
 ok=1; detail=""
+# a glob matching nothing leaves $f the pattern itself: red naming it, since every read below needs
+# its record and a Run that recorded none of them was passing on the exit status alone
 for f in "$rec"/*-reviewer-1-fable.argv "$rec"/*-reviewer-2-fable.argv "$rec"/*-manager-2.argv; do
-  [ -e "$f" ] || continue
+  [ -e "$f" ] || { ok=0; detail="$detail [no record matching $(basename "$f")]"; continue; }
   tr '\0' '\n' < "$f" | grep -q "since commit $older_hash" || { ok=0; detail="$detail [$(basename "$f") lacks $older_hash]"; }
 done
 [ "$e" = 0 ] || { ok=0; detail="$detail exit $e"; }

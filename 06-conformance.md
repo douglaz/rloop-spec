@@ -125,7 +125,9 @@ fixtures with each value's bytes unchanged, as `PRM-6` renders them. Each render
 
 **CNF-13** `{{BASE}}` is the full hash of `HEAD` at start, and with `--base <ref>` the full hash of
 that ref; a commit the fake Implementer makes during Round 1 does not change the base rendered
-into Round 2's prompts. (`RUN-2`)
+into Round 2's prompts. The base is read out of each Round's `fable` Reviewer call and Round 2's
+judge call, and the item cannot pass on absent evidence: a record of one of those calls missing is
+red. (`RUN-2`)
 
 ## Output
 
