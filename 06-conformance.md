@@ -156,33 +156,38 @@ and, when the executable has returned, neither the fake nor its child is running
 on 2026-09-23: an Implementation that waits for its `timeout` wrapper alone returned 2 with the
 SIGTERM-ignoring child alive, since the wrapper returns the moment the fake itself dies.*
 
-**CNF-34** With `--kill-after 1` and a Run of one Round that every role completes — the pick
-writes a Task File, the Implementer and all four Reviewers succeed and the judge writes
-`STATUS: done` — each Manager fake exiting 0 having spawned a child that ignores SIGTERM: the Run
-exits 0; no call of the Run records any of those children among the children alive when it
-started, nor the pick's or the Implementer's own process among the calls alive when it started;
-and once the executable has returned, neither a fake that spawned one nor any of the children is
-running. The same Run with the Implementer fake spawning that child instead of the Manager's. A
-third Run of that second shape, the Implementer fake also appending to the Task File and its child
-polling for `rejected-1-task.md` under the Run Directory rather than sleeping: the Run exits 0,
+**CNF-34** With `--kill-after 1` and a Run of one Round that every role completes — the pick writes
+a Task File, the Implementer and all four Reviewers succeed and the judge writes `STATUS: done` —
+each Manager fake exiting 0 having spawned a child that ignores SIGTERM: the Run exits 0; no call of
+the Run records any of those children among the children alive when it started, nor the pick's or
+the Implementer's own process among the calls alive when it started; and once the executable has
+returned, neither a fake that spawned one nor any of the children is running. The same Run with the
+Implementer fake spawning that child instead of the Manager's. The same Run with every Reviewer fake
+spawning it: the judge's record — the first call to start once every Reviewer has exited — carries
+no Reviewer's child among the children alive when it started and no Reviewer's own process among the
+calls alive when it started. The same Run with both of the Run's probes spawning it: the pick's
+record carries neither the child nor the own process of the probe before the pick, and each of the
+Panel's four records carries neither the child nor the own process of the Round's probe. Neither of
+those two Runs can pass on absent evidence: a missing record, a missing snapshot line, a missing
+recorded pid and a Panel of other than four records are each red. A further Run of the Implementer's
+shape, the Implementer fake also appending to the Task File and its child polling for
+`rejected-1-task.md` under the Run Directory rather than sleeping: the Run exits 0,
 `rejected-1-task.md` is there, the child recorded that it was watching before its fake exited, and
-it never found the file — so the Implementer's group was gone before the Checkpoint that follows
-its call, and not only before the next call.
+it never found the file — so the Implementer's group was gone before the Checkpoint that follows its
+call, and not only before the next call.
 *A call that exits 0 is what `AGT-14`'s `At the limit` never reaches, and leaving a check running is
 a habit `07-open-findings.md`'s `F16` records: the child of a healthy Implementer writes into the
 working tree through the whole Panel and the Manager's commit. `CNF-17` reads the same record for
-the reaping after a timeout. Of the calls whose own process a later call's record can speak for,
-this item names the pick and the Implementer: no sibling Reviewer's record can speak for another,
-since `RUN-8` has the Panel's Reviewers spawned so that `none waits for another to finish`, so a
-Reviewer that finds a sibling's process alive has found that working. The Reviewer's own process,
-which the judge's record could speak for, and the Probe's — `RUN-21` runs it `once before the pick`
-and `once immediately before each Round's Panel`, and `RUN-7` has the Round's probe
-`waited for before the Panel starts`, as sequential as the two named — are out for scope: no item
-drives either yet. The Checkpoint starts no call, so no record of a later one speaks for that
-boundary and the straggler is the witness; the appended Task File is what makes `DIR-6`
-`move task.md to rejected-<r>-task.md` there, and the child's recorded readiness is what keeps its
-silence from passing for compliance. `F17` names the boundaries this item still reads at the next
-call alone.*
+the reaping after a timeout. The pick's and the Implementer's own processes are read from every
+later record, each Reviewer's from the judge's record alone, and each probe's from the call that
+follows it (`RUN-21`, `RUN-7`). What `RUN-8` forecloses is a *sibling* Reviewer's record, having the
+Panel's Reviewers spawned so that `none waits for another to finish`: a Reviewer that finds a
+sibling's process — or a sibling's child — alive has found that working, which is why the judge, the
+call after the whole Panel, is where a Reviewer is read. The Checkpoint starts no call, so no record
+of a later one speaks for that boundary and the straggler is the witness; the appended Task File is
+what makes `DIR-6` `move task.md to rejected-<r>-task.md` there, and the child's recorded readiness
+is what keeps its silence from passing for compliance. `F17` names the boundaries this item still
+reads at the next call alone.*
 (`AGT-15`, `AGT-16`, `DIR-6`)
 
 **CNF-18** SIGINT sent to the executable while an Implementer fake sleeps, having spawned a child

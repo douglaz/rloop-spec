@@ -457,6 +457,47 @@ if [ "$ok" = 1 ]; then verdict CNF-17 ok "timeouts kill the group, the child tha
 # at each call's start is the record's own (GRANDCHILDREN_ALIVE, CALLS_ALIVE), so "gone before the
 # step that follows" is read from the calls that came after, not measured by the suite.
 ok=1; detail=""
+# record_of <label> <tag>: sets `found` to the one .env record of that tag, and leaves it empty
+# and the item red when there is none — every read below needs its record.
+record_of() {
+  found=$(ls "$rec"/*-"$2".env 2>/dev/null | head -1)
+  [ -n "$found" ] || { ok=0; detail="$detail [$1: no record of $2]"; }
+}
+# panel_records <label>: fills `panel` with the Panel's .env records, red unless there are the four
+# RUN-8 spawns, so the reads over them cannot pass on however many happen to exist.
+panel_records() {
+  panel=($(ls "$rec"/*-reviewer-1-*.env 2>/dev/null))
+  [ "${#panel[@]}" = 4 ] || { ok=0; detail="$detail [$1: ${#panel[@]} Reviewer records, not the Panel's four]"; }
+}
+# gone_by <label> <later record> <earlier record>: neither the earlier call's own process nor its
+# child is among what the later call recorded alive at its start. Every part of the read is guarded
+# — the earlier call's two pids and the later call's two snapshot lines — since an unwritten one is
+# a red item, not a vacuous pass.
+gone_by() {
+  local label="$1" later="$2" earlier="$3" pair key snap p
+  { [ -n "$later" ] && [ -n "$earlier" ]; } || return 0
+  for pair in PID:CALLS_ALIVE GRANDCHILD:GRANDCHILDREN_ALIVE; do
+    key="${pair%%:*}"; snap="${pair#*:}"
+    p=$(sed -n "s/^$key=//p" "$earlier" 2>/dev/null)
+    [ -n "$p" ] || { ok=0; detail="$detail [$label: $(basename "$earlier") recorded no $key]"; continue; }
+    grep -q "^$snap=" "$later" 2>/dev/null || { ok=0; detail="$detail [$label: $(basename "$later") has no $snap line]"; continue; }
+    pid_in "$p" "$(sed -n "s/^$snap=//p" "$later")" \
+      && { ok=0; detail="$detail [$label: $(basename "$earlier") $key $p alive when $(basename "$later") started]"; }
+  done
+}
+# nothing_survived <label>: of every fake that spawned a child, neither its own pid nor the child's
+# is running once the executable has returned. Every ancestor is gone by then, so neither can be a
+# zombie.
+nothing_survived() {
+  local f key p
+  for f in "$rec"/*.env; do
+    grep -q '^GRANDCHILD=' "$f" || continue
+    for key in PID GRANDCHILD; do
+      p=$(sed -n "s/^$key=//p" "$f")
+      [ -n "$p" ] && kill -0 "$p" 2>/dev/null && { ok=0; detail="$detail [$1: $(basename "$f") $key $p survived the Run]"; }
+    done
+  done
+}
 for spawner in manager implementer; do
   repo="$(new_repo)"; rec="$work/rec-reap-$spawner"
   e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_GRANDCHILD_IGNORE_TERM="$spawner" run_rloop "$repo" "$rec" --run-dir "$repo/run" --kill-after 1)
@@ -468,9 +509,10 @@ for spawner in manager implementer; do
     pid_in "$p" "$alive" && { ok=0; detail="$detail [$spawner: child $p alive when a later call started]"; }
   done
   # And two calls' own processes, each before the step that follows it: the pick, which RUN-6
-  # follows `After the pick`, and the Implementer, RUN-7's first step. Not a Reviewer's own process
-  # and not the Probe's: both are out for scope, and CNF-34's note owns the reason. The judge's
-  # line is read too: an unwritten snapshot is a red item, not a vacuous pass.
+  # follows `After the pick`, and the Implementer, RUN-7's first step. A Reviewer's own process and
+  # the Probe's are read by the rows below instead, each at a boundary of its own; CNF-34's note
+  # owns the reason. The judge's line is read too: an unwritten snapshot is a red item, not a
+  # vacuous pass.
   calls=$(sed -n 's/^CALLS_ALIVE=//p' "$rec"/*.env 2>/dev/null | tr '\n' ' ')
   judge_env=$(ls "$rec"/*-manager-1.env 2>/dev/null | head -1)
   [ -n "$judge_env" ] && grep -q '^CALLS_ALIVE=' "$judge_env" || { ok=0; detail="$detail [$spawner: the judge's record has no CALLS_ALIVE line]"; }
@@ -479,15 +521,40 @@ for spawner in manager implementer; do
     if [ -z "$p" ]; then ok=0; detail="$detail [$spawner: $own_tag recorded no PID]"
     elif pid_in "$p" "$calls"; then ok=0; detail="$detail [$spawner: $own_tag $p alive when a later call started]"; fi
   done
-  for f in "$rec"/*.env; do
-    grep -q '^GRANDCHILD=' "$f" || continue
-    for key in PID GRANDCHILD; do
-      p=$(sed -n "s/^$key=//p" "$f")
-      [ -n "$p" ] && kill -0 "$p" 2>/dev/null && { ok=0; detail="$detail [$spawner: $(basename "$f") $key $p survived the Run]"; }
-    done
-  done
+  nothing_survived "$spawner"
   kill_recorded "$rec"
 done
+# --- the Panel's Reviewers. The union above cannot speak for one: RUN-8 has them spawned so that
+# `none waits for another to finish`, so a Reviewer that finds a sibling's process — or a sibling's
+# child — alive has found RUN-8 working, not a defect. What reaches a Reviewer is RUN-8's other
+# clause, `rloop MUST wait for every one of them before the Checkpoint that follows`, with RUN-7
+# putting `the Checkpoint again` and then the judge after the Panel: the judge is the first call
+# that starts once every Reviewer has exited, so its record is read alone, and each of the Panel's
+# four is read against it.
+repo="$(new_repo)"; rec="$work/rec-reap-reviewer"
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=reviewer run_rloop "$repo" "$rec" --run-dir "$repo/run" --kill-after 1)
+[ "$e" = 0 ] || { ok=0; detail="$detail [reviewer: exit $e]"; }
+record_of reviewer manager-1; judge_env="$found"
+panel_records reviewer
+for f in ${panel[@]+"${panel[@]}"}; do gone_by reviewer "$judge_env" "$f"; done
+nothing_survived reviewer
+kill_recorded "$rec"
+# --- the Probe, at both of RUN-21's call sites. It is sequential at each — RUN-21 runs it `once
+# before the pick` and `once immediately before each Round's Panel`, and RUN-7 has the Round's probe
+# `waited for before the Panel starts` — so the call that follows each is a tighter boundary than
+# the judge, and one Run gives both probes a child: the pick's record for the probe before the pick,
+# and every Reviewer's for the Round's.
+repo="$(new_repo)"; rec="$work/rec-reap-probe"
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=probe run_rloop "$repo" "$rec" --run-dir "$repo/run" --kill-after 1)
+[ "$e" = 0 ] || { ok=0; detail="$detail [probe: exit $e]"; }
+record_of probe-0 probe-0; probe0_env="$found"
+record_of probe-0 manager-0; pick_env="$found"
+gone_by probe-0 "$pick_env" "$probe0_env"
+record_of probe-1 probe-1; probe1_env="$found"
+panel_records probe-1
+for f in ${panel[@]+"${panel[@]}"}; do gone_by probe-1 "$f" "$probe1_env"; done
+nothing_survived probe
+kill_recorded "$rec"
 # And the Checkpoint boundary. RUN-7 has a Round consist of `one Implementer call`, then `the
 # Checkpoint (DIR-6)`, then `the availability probe`, so no agent call falls between the Implementer
 # and the step that follows it and no snapshot above can speak for that step: the witness has to be
@@ -516,7 +583,7 @@ ls "$rec"/*.seen >/dev/null 2>&1 && { ok=0; detail="$detail [checkpoint: the Imp
 gc=$(sed -n 's/^GRANDCHILD=//p' "$rec"/*-implementer-1.env 2>/dev/null)
 { [ -n "$gc" ] && ! kill -0 "$gc" 2>/dev/null; } || { ok=0; detail="$detail [checkpoint: the Implementer's child ${gc:-(unrecorded)} is alive once the executable has returned]"; }
 kill_recorded "$rec"
-if [ "$ok" = 1 ]; then verdict CNF-34 ok "a call that exits 0 leaves neither its own process nor anything in its group, for a Manager call and for the Implementer, and the Implementer's group is gone before the Checkpoint that follows it"; else verdict CNF-34 fail "$detail"; fi
+if [ "$ok" = 1 ]; then verdict CNF-34 ok "a call that exits 0 leaves neither its own process nor anything in its group, for a Manager call, for the Implementer, for every Reviewer of the Panel read from the judge's record and for both probes read from the call that follows each, and the Implementer's group is gone before the Checkpoint that follows it"; else verdict CNF-34 fail "$detail"; fi
 
 # --- CNF-18: interruption ------------------------------------------------------------------------------
 ok=1; detail=""

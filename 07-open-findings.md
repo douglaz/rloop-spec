@@ -502,9 +502,12 @@ boundary's alone, but neither `RLOOP_FAKE_INTERFERENCE=1:afterImplementer:editTa
 against a missing `rejected-1-task.md` is demonstrated by that executable.
 
 *What `CNF-34` still reads at the next call alone.* The Checkpoint after the Implementer is the one
-step boundary the item now observes, and it is the boundary whose files a straggler races
-(`DIR-6`). Three are still observed only at the call that follows: the pick's, where the next step
-is `RUN-6`'s `copy the Task File to` `task-1.md`; the Panel's, where `RUN-7` has `the Checkpoint
-again`; and the judge's, where `RUN-7` has `the decision` — and in a Run of one Round no later call
-exists at all, so the judge's own snapshot is read only to keep an unwritten one from passing. The
-same watching straggler would witness each of them; none is witnessed today.
+step boundary the item now observes, and it is the boundary whose files a straggler races (`DIR-6`).
+Three are still observed only at the call that follows: the pick's, where the next step is `RUN-6`'s
+`copy the Task File to` `task-1.md`; the Panel's, where `RUN-7` has `the Checkpoint again` and the
+judge's record is what the Reviewer row reads in its place; and the judge's, where `RUN-7` has
+`the decision` — and in a Run of one Round no later call exists at all, so the judge's own snapshot
+is read only to keep an unwritten one from passing. The Probe row's two boundaries are not among
+them: the step after each probe call is itself a call — the pick after the one before the pick, the
+Panel after the Round's (`RUN-21`, `RUN-7`) — so there the call that follows is the step that
+follows. The same watching straggler would witness each of the three; none is witnessed today.
