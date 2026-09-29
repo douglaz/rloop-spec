@@ -688,9 +688,9 @@ done
 # and calls the pick. What separates the two is that record and the calls after it and not the exit
 # status, which is 2 either way when the defect is the pick's alone: the Round the mutant goes on to
 # reaches RUN-21's other call site, whose probe leaves the same straggler, and RUN-22 refuses there
-# instead. That the line is byte-exactly what no probe shape writes (every shape's Fable line
-# carries a ` · resets` suffix, and `both`'s, which does not, is not the shape the row pins) is what
-# keeps the fake's own output from standing in for the straggler's.
+# instead. What keeps the fake's own output from standing in for the straggler's is that pin: the
+# `clear` shape writes that aggregate line and no other, so the Fable line the read acts on can have
+# come from nothing but the child.
 # The window, and why each end has margin: the child waits for its own fake to exit and then one
 # second more before its first write, so a read that comes before the reaping has that whole second
 # in which the line cannot yet be there, while --kill-after 4 leaves the SIGTERM-ignoring child
