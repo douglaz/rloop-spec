@@ -341,6 +341,31 @@ check_call "$rec_h" manager-0 "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$s
 check_call "$rec_h" implementer-1 "$fx/argv/AGT-5.txt" "$fx/prompts/PRM-3.txt" "$sid_h" claude-fable-5-1 "implementer (cyclic run dir)"
 check_call "$rec_h" manager-1 "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid_h" claude-fable-5-1 "judge (cyclic run dir)"
 argv_hostile_ok=$ok; argv_hostile_detail="$detail"
+# a whitespace Run: the repository's own path holds a space and a tab, and so does the Run
+# Directory's (RUN-23). The suite builds both paths itself rather than reading either out of
+# TMPDIR, so this witness cannot move with what the caller exported. Every path rloop renders into
+# a prompt or passes on a command line is compared here against the fixture rendered with those
+# same paths, byte for byte: PRM-2 alone carries the Run Directory, the Task File, the Finished
+# File, the Implementer log and the four Feedback File paths, so a path word-split on its way into
+# a prompt or an argument is red under any TMPDIR. What the Run Directory holds afterwards is
+# CNF-9's whitespace arm; this one reads what the agents were handed.
+repo="$(new_repo "$work/ws argv"$'\t'"tab")"; rec_ws="$work/rec-argv-ws"  # its own rec and sid
+base_hash=$(cd "$repo" && git rev-parse HEAD)
+P_RUN_DIR="$repo/run dir"$'\t'"tab"
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec_ws" --run-dir "$P_RUN_DIR")
+sid_ws=$(cat "$P_RUN_DIR/session" 2>/dev/null)
+P_INSTRUCTION=""; P_TASK_FILE="$P_RUN_DIR/task.md"; P_FINISHED_FILE="$P_RUN_DIR/finished.md"; P_BASE="$base_hash"
+P_ROUND=1; P_MAX_ROUNDS=10; P_IMPLEMENTER_LOG="$P_RUN_DIR/implementer-1.out"; P_DIRTY_AT_START=""; P_UNAVAILABLE=""
+P_FEEDBACK_FILES="$P_RUN_DIR/feedback-1-fable.md
+$P_RUN_DIR/feedback-1-opus.md
+$P_RUN_DIR/feedback-1-astra.md
+$P_RUN_DIR/feedback-1-sol.md"
+ok=1; detail=""
+[ "$e" = 0 ] || { ok=0; detail="$detail [whitespace paths: exit $e]"; }
+check_call "$rec_ws" manager-0 "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid_ws" claude-fable-5-1 "pick (whitespace paths)"
+check_call "$rec_ws" implementer-1 "$fx/argv/AGT-5.txt" "$fx/prompts/PRM-3.txt" "$sid_ws" claude-fable-5-1 "implementer (whitespace paths)"
+check_call "$rec_ws" manager-1 "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid_ws" claude-fable-5-1 "judge (whitespace paths)"
+argv_ws_ok=$ok; argv_ws_detail="$detail"
 # a fourth Run: the Implementer on a model no Seat defaults to ($off_table_model, scenario-lib.sh);
 # every Seat is asserted, so a flag that moved the Manager's model (the claude preset's default
 # here) or any Reviewer's fixed one is caught. An Implementation that does not accept the flag
@@ -365,8 +390,8 @@ check_call "$rec4" reviewer-1-astra "$fx/argv/AGT-10-1.txt" "$fx/prompts/PRM-4.t
 check_call "$rec4" reviewer-1-sol "$fx/argv/AGT-10-2.txt" "$fx/prompts/PRM-4.txt" "$sid4" x "sol (--implementer-model $off_table_model)"
 check_call "$rec4" manager-1 "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid4" claude-fable-5-1 "judge (--implementer-model $off_table_model)"
 prompts_ok=$prompt_ok; prompts_detail="$prompt_detail"
-if [ "$argv_ok" = 1 ] && [ "$argv2_ok" = 1 ] && [ "$argv3_ok" = 1 ] && [ "$argv_hostile_ok" = 1 ] && [ "$ok" = 1 ]; then verdict CNF-11 ok "every role's argv is its fixture with the placeholders filled, under both presets of the Manager and the Implementer, and a model given to each"; else verdict CNF-11 fail "$argv_detail $argv2_detail $argv3_detail $argv_hostile_detail $detail"; fi
-if [ "$prompts_ok" = 1 ]; then verdict CNF-12 ok "every prompt is its fixture rendered in one pass; placeholder names, backslash, & and %s in an instruction and {{INSTRUCTION}} in the Run Directory path survive"; else verdict CNF-12 fail "$prompts_detail"; fi
+if [ "$argv_ok" = 1 ] && [ "$argv2_ok" = 1 ] && [ "$argv3_ok" = 1 ] && [ "$argv_hostile_ok" = 1 ] && [ "$argv_ws_ok" = 1 ] && [ "$ok" = 1 ]; then verdict CNF-11 ok "every role's argv is its fixture with the placeholders filled, under both presets of the Manager and the Implementer, a model given to each, and paths holding a space and a tab"; else verdict CNF-11 fail "$argv_detail $argv2_detail $argv3_detail $argv_hostile_detail $argv_ws_detail $detail"; fi
+if [ "$prompts_ok" = 1 ]; then verdict CNF-12 ok "every prompt is its fixture rendered in one pass; placeholder names, backslash, & and %s in an instruction, {{INSTRUCTION}} in the Run Directory path, and a space and a tab in the repository's and the Run Directory's paths survive"; else verdict CNF-12 fail "$prompts_detail"; fi
 
 # --- CNF-23: the codex Manager's session id ------------------------------------------------------------
 ok=1; detail=""

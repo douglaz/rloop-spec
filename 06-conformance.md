@@ -94,7 +94,8 @@ holds the Manager's session id as a UUID, whichever preset established it (`RUN-
 directory is intact after a Run that ended 2. One further two-Round Run has the repository's own
 path hold a space and a tab, and its `--run-dir` a space as well, and leaves that same listing; the
 suite makes that path itself rather than reading it out of `TMPDIR`, since an item that sees
-whitespace only when the caller exports it is exactly the verdict that moves with `TMPDIR`.
+whitespace only when the caller exports it gives a verdict that moves with `TMPDIR`. That arm reads
+what the Run Directory holds afterwards; what the agents were handed is `CNF-11`'s and `CNF-12`'s.
 (`DIR-4`, `RUN-17`, `RUN-23`)
 
 ## What agents receive
@@ -113,7 +114,11 @@ claude default, the codex default and a non-default value given on the command l
 `--manager codex` produces `AGT-3`'s and `AGT-4`'s second lists and the default produces their
 first; `--implementer codex` produces `AGT-6`'s list and the default `AGT-5`'s; the four
 Reviewers' lists are `AGT-7`, `AGT-8` and `AGT-10`'s, one each, with their `RLOOP_REVIEWER` names.
-(`AGT-3`, `AGT-4`, `AGT-5`, `AGT-6`, `AGT-7`, `AGT-8`, `AGT-10`, `AGT-11`, `RUN-16`, `OVR-2`)
+One further Run has the repository's own path and its `--run-dir` path each hold a space and a tab,
+and its pick, Implementer and judge lists equal their fixtures with those paths' bytes unchanged;
+the suite makes both paths itself rather than reading either out of `TMPDIR`, so no verdict here
+moves with what the caller exported. (`AGT-3`, `AGT-4`, `AGT-5`, `AGT-6`, `AGT-7`, `AGT-8`,
+`AGT-10`, `AGT-11`, `RUN-16`, `RUN-23`, `OVR-2`)
 
 **CNF-12** For each role the recorded prompt argument equals the fixture in
 `conformance/fixtures/prompts/` rendered by `PRM-6` with the values the suite knows: the Run
@@ -124,8 +129,13 @@ reports anything exhausted (`CNF-32` asserts it populated, and empty in a Run of
 four Feedback File paths in order. One further Run gives an instruction holding placeholder names
 (`{{TASK_FILE}}`, `{{UNAVAILABLE}}`, `{{ROUND}}`) together with a backslash, `&` and `%s`, and a
 `--run-dir` path holding `{{INSTRUCTION}}`; its pick, Implementer and judge prompts equal their
-fixtures with each value's bytes unchanged, as `PRM-6` renders them. Each rendered prompt ends with
-`PRM-5`'s sentence. (`PRM-1`, `PRM-2`, `PRM-3`, `PRM-4`, `PRM-5`, `PRM-6`, `RUN-3`, `DIR-10`)
+fixtures with each value's bytes unchanged, as `PRM-6` renders them. A further Run, the one
+`CNF-11` reads the argument lists of, has the repository's own path and its `--run-dir` path each
+hold a space and a tab; its judge prompt alone carries the Run Directory, the Task File, the
+Finished File, the Implementer log and the four Feedback File paths, and each equals the fixture
+rendered with the path the suite handed the executable, byte for byte. Each rendered prompt ends
+with `PRM-5`'s sentence. (`PRM-1`, `PRM-2`, `PRM-3`, `PRM-4`, `PRM-5`, `PRM-6`, `RUN-3`, `RUN-23`,
+`DIR-10`)
 
 **CNF-13** `{{BASE}}` is the full hash of `HEAD` at start, and with `--base <ref>` the full hash of
 that ref; a commit the fake Implementer makes during Round 1 does not change the base rendered
