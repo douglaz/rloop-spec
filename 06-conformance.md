@@ -115,10 +115,10 @@ claude default, the codex default and a non-default value given on the command l
 first; `--implementer codex` produces `AGT-6`'s list and the default `AGT-5`'s; the four
 Reviewers' lists are `AGT-7`, `AGT-8` and `AGT-10`'s, one each, with their `RLOOP_REVIEWER` names.
 One further Run has the repository's own path and its `--run-dir` path each hold a space and a tab,
-and its pick, Implementer and judge lists equal their fixtures with those paths' bytes unchanged;
-the suite makes both paths itself rather than reading either out of `TMPDIR`, so no verdict here
-moves with what the caller exported. (`AGT-3`, `AGT-4`, `AGT-5`, `AGT-6`, `AGT-7`, `AGT-8`,
-`AGT-10`, `AGT-11`, `RUN-16`, `RUN-23`, `OVR-2`)
+and every role's list — the pick's, the Implementer's, the four Reviewers' and the judge's — equals
+its fixture with those paths' bytes unchanged; the suite makes both paths itself rather than
+reading either out of `TMPDIR`, so no verdict here moves with what the caller exported. (`AGT-3`,
+`AGT-4`, `AGT-5`, `AGT-6`, `AGT-7`, `AGT-8`, `AGT-10`, `AGT-11`, `RUN-16`, `RUN-23`, `OVR-2`)
 
 **CNF-12** For each role the recorded prompt argument equals the fixture in
 `conformance/fixtures/prompts/` rendered by `PRM-6` with the values the suite knows: the Run
@@ -131,11 +131,10 @@ four Feedback File paths in order. One further Run gives an instruction holding 
 `--run-dir` path holding `{{INSTRUCTION}}`; its pick, Implementer and judge prompts equal their
 fixtures with each value's bytes unchanged, as `PRM-6` renders them. A further Run, the one
 `CNF-11` reads the argument lists of, has the repository's own path and its `--run-dir` path each
-hold a space and a tab; its judge prompt alone carries the Run Directory, the Task File, the
-Finished File, the Implementer log and the four Feedback File paths, and each equals the fixture
-rendered with the path the suite handed the executable, byte for byte. Each rendered prompt ends
-with `PRM-5`'s sentence. (`PRM-1`, `PRM-2`, `PRM-3`, `PRM-4`, `PRM-5`, `PRM-6`, `RUN-3`, `RUN-23`,
-`DIR-10`)
+hold a space and a tab; every role's prompt — the pick's, the Implementer's, the four Reviewers'
+and the judge's — equals the fixture rendered with the paths the suite handed the executable, byte
+for byte. Each rendered prompt ends with `PRM-5`'s sentence. (`PRM-1`, `PRM-2`, `PRM-3`, `PRM-4`,
+`PRM-5`, `PRM-6`, `RUN-3`, `RUN-23`, `DIR-10`)
 
 **CNF-13** `{{BASE}}` is the full hash of `HEAD` at start, and with `--base <ref>` the full hash of
 that ref; a commit the fake Implementer makes during Round 1 does not change the base rendered

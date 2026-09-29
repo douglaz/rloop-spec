@@ -343,12 +343,12 @@ check_call "$rec_h" manager-1 "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$s
 argv_hostile_ok=$ok; argv_hostile_detail="$detail"
 # a whitespace Run: the repository's own path holds a space and a tab, and so does the Run
 # Directory's (RUN-23). The suite builds both paths itself rather than reading either out of
-# TMPDIR, so this witness cannot move with what the caller exported. Every path rloop renders into
-# a prompt or passes on a command line is compared here against the fixture rendered with those
-# same paths, byte for byte: PRM-2 alone carries the Run Directory, the Task File, the Finished
-# File, the Implementer log and the four Feedback File paths, so a path word-split on its way into
-# a prompt or an argument is red under any TMPDIR. What the Run Directory holds afterwards is
-# CNF-9's whitespace arm; this one reads what the agents were handed.
+# TMPDIR, so this witness cannot move with what the caller exported. Every role of the Run is read
+# here — the pick, the Implementer, the four Reviewers and the judge — so every path rloop renders
+# into a prompt or passes on a command line is compared against the fixture rendered with those
+# same paths, byte for byte, and a path word-split on its way into any one of them is red under any
+# TMPDIR. What the Run Directory holds afterwards is CNF-9's whitespace arm; this one reads what
+# the agents were handed.
 repo="$(new_repo "$work/ws argv"$'\t'"tab")"; rec_ws="$work/rec-argv-ws"  # its own rec and sid
 base_hash=$(cd "$repo" && git rev-parse HEAD)
 P_RUN_DIR="$repo/run dir"$'\t'"tab"
@@ -364,6 +364,10 @@ ok=1; detail=""
 [ "$e" = 0 ] || { ok=0; detail="$detail [whitespace paths: exit $e]"; }
 check_call "$rec_ws" manager-0 "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid_ws" claude-fable-5-1 "pick (whitespace paths)"
 check_call "$rec_ws" implementer-1 "$fx/argv/AGT-5.txt" "$fx/prompts/PRM-3.txt" "$sid_ws" claude-fable-5-1 "implementer (whitespace paths)"
+check_call "$rec_ws" reviewer-1-fable "$fx/argv/AGT-7.txt" "$fx/prompts/PRM-4.txt" "$sid_ws" x "fable (whitespace paths)"
+check_call "$rec_ws" reviewer-1-opus "$fx/argv/AGT-8.txt" "$fx/prompts/PRM-4.txt" "$sid_ws" x "opus (whitespace paths)"
+check_call "$rec_ws" reviewer-1-astra "$fx/argv/AGT-10-1.txt" "$fx/prompts/PRM-4.txt" "$sid_ws" x "astra (whitespace paths)"
+check_call "$rec_ws" reviewer-1-sol "$fx/argv/AGT-10-2.txt" "$fx/prompts/PRM-4.txt" "$sid_ws" x "sol (whitespace paths)"
 check_call "$rec_ws" manager-1 "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid_ws" claude-fable-5-1 "judge (whitespace paths)"
 argv_ws_ok=$ok; argv_ws_detail="$detail"
 # a fourth Run: the Implementer on a model no Seat defaults to ($off_table_model, scenario-lib.sh);
