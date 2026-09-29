@@ -40,6 +40,23 @@ run "fixtures     (the suite's fixtures are the documents' blocks)" python3 tool
 run "scenarios    (the committed scenarios are what the model enumerates)" python3 tools/check_scenarios.py
 run "panel-trace  (the suite's comparator on hand-written traces, the fake past a script's last Round and probe shape, restrict_path's skip, its refusals and its relative-entry normalisation; the executable checks run in an Implementation's CI)" conformance/test-panel-trace
 
+# The last gate runs this script: tools/test_citation_gates.py's aggregate control copies
+# the set and runs check-all.sh in the copy, three times. That control sets
+# RLOOP_SPEC_CITATION_CONTROLS_NESTED in the environment it passes to each of those runs,
+# and a run that sees it skips this one step, so neither entry point -- this script, or
+# `python3 tools/test_citation_gates.py` run directly -- recurses. The skip is announced
+# and takes no SUMMARY row: a PASS for a gate that did not run is the false green this
+# step exists to close. Nothing else sets this variable; anything that did would hide the
+# step from a top-level run.
+if [ -n "${RLOOP_SPEC_CITATION_CONTROLS_NESTED:-}" ]; then
+  echo
+  echo "=============================================================="
+  echo "  SKIPPED  controls (nested run: RLOOP_SPEC_CITATION_CONTROLS_NESTED is set)"
+  echo "=============================================================="
+else
+  run "controls     (the identifier and citation gates' own positive and negative controls, each in a disposable copy of the set)" python3 tools/test_citation_gates.py
+fi
+
 echo
 echo "=============================================================="
 echo "  SUMMARY"

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Positive/negative CLI controls in disposable copies, also run by gates.yml."""
+"""Positive/negative CLI controls in disposable copies, run by check-all.sh and gates.yml."""
 
 from pathlib import Path
+import os
 import re
 import shutil
 import subprocess
@@ -37,6 +38,14 @@ class CitationControls(unittest.TestCase):
         self.assertIn(old, text)
         path.write_text(text.replace(old, new, 1))
 
+    def corpus_line(self, document, needle):
+        """The line `needle` is on in this copy of the corpus. A control that pins a
+        corpus location derives it here rather than carrying a literal, which prose
+        above the line silently stales -- `47c3b48` moved RUN-16's history by 14."""
+        text = (self.root / document).read_text()
+        self.assertIn(needle, text)
+        return text.count("\n", 0, text.index(needle)) + 1
+
     def gate(self, script, status=0, *reasons):
         result = subprocess.run([sys.executable, str(self.root / "tools" / script)],
                                 cwd=self.root, capture_output=True, text=True)
@@ -62,8 +71,10 @@ class CitationControls(unittest.TestCase):
         return self.gate("check_citations.py", status, *reasons)
 
     def test_current_definitions_and_quotes(self):
-        self.ids(0, "RESTATEMENT: 01-run-lifecycle.md:249", tier="ADVISORY")
-        self.citations(0, "CITATION: docs/adr/0006-", tier="ADVISORY")
+        history = self.corpus_line("01-run-lifecycle.md", "pick MUST start")
+        self.ids(0, f"RESTATEMENT: 01-run-lifecycle.md:{history}", "pick MUST start",
+                 tier="ADVISORY")
+        self.citations(0, "Quoted attributions verified: clean")
 
     def test_copy_quote_and_one_word_mutation_compose(self):
         copy = f"{QUOTE} (`RUN-16`)."
@@ -145,7 +156,7 @@ class CitationControls(unittest.TestCase):
                     self.ids()
                     self.citations(1, "CITATION: control.md:1",
                                    "SEQ-4 (05-sequence.md)", "one session",
-                                   "Quoted attributions: 1 blocking, 1 advisory.")
+                                   "Quoted attributions: 1 blocking, 0 advisory.")
             with self.subTest(intro=intro, owners="valid only"):
                 path.write_text(f"`RUN-16`{intro} `one session` (`RUN-16`).")
                 self.ids()
@@ -159,7 +170,7 @@ class CitationControls(unittest.TestCase):
         path.write_text(f"`{QUOTE}` (`SEQ-4`; but see `RUN-16` for the session rule).")
         self.ids()
         self.citations(1, "CITATION: control.md:1", "SEQ-4 (05-sequence.md)", QUOTE,
-                       "Quoted attributions: 1 blocking, 1 advisory.")
+                       "Quoted attributions: 1 blocking, 0 advisory.")
 
     def test_explanatory_reference_preserves_preceding_owner_list(self):
         path = self.root / "control.md"
@@ -168,7 +179,7 @@ class CitationControls(unittest.TestCase):
                 path.write_text(f"`{QUOTE}` (`RUN-16`, `SEQ-4`{suffix}).")
                 self.ids()
                 self.citations(1, "CITATION: control.md:1", "SEQ-4 (05-sequence.md)",
-                               QUOTE, "Quoted attributions: 1 blocking, 1 advisory.")
+                               QUOTE, "Quoted attributions: 1 blocking, 0 advisory.")
         path.write_text("`MUST exit 2` (`SEQ-5`, `RUN-1`; but see `RUN-16` for sessions).")
         self.ids()
         self.citations()
@@ -742,18 +753,25 @@ class CitationControls(unittest.TestCase):
 
     def test_restored_adr0006_full_sentence_is_advisory(self):
         document = "docs/adr/0006-rloop-reads-a-vendors-quota-report-and-fails-open.md"
-        sentence = ("So rloop runs the probe `AGT-18` states before each Panel and reads the "
-                    "`Current week (<family>):\n<n>% used` line out of it (`RUN-21`).")
+        sentence = ("So rloop runs the probe `AGT-18` states before each Panel, and `RUN-21` "
+                    "reads out of it a line\nbeginning `Current week (<family>): 100% used`.")
         self.assertIn(sentence, (self.root / document).read_text())
         self.assertNotIn(f"RESTATEMENT: {document}:", self.ids())
-        self.citations(0, f"CITATION: {document}:", "AGT-18", "Current week (<family>): <n>% used",
-                       tier="ADVISORY")
+        self.citations(0, "Quoted attributions verified: clean")  # 3ca7e1d: the quote verifies
+        # The shape is still recognised, still attributed and still advisory; only the
+        # quote came true. Corrupt it in this copy alone -- the corpus keeps RUN-21's words.
+        self.replace(document, "Current week (<family>): 100% used",
+                     "Current week (<family>): 17% used")
+        self.citations(0, f"CITATION: {document}:", "RUN-21 (01-run-lifecycle.md)",
+                       "Current week (<family>): 17% used",
+                       "Quoted attributions: 0 blocking, 1 advisory.", tier="ADVISORY")
 
     def test_restored_run16_history_has_no_quote_owner(self):
         document = "01-run-lifecycle.md"
         self.assertIn('this read "the\npick MUST start', (self.root / document).read_text())
-        self.ids(0, f"RESTATEMENT: {document}:249", "pick MUST start", tier="ADVISORY")
-        self.assertNotIn(f"CITATION: {document}:249", self.citations())
+        line = self.corpus_line(document, "pick MUST start")
+        self.ids(0, f"RESTATEMENT: {document}:{line}", "pick MUST start", tier="ADVISORY")
+        self.assertNotIn(f"CITATION: {document}:{line}", self.citations())
 
     def test_aggregate_advisories_and_blockers(self):
         # Copy the actual runner, formal model and generated assets, including
@@ -773,8 +791,13 @@ class CitationControls(unittest.TestCase):
                 self.ids(1 if "RUN-9999" in mutation else 0)
                 self.citations(status if "BLOCKING" in diagnostic else 0,
                                "CITATION: control.md:", "SEQ-4", QUOTE, tier="ADVISORY")
+                # check-all.sh runs this file as its last gate. The guard is set here, not
+                # merely inherited, so that the standalone invocation gates.yml and AGENTS.md
+                # use -- which has no guard in its environment -- terminates too.
                 result = subprocess.run(["bash", "tools/check-all.sh"], cwd=self.root,
-                                        capture_output=True, text=True)
+                                        capture_output=True, text=True,
+                                        env={**os.environ,
+                                             "RLOOP_SPEC_CITATION_CONTROLS_NESTED": "1"})
                 output = result.stdout + result.stderr
                 self.assertEqual(result.returncode, status, output)
                 self.assertIn(diagnostic, output)

@@ -30,16 +30,14 @@ script runs every gate below:
 | `tools/check_fixtures.py` | A prompt or command-line fixture in `conformance/fixtures/` that differs from its block in `02-agents.md` or `03-prompts.md`; the Markdown is the home (`ADR-0001`) |
 | `tools/check_scenarios.py` | A committed `conformance/scenarios.tsv` that is not what the model enumerates; it prints the count so growth shows in review |
 | `conformance/test-panel-trace` | A regression in the suite's Panel-membership comparator, `observed_trace` in `conformance/scenario-lib.sh`, caught on hand-written traces — such as a comparator that observes only `end` records and so loses a Reviewer that started and never finished — and a fake that, past its script's last entry, writes anything but `clear` for the probe or does not fail as Implementer, Panel and judge; and a regression in `restrict_path`, the same library's builder of the executable's PATH, driven against a PATH built here so the paths this repository's own hosts never take are reached — a name the host lacks linked anyway or not named in one skip line, either refusal that does not exit 2 with its message alone, and a link left relative when the `PATH` entry that found it was relative. The checks that need an executable — a real fake-agent timeout, the positive scenario replays and the mutants of `rloop-bash` — are not run here, and the gate says so in one `NOT RUN:` line; an Implementation that is `rloop-bash` runs them in its CI with `spec/conformance/test-panel-trace ./result/bin/rloop` |
+| `tools/test_citation_gates.py` | A regression in the identifier and citation gates themselves: each control mutates a disposable copy of the set and asserts those gates' exit statuses, diagnostics and tiers, over changed words, misleading code spans, owner-boundary failures and the set's own current findings. Its aggregate control runs `tools/check-all.sh` over such a copy, proving that an advisory stays visible with exit zero while an explicit false attribution or an unrelated identifier failure still fails the build alongside it; those nested runs set `RLOOP_SPEC_CITATION_CONTROLS_NESTED`, which makes a run announce this row as skipped rather than run the file again |
 
 On every run the workflow also proves each gate that has a negative control can fail: a scratch
 copy of the set, the gate green on it before the mutation, then one thing broken and the gate
 required to exit non-zero and print the diagnostic that mutation causes, so that green is
-evidence.
-The restatement/citation controls also run locally with
-`nix develop --command python3 tools/test_citation_gates.py`; each mutation uses a disposable
-copy and asserts the gates' exit statuses, diagnostics and tiers. Aggregate controls prove that
-advisories remain visible with exit zero, while explicit false attributions and unrelated
-identifier failures still fail the build alongside advisories.
+evidence. The controls in the last row are the exception it also runs on their own, with
+`nix develop --command python3 tools/test_citation_gates.py`, because that invocation carries no
+recursion guard and so is the one that proves the guard is not what makes them terminate.
 
 ## How to read this
 
