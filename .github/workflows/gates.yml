@@ -44,6 +44,41 @@ jobs:
           grep -qF "DANGLING: ['DIR-9999']" "$tmp/out" \
             || { echo "::error::identifier gate red, but not on the dangling citation"; exit 1; }
 
+      # Both tiers of the line-citation gate in one step and one scratch copy: the two mutations
+      # are the same citation, each restored by the next, so neither decides anything for the
+      # other. The gate prints an advisory on a clean tree too, so a tier line alone proves
+      # nothing: each control first cuts out the finding for its own citation, then reads the
+      # tier off that line.
+      - name: Prove the line-citation gate can fail on both tiers
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"; cp -r . "$tmp/repo"; cd "$tmp/repo"
+          python3 tools/check_line_citations.py > "$tmp/clean" \
+            || { echo "::error::line-citation gate red unmutated"; exit 1; }
+          cat "$tmp/clean"
+          grep -qF 'conformance/run:32  by `spawn_count`' "$tmp/clean" \
+            || { echo "::error::line-citation gate did not anchor conformance/run:32 unmutated"; exit 1; }
+          # A line past the end of conformance/run: the cited line does not exist, so this blocks.
+          sed -i 's|`conformance/run:32`|`conformance/run:99999`|' 07-open-findings.md
+          st=0; python3 tools/check_line_citations.py > "$tmp/out" 2>&1 || st=$?
+          cat "$tmp/out"
+          [ "$st" != 0 ] || { echo "::error::line-citation gate passed a range that cannot exist"; exit 1; }
+          grep -F 'cites conformance/run:99999, a line conformance/run does not have (' "$tmp/out" \
+            > "$tmp/finding" \
+            || { echo "::error::line-citation gate red, but not on the impossible range"; exit 1; }
+          grep -qF 'BLOCKING LINE CITATION:' "$tmp/finding" \
+            || { echo "::error::the impossible range was reported, but not in the blocking tier"; exit 1; }
+          # A line that exists and that none of the sentence's literals is on: advisory, exit 0.
+          sed -i 's|`conformance/run:99999`|`conformance/run:31`|' 07-open-findings.md
+          python3 tools/check_line_citations.py > "$tmp/out" 2>&1 \
+            || { echo "::error::line-citation gate blocked on an unanchored citation"; exit 1; }
+          cat "$tmp/out"
+          grep -F 'cites conformance/run:31, where no other literal from its sentence appears:' "$tmp/out" \
+            > "$tmp/finding" \
+            || { echo "::error::line-citation gate green, but silent about the unanchored citation"; exit 1; }
+          grep -qF 'ADVISORY LINE CITATION:' "$tmp/finding" \
+            || { echo "::error::the unanchored citation was reported, but not in the advisory tier"; exit 1; }
+
       - name: Prove the coverage gate can fail
         run: |
           set -euo pipefail

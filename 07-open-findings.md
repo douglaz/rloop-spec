@@ -525,8 +525,8 @@ read is an own-process read of the item as well — `nothing_survived` (`conform
 reads `PID` beside `GRANDCHILD` — and no mutant of either Round reddens that half either, for the
 reason its own comment gives: `Every ancestor is gone by then, so neither can be a zombie`
 (`conformance/run:53-54`). Both own-process brackets come with a green group half for one reason:
-the fake writes `GRANDCHILDREN_ALIVE` (`conformance/fakes/agent:111`) before it spawns the child that
-ignores SIGTERM (`:163`), so a call that starts while the probe is still running finds no
+the fake writes `GRANDCHILDREN_ALIVE` (`conformance/fakes/agent:118`) before it spawns the child
+that ignores SIGTERM (`:173`), so a call that starts while the probe is still running finds no
 `GRANDCHILD=` line in the probe's record and has nothing to report. The group half can be green with
 the group alive, and it is the two halves together that caught these mutants.
 

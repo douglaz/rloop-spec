@@ -33,6 +33,7 @@ run() {
 run "formal       (Lean build, axiom policy, @[req] index, regions, scenarios)" bash tools/check_formal.sh
 run "identifiers  (identifier integrity; restatements block or advise per F2)" python3 tools/check_ids.py
 run "citations    (owner-body quotations; explicit failures block, inferred failures advise)" python3 tools/check_citations.py
+run "line-cites   (a <path>:<line> citation's sentence still reads there; an impossible range blocks, an unanchored one advises)" python3 tools/check_line_citations.py
 run "coverage     (every requirement cited by a CNF item or excused)" python3 tools/check_coverage.py
 run "regions      (a marked region is what its declaration emits)" python3 tools/check_regions.py
 run "fixtures     (the suite's fixtures are the documents' blocks)" python3 tools/check_fixtures.py
