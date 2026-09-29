@@ -556,7 +556,7 @@ both of `RUN-21`'s call sites, and `CNF-34` gained a watching straggler at each.
 and the mutant is red. Rebuilt against rloop-bash `18c8807`, gated on `RLOOP_FAKE_WATCH`'s value
 beginning `probe:` — what confines it to the two new Runs, where a gate on the variable merely being
 set would mutate the Checkpoint arm too, whose value is `implementer:rejected-1-task.md`
-(`conformance/run:643`) — and with the wait loop of that executable's `reap` inlined rather than
+(`conformance/run:735`) — and with the wait loop of that executable's `reap` inlined rather than
 reordered so the verdicts still see the status the reaping sets, it gives `[probe-0 watch: the
 probe's child saw probe-pick.md, so its group outlived the call and ran through the record]` and the
 same bracket for `probe-1` and `probe-1.md` as the item's whole detail, with every other verdict
@@ -573,7 +573,7 @@ reading a call's output leaves it no file to find, so a read taken before the re
 after look the same to it. The witness for the read is a straggler that *writes* into the capture
 `DIR-4` has the probe's standard output reach `entire and unmodified` — a line the reader acts on,
 since an inert one changes no verdict — and `CNF-34` gained one Run of it, at the probe before the
-pick (`conformance/run:662-702`). `RUN-22` is what makes the read observable there: it has rloop
+pick (`conformance/run:676-716`). `RUN-22` is what makes the read observable there: it has rloop
 `exit 2 without spawning any agent` on that probe's verdicts, so an executable that derives them
 from bytes the straggler's line has not reached yet calls the pick and runs on. The knob is
 `RLOOP_FAKE_WRITE_STDOUT`, which had only a role and a fixed line and now takes a first-write delay
@@ -606,7 +606,7 @@ call has, and `rl-cnf34-probe0-read-fast-fake-8et` holds the remaining `probe-0`
 ## F18 — `conformance/run` is not newline-safe (deferred 2026-09-27)
 
 A newline is whitespace, and two of the suite's line-delimited path reads do not survive one.
-`record_of` (`conformance/run:519-522`) selects a record with `ls` into `head -1`, which truncates
+`record_of` (`conformance/run:554-559`) selects a record with `ls` into `head -1`, which truncates
 the path at the newline. The prefix that survives is non-empty, so `record_of`'s own guard never
 fires and no run of the suite prints that it has no record of the tag; the truncated path travels on
 to the reads that open it, and they report the records they cannot find as unwritten. Measured under

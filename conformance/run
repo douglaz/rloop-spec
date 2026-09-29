@@ -573,6 +573,26 @@ gone_by() {
       && { ok=0; detail="$detail [$label: $(basename "$earlier") $key $p alive when $(basename "$later") started]"; }
   done
 }
+# watched_nothing <label> <tag> <watched name> <step> <child> <fake>: the whole of a straggler arm,
+# for a boundary no later call speaks for. RLOOP_FAKE_WATCH has <tag>'s SIGTERM-ignoring child poll
+# the Run Directory for <watched name>, which a reaped child never finds; that it did not is the
+# assertion, and the reads around it are what keep the absence from being vacuous — the call exited
+# 0, the step happened, the child published that it was watching, no fake of the Run outran its own
+# child, and the child's own pid is gone once the executable has returned. Reads `$e`, `$rec` and
+# `$repo` of the arm that calls it. Every read but WATCH_NOT_READY= is scoped to <tag>, since a Run
+# may have more than one role watching; that one is arm-wide on purpose, because the fake it catches
+# need not be the watching one. <step>, <child> and <fake> are the arm's own nouns, so that each
+# bracket names what that arm witnesses and not a generic one.
+watched_nothing() {
+  local label="$1" tag="$2" name="$3" step="$4" child="$5" fake="$6" gc
+  [ "$e" = 0 ] || { ok=0; detail="$detail [$label: exit $e]"; }
+  [ -f "$repo/run/$name" ] || { ok=0; detail="$detail [$label: no $name, so $step had nothing to witness]"; }
+  ls "$rec"/*-"$tag".watching >/dev/null 2>&1 || { ok=0; detail="$detail [$label: $child never published that it was watching]"; }
+  grep -q '^WATCH_NOT_READY=' "$rec"/*.env 2>/dev/null && { ok=0; detail="$detail [$label: $fake exited before its child published that it was watching]"; }
+  ls "$rec"/*-"$tag".seen >/dev/null 2>&1 && { ok=0; detail="$detail [$label: $child saw $name, so its group outlived the call and ran through $step]"; }
+  gc=$(sed -n 's/^GRANDCHILD=//p' "$rec"/*-"$tag".env 2>/dev/null)
+  { [ -n "$gc" ] && ! kill -0 "$gc" 2>/dev/null; } || { ok=0; detail="$detail [$label: $child ${gc:-(unrecorded)} is alive once the executable has returned]"; }
+}
 for spawner in manager implementer; do
   repo="$(new_repo)"; rec="$work/rec-reap-$spawner"
   e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_GRANDCHILD_IGNORE_TERM="$spawner" run_rloop "$repo" "$rec" --run-dir "$repo/run" --kill-after 1)
@@ -650,13 +670,7 @@ for site in probe-0:probe-pick.md probe-1:probe-1.md; do
   e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" \
     RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=probe RLOOP_FAKE_WATCH="probe:$prec" \
     run_rloop "$repo" "$rec" --run-dir "$repo/run" --kill-after 1)
-  [ "$e" = 0 ] || { ok=0; detail="$detail [$ptag watch: exit $e]"; }
-  [ -f "$repo/run/$prec" ] || { ok=0; detail="$detail [$ptag watch: no $prec, so the record had nothing to witness]"; }
-  ls "$rec"/*-"$ptag".watching >/dev/null 2>&1 || { ok=0; detail="$detail [$ptag watch: the probe's child never published that it was watching]"; }
-  grep -q '^WATCH_NOT_READY=' "$rec"/*.env 2>/dev/null && { ok=0; detail="$detail [$ptag watch: a probe fake exited before its child published that it was watching]"; }
-  ls "$rec"/*-"$ptag".seen >/dev/null 2>&1 && { ok=0; detail="$detail [$ptag watch: the probe's child saw $prec, so its group outlived the call and ran through the record]"; }
-  gc=$(sed -n 's/^GRANDCHILD=//p' "$rec"/*-"$ptag".env 2>/dev/null)
-  { [ -n "$gc" ] && ! kill -0 "$gc" 2>/dev/null; } || { ok=0; detail="$detail [$ptag watch: the probe's child ${gc:-(unrecorded)} is alive once the executable has returned]"; }
+  watched_nothing "$ptag watch" "$ptag" "$prec" "the record" "the probe's child" "a probe fake"
   kill_recorded "$rec"
 done
 # And the read itself, the clause's other half. AGT-15 has `rloop MUST read the call's output, and
@@ -720,13 +734,7 @@ repo="$(new_repo)"; rec="$work/rec-reap-checkpoint"
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_INTERFERENCE=1:afterImplementer:editTask \
   RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=implementer RLOOP_FAKE_WATCH=implementer:rejected-1-task.md \
   run_rloop "$repo" "$rec" --run-dir "$repo/run" --kill-after 1)
-[ "$e" = 0 ] || { ok=0; detail="$detail [checkpoint: exit $e]"; }
-[ -f "$repo/run/rejected-1-task.md" ] || { ok=0; detail="$detail [checkpoint: no rejected-1-task.md, so the Checkpoint had nothing to witness]"; }
-ls "$rec"/*-implementer-1.watching >/dev/null 2>&1 || { ok=0; detail="$detail [checkpoint: the Implementer's child never published that it was watching]"; }
-grep -q '^WATCH_NOT_READY=' "$rec"/*.env 2>/dev/null && { ok=0; detail="$detail [checkpoint: the Implementer's fake exited before its child published that it was watching]"; }
-ls "$rec"/*.seen >/dev/null 2>&1 && { ok=0; detail="$detail [checkpoint: the Implementer's child saw rejected-1-task.md, so its group outlived the call and ran through the Checkpoint]"; }
-gc=$(sed -n 's/^GRANDCHILD=//p' "$rec"/*-implementer-1.env 2>/dev/null)
-{ [ -n "$gc" ] && ! kill -0 "$gc" 2>/dev/null; } || { ok=0; detail="$detail [checkpoint: the Implementer's child ${gc:-(unrecorded)} is alive once the executable has returned]"; }
+watched_nothing checkpoint implementer-1 rejected-1-task.md "the Checkpoint" "the Implementer's child" "the Implementer's fake"
 kill_recorded "$rec"
 if [ "$ok" = 1 ]; then verdict CNF-34 ok "a call that exits 0 leaves neither its own process nor anything in its group, for a Manager call, for the Implementer, for every Reviewer of the Panel read from the judge's record and for both probes read from the call that follows each, and the group is gone before the step that is no call: the Implementer's before the Checkpoint that follows it, and each probe's before rloop writes that probe's availability record — and before rloop reads that probe's output, a straggler's usage line reaching the verdicts and refusing the Run"; else verdict CNF-34 fail "$detail"; fi
 
