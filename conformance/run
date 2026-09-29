@@ -694,9 +694,9 @@ done
 # The window, and why each end has margin: the child waits for its own fake to exit and then one
 # second more before its first write, so a read that comes before the reaping has that whole second
 # in which the line cannot yet be there, while --kill-after 4 leaves the SIGTERM-ignoring child
-# alive four seconds past that exit, three of them after it has begun writing. Both margins are
-# twenty of the child's poll intervals, which is what keeps the row from being green against a
-# reordering it cannot resolve.
+# alive four seconds past that exit, three of them after it has begun writing. The early margin is
+# twenty of the child's poll intervals and the late one sixty, which is what keeps the row from
+# being green against a reordering it cannot resolve.
 # Nor may it pass on absent evidence: that the line reached the capture at all is read, since a
 # child that wrote nothing leaves the row nothing to witness and every Seat `unknown` for a reason
 # that is not the Implementation's, and so is the child's own pid once the executable has returned,
