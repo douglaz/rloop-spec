@@ -521,12 +521,12 @@ probe before the pick, with that one probe call's standard input left open — a
 `[probe-0: 001-probe-0.env PID … alive when 002-manager-0.env started]` beside a green group half,
 as the item's whole detail and with no other item's verdict moved. `manager-0`, the arm above, is
 then the only own-process read at a call boundary that no mutant reddens. The `survived the Run`
-read is an own-process read of the item as well — `nothing_survived` (`conformance/run:488-500`)
+read is an own-process read of the item as well — `nothing_survived` (`conformance/run:52-64`)
 reads `PID` beside `GRANDCHILD` — and no mutant of either Round reddens that half either, for the
 reason its own comment gives: `Every ancestor is gone by then, so neither can be a zombie`
-(`conformance/run:489-490`). Both own-process brackets come with a green group half for one reason:
-the fake writes `GRANDCHILDREN_ALIVE` (`conformance/fakes/agent:98`) before it spawns the child that
-ignores SIGTERM (`:140`), so a call that starts while the probe is still running finds no
+(`conformance/run:53-54`). Both own-process brackets come with a green group half for one reason:
+the fake writes `GRANDCHILDREN_ALIVE` (`conformance/fakes/agent:111`) before it spawns the child that
+ignores SIGTERM (`:163`), so a call that starts while the probe is still running finds no
 `GRANDCHILD=` line in the probe's record and has nothing to report. The group half can be green with
 the group alive, and it is the two halves together that caught these mutants.
 
@@ -554,7 +554,7 @@ both of `RUN-21`'s call sites, and `CNF-34` gained a watching straggler at each.
 and the mutant is red. Rebuilt against rloop-bash `18c8807`, gated on `RLOOP_FAKE_WATCH`'s value
 beginning `probe:` — what confines it to the two new Runs, where a gate on the variable merely being
 set would mutate the Checkpoint arm too, whose value is `implementer:rejected-1-task.md`
-(`conformance/run:615`) — and with the wait loop of that executable's `reap` inlined rather than
+(`conformance/run:643`) — and with the wait loop of that executable's `reap` inlined rather than
 reordered so the verdicts still see the status the reaping sets, it gives `[probe-0 watch: the
 probe's child saw probe-pick.md, so its group outlived the call and ran through the record]` and the
 same bracket for `probe-1` and `probe-1.md` as the item's whole detail, with every other verdict
@@ -568,7 +568,7 @@ so `CNF-34` stayed green there. That is the gap these two Runs close.
 ## F18 — `conformance/run` is not newline-safe (deferred 2026-09-27)
 
 A newline is whitespace, and two of the suite's line-delimited path reads do not survive one.
-`record_of` (`conformance/run:467-468`) selects a record with `ls` into `head -1`, which truncates
+`record_of` (`conformance/run:519-522`) selects a record with `ls` into `head -1`, which truncates
 the path at the newline. The prefix that survives is non-empty, so `record_of`'s own guard never
 fires and no run of the suite prints that it has no record of the tag; the truncated path travels on
 to the reads that open it, and they report the records they cannot find as unwritten. Measured under

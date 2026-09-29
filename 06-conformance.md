@@ -140,7 +140,21 @@ status; a pick whose first line is `STATUS: done` with a NUL byte inside it; a j
 
 **CNF-15** A Reviewer fake that exits 7 after writing a line leaves its Feedback File holding that
 line followed by `REVIEWER FAILED (exit 7)`; a Round with one such Reviewer proceeds to the judge.
-(`RUN-15`)
+The same Round once more with `--kill-after 2`, every Reviewer fake spawning a child that ignores
+SIGTERM and, once its own fake has exited, writing to the standard output it inherited — its
+Reviewer's Feedback File (`AGT-13`, `DIR-4`): the Run ends 0 and each failing Reviewer's Feedback
+File opens with that Reviewer's line, **ends** with `REVIEWER FAILED (exit 7)`, and carries at least
+one line of its straggler's between the two. (`RUN-15`)
+*The straggler's own lines are in the file because its Reviewer's group lives the grace out, and the
+note's byte-exact form is the row above, which has no straggler; what this row adds is that the note
+is on the far side of the straggler's writes. The child inherits the Feedback File's descriptor and
+with it that descriptor's file offset, and `AGT-15` has `A call is complete only once its process
+group has been reaped that way`, so an Implementation that appends the note before that reaping
+leaves it at the offset the child's next write overwrites — and the Manager then reads a crashed
+Reviewer's partial output as ordinary feedback. That a straggler line is there at all is asserted
+because a child that wrote nothing leaves the note nothing to survive, and no arm of this suite may
+pass on absent evidence. `--kill-after 2` rather than 1 so that the child is certainly scheduled to
+write inside the grace; nothing here is clock-measured.*
 
 ## Concurrency, time and signals
 
@@ -211,6 +225,40 @@ capture rather than one that polls — a knob the fake does not have — and tha
 call alone.*
 (`AGT-15`, `AGT-16`, `DIR-6`, `RUN-21`)
 
+**CNF-35** With one Round, `--kill-after 1`, the `fable` Reviewer fake sleeping 10 seconds while the
+other three answer at once, and every Reviewer fake spawning a child that ignores SIGTERM: the child
+the `opus` fake left is gone within 6 seconds of `opus`'s own recorded exit, and at that moment the
+Panel is four Reviewer records each carrying a child, `fable`'s own recorded process is running and
+`fable` has not recorded its exit; the Run ends 0, and neither a fake that spawned a child nor any
+child is running once the executable has returned. Then the same Round with `--kill-after 5` and no
+Reviewer sleeping, so that the four exit within a moment of one another: each of the four children
+is gone within 9 seconds of its own Reviewer's recorded exit. Neither row passes on absent
+evidence: a Panel of other than four records, a Reviewer that recorded no child, and one whose fake
+recorded no exit, are each red. (`AGT-15`, `RUN-8`)
+*`AGT-15` has `Reviewers run concurrently` and `so each Reviewer's group is reaped as that Reviewer
+exits`, and these are the two ways an Implementation reaps them in some other order anyway. The
+first row is the roster: a Panel waited for in the fixed order `fable`, `opus`, `astra`, `sol` keeps
+an early Reviewer's group until every Reviewer named before it has exited too — up to
+`--reviewer-timeout` of an orphaned build or check writing into the working tree while the rest of
+the Panel reviews it — and `opus` is the one read because `fable`, the Reviewer ahead of it, is the
+one still running. That `fable` runs is read from `fable`'s own recorded process, and the Panel's
+records are counted rather than assumed, because every other read of the row is about `opus` alone:
+an Implementation that called one Reviewer would satisfy all of them, and the survival clause says
+nothing about a record that was never written. `fable`'s missing end line is read as well and not
+instead, a Reviewer the executable has not yet reaped being a zombie whose pid still answers. The
+second row is the grace: a reap that blocks the wait loop leaves the Reviewer that exits next
+unsignalled until the previous group's grace has ended, so the second child of four goes two graces
+past its own Reviewer's exit and the fourth four. `CNF-34` sees neither, reading each Reviewer
+against `the first call to start once every Reviewer has exited`, by which time every
+delay above has ended. Each bound is its row's grace and a margin, five seconds and four, because
+the claim is that a group goes with its own Reviewer and not that it goes in any particular tenth of
+a second: these rows with `CNF-16` and `CNF-17` are the suite's only clock-measured claims, and a
+tight bound is a flaky suite. `--kill-after 5` in the second row rather than 1 is what carries the
+shape it separates from past nine seconds at all, and that margin is not wide at every child: the
+second Reviewer's two graces are ten seconds and clear the bound by one. It is the third child and
+the fourth, three graces and four — fifteen seconds and twenty — that the bound separates widely,
+while the first, whose group waits on nothing, is not separated at all.*
+
 **CNF-18** SIGINT sent to the executable while an Implementer fake sleeps, having spawned a child
 that ignores SIGTERM: the fake records SIGTERM, the executable exits 2 with `interrupted` on
 standard error, neither the fake nor its child survives, and the Run Directory is intact. The
@@ -221,7 +269,14 @@ the probe's record carries SIGTERM, the executable exits 2 with `interrupted` on
 neither the process it recorded nor the child it recorded survives, and the Run Directory is still
 there. No clause of that Run passes on absent evidence: its record is found by counting what matched
 rather than by reading an unmatched glob, and a missing record, an unrecorded process and an
-unrecorded child are each a failure. A second SIGINT while a fake ignores SIGTERM ends it at once.
+unrecorded child are each a failure. A second SIGINT while a fake ignores SIGTERM ends it at once,
+and so does a second SIGINT delivered while a call's **group** is being reaped rather than during
+the call: with `--kill-after 20` and an Implementer fake that exits at once having spawned a child
+that ignores SIGTERM, two SIGINTs 200 ms apart once that fake's own process is gone leave the child
+dead within 5 seconds — a quarter of the grace the reap would otherwise run out — and the executable
+exits 2 with `interrupted` on standard error. That row does not pass on absent evidence either: the
+child is read alive immediately before each of the two signals, and is red if it is not, since a
+group already empty leaves the bound nothing to measure.
 (`AGT-15`, `AGT-16`, `AGT-18`, `OVR-4`, `RUN-4`, `RUN-17`, `RUN-21`)
 *The Probe Run is here because `AGT-15` binds the interruption to `every live group`, and `AGT-16`
 has the Probe started `in its own process group` as every agent process is: an Implementation that
@@ -241,7 +296,12 @@ Probe Run is therefore the weaker one deliberately: at the instant that probe is
 directory itself is all the suite can portably read. `RUN-17`'s `no cleanup, no deletion` is what
 forbids removing the directory on the way out; `task-1.md`, the witness of work left as it is, stays
 the Implementer Runs'. The second SIGINT stays on an Implementer fake: escalation is the handler's
-second-signal branch and not per-role.*
+second-signal branch and not per-role. The reap it is delivered into besides is where `AGT-15`'s
+`A second SIGINT during that wait MUST send SIGKILL at once` reaches a group whose call has already
+returned: an Implementation that takes a group off the set its handler signals before reaping it
+passes every clause above, the group being on that set for the whole of the call, while neither
+signal reaches it there and the group runs the whole `--kill-after` grace out. `--kill-after 20` is
+what makes that grace long enough to signal into and the 5-second bound generous inside it.*
 
 ## Git
 

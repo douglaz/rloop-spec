@@ -38,6 +38,30 @@ carries_arg() { # carries_arg <record file> <string>: some argument of the recor
   while IFS= read -r -d '' arg; do [ "$arg" = "$2" ] && return 0; done < "$1"
   return 1
 }
+# pid_in <pid> <space-separated pids>: exact match, not a substring
+pid_in() { tr ' ' '\n' <<< "$2" | grep -qx "$1"; }
+# kill_recorded <record dir>: SIGKILL every PID and GRANDCHILD a fake recorded, so a red row leaves nothing behind
+kill_recorded() { local f p; for f in "$1"/*.env; do for p in $(sed -n 's/^\(PID\|GRANDCHILD\)=//p' "$f" 2>/dev/null); do kill -9 "$p" 2>/dev/null; done; done; }
+# panel_records <label>: fills `panel` with the Panel's .env records, red unless there are the four
+# RUN-8 spawns, so the reads over them cannot pass on however many happen to exist.
+panel_records() {
+  local f
+  panel=(); for f in "$rec"/*-reviewer-1-*.env; do [ -e "$f" ] && panel+=("$f"); done
+  [ "${#panel[@]}" = 4 ] || { ok=0; detail="$detail [$1: ${#panel[@]} Reviewer records, not the Panel's four]"; }
+}
+# nothing_survived <label>: of every fake that spawned a child, neither its own pid nor the child's
+# is running once the executable has returned. Every ancestor is gone by then, so neither can be a
+# zombie.
+nothing_survived() {
+  local f key p
+  for f in "$rec"/*.env; do
+    grep -q '^GRANDCHILD=' "$f" || continue
+    for key in PID GRANDCHILD; do
+      p=$(sed -n "s/^$key=//p" "$f")
+      [ -n "$p" ] && kill -0 "$p" 2>/dev/null && { ok=0; detail="$detail [$1: $(basename "$f") $key $p survived the Run]"; }
+    done
+  done
+}
 # Both Seats on a model RUN-21's table does not name, so that no verdict of theirs stops the Run.
 off=(--manager-model "$off_table_model" --implementer-model "$off_table_model")
 # record_is <record file> <label> <verdict of each Seat, in RUN-21's order>: byte for byte, every line
@@ -406,11 +430,39 @@ e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=idle" run
 if [ "$ok" = 1 ]; then verdict CNF-14 ok "stdout is the Finished File on 0/1/3, empty on 2 with or without a Finished File"; else verdict CNF-14 fail "$detail"; fi
 
 # --- CNF-15: reviewer failure note --------------------------------------------------------------------
+ok=1; detail=""
 repo="$(new_repo)"; rec="$work/rec-revfail"
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=some;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run")
 want=$'partial feedback\nREVIEWER FAILED (exit 7)'
 got=$(cat "$repo/run/feedback-1-opus.md" 2>/dev/null)
-if [ "$e" = 0 ] && [ "$got" = "$want" ] && [ "$(cat "$repo/run/feedback-1-fable.md")" = "No findings." ]; then verdict CNF-15 ok "failure note appended, Round proceeded"; else verdict CNF-15 fail "exit $e; feedback-1-opus.md: '$got'"; fi
+{ [ "$e" = 0 ] && [ "$got" = "$want" ] && [ "$(cat "$repo/run/feedback-1-fable.md")" = "No findings." ]; } \
+  || { ok=0; detail="$detail [note: exit $e; feedback-1-opus.md: '$got']"; }
+# --- and the same Round with a straggler writing to the standard output the Feedback File is
+# (AGT-13, DIR-4). Every Reviewer leaves a child that ignores SIGTERM and, once its own Reviewer has
+# exited, writes to the descriptor it inherited: the offset is shared, so rloop's note goes at the
+# child's own next write position and a note appended while that group still lived is erased by it.
+# The straggler's lines are therefore expected between the Reviewer's line and the note, and the
+# reads are of the first line and the last — CNF-15's byte-exact form is the row above, which has no
+# straggler. That at least one straggler line is there is read too: a child that wrote nothing leaves
+# the note nothing to survive, and this row may not pass on that absence. --kill-after 2 is the
+# grace, generous so that the child is certainly scheduled to write inside it.
+repo="$(new_repo)"; rec="$work/rec-revfail-straggler"
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=some;judge=done" \
+  RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=reviewer RLOOP_FAKE_WRITE_STDOUT=reviewer \
+  run_rloop "$repo" "$rec" --run-dir "$repo/run" --kill-after 2)
+[ "$e" = 0 ] || { ok=0; detail="$detail [straggler: exit $e]"; }
+for rv in opus sol; do
+  f="$repo/run/feedback-1-$rv.md"
+  [ -s "$f" ] || { ok=0; detail="$detail [straggler: feedback-1-$rv.md is missing or empty]"; continue; }
+  [ "$(head -n1 "$f")" = "partial feedback" ] \
+    || { ok=0; detail="$detail [straggler: feedback-1-$rv.md does not open with the Reviewer's line: '$(head -n1 "$f")']"; }
+  grep -q "^straggler of " "$f" \
+    || { ok=0; detail="$detail [straggler: nothing of $rv's straggler reached feedback-1-$rv.md, so the note had nothing to survive]"; }
+  [ "$(tail -n1 "$f")" = "REVIEWER FAILED (exit 7)" ] \
+    || { ok=0; detail="$detail [straggler: feedback-1-$rv.md does not end with the failure note: '$(tail -n1 "$f")']"; }
+done
+kill_recorded "$rec"
+if [ "$ok" = 1 ]; then verdict CNF-15 ok "failure note appended, Round proceeded, and the note survives a straggler of the Reviewer's group"; else verdict CNF-15 fail "$detail"; fi
 
 # --- CNF-16: the Panel runs concurrently -------------------------------------------------------------
 repo="$(new_repo)"; rec="$work/rec-conc"
@@ -423,10 +475,6 @@ if [ "$e" = 0 ] && [ $((t1 - t0)) -lt 8 ] && [ "$last_start" -lt "$first_end" ];
 
 # --- CNF-17: timeouts and process groups -------------------------------------------------------------
 ok=1; detail=""
-# pid_in <pid> <space-separated pids>: exact match, not a substring
-pid_in() { tr ' ' '\n' <<< "$2" | grep -qx "$1"; }
-# kill_recorded <record dir>: SIGKILL every PID and GRANDCHILD a fake recorded, so a red row leaves nothing behind
-kill_recorded() { local f p; for f in "$1"/*.env; do for p in $(sed -n 's/^\(PID\|GRANDCHILD\)=//p' "$f" 2>/dev/null); do kill -9 "$p" 2>/dev/null; done; done; }
 # One Reviewer sleeps and spawns a child that ignores SIGTERM; the other three answer, so the judge
 # is called. The judge's own record says which children were alive when it started (AGT-14, AGT-16).
 repo="$(new_repo)"; rec="$work/rec-tmo"
@@ -472,13 +520,6 @@ record_of() {
   found=$(ls "$rec"/*-"$2".env 2>/dev/null | head -1)
   [ -n "$found" ] || { ok=0; detail="$detail [$1: no record of $2]"; }
 }
-# panel_records <label>: fills `panel` with the Panel's .env records, red unless there are the four
-# RUN-8 spawns, so the reads over them cannot pass on however many happen to exist.
-panel_records() {
-  local f
-  panel=(); for f in "$rec"/*-reviewer-1-*.env; do [ -e "$f" ] && panel+=("$f"); done
-  [ "${#panel[@]}" = 4 ] || { ok=0; detail="$detail [$1: ${#panel[@]} Reviewer records, not the Panel's four]"; }
-}
 # gone_by <label> <later record> <earlier record>: neither the earlier call's own process nor its
 # child is among what the later call recorded alive at its start. Every part of the read is guarded
 # — the earlier call's two pids and the later call's two snapshot lines — since an unwritten one is
@@ -493,19 +534,6 @@ gone_by() {
     grep -q "^$snap=" "$later" 2>/dev/null || { ok=0; detail="$detail [$label: $(basename "$later") has no $snap line]"; continue; }
     pid_in "$p" "$(sed -n "s/^$snap=//p" "$later")" \
       && { ok=0; detail="$detail [$label: $(basename "$earlier") $key $p alive when $(basename "$later") started]"; }
-  done
-}
-# nothing_survived <label>: of every fake that spawned a child, neither its own pid nor the child's
-# is running once the executable has returned. Every ancestor is gone by then, so neither can be a
-# zombie.
-nothing_survived() {
-  local f key p
-  for f in "$rec"/*.env; do
-    grep -q '^GRANDCHILD=' "$f" || continue
-    for key in PID GRANDCHILD; do
-      p=$(sed -n "s/^$key=//p" "$f")
-      [ -n "$p" ] && kill -0 "$p" 2>/dev/null && { ok=0; detail="$detail [$1: $(basename "$f") $key $p survived the Run]"; }
-    done
   done
 }
 for spawner in manager implementer; do
@@ -624,6 +652,91 @@ gc=$(sed -n 's/^GRANDCHILD=//p' "$rec"/*-implementer-1.env 2>/dev/null)
 kill_recorded "$rec"
 if [ "$ok" = 1 ]; then verdict CNF-34 ok "a call that exits 0 leaves neither its own process nor anything in its group, for a Manager call, for the Implementer, for every Reviewer of the Panel read from the judge's record and for both probes read from the call that follows each, and the group is gone before the step that is no call: the Implementer's before the Checkpoint that follows it, and each probe's before rloop writes that probe's availability record"; else verdict CNF-34 fail "$detail"; fi
 
+# --- CNF-35: each Reviewer's group is reaped as that Reviewer exits, on a grace of its own -------
+# Both rows are about when a group goes, not about what had gone by the next call, so neither reads a
+# later record's snapshot: the executable runs in a background subshell and the suite watches the
+# children die while the Panel is still running, as CNF-18's Runs do. `env --default-signal=INT,TERM`
+# is theirs too, so the fakes and their children start with the dispositions a foreground Run leaves
+# them.
+ok=1; detail=""
+# child_gone_within <label> <reviewer> <bound>: the SIGTERM-ignoring child that Reviewer left is gone
+# within <bound> seconds of that Reviewer's own exit, which the trace line its fake writes as its
+# last act dates. Every read is guarded — an unrecorded child and a Reviewer with no end line are
+# each red — so no clause of either row passes on absent evidence.
+child_gone_within() {
+  local label="$1" rv="$2" bound="$3" gc="" end="" deadline i
+  for i in $(seq 1 600); do
+    gc=$(sed -n 's/^GRANDCHILD=//p' "$rec"/*-reviewer-1-"$rv".env 2>/dev/null | head -1)
+    [ -n "$gc" ] && break
+    sleep 0.1
+  done
+  [ -n "$gc" ] || { ok=0; detail="$detail [$label: $rv recorded no child]"; return 0; }
+  for i in $(seq 1 600); do
+    end=$(awk -F: -v rv="$rv" '$1 == "reviewer" && $3 == rv && $4 == "end" { print $5 }' "$rec/trace" 2>/dev/null | head -1)
+    [ -n "$end" ] && break
+    sleep 0.1
+  done
+  [ -n "$end" ] || { ok=0; detail="$detail [$label: $rv recorded no exit]"; return 0; }
+  deadline=$(( end + bound * 1000000000 ))
+  while kill -0 "$gc" 2>/dev/null; do
+    [ "$(date +%s%N)" -lt "$deadline" ] && { sleep 0.1; continue; }
+    ok=0; detail="$detail [$label: $rv's child $gc is still alive ${bound}s past $rv's own exit]"; return 0
+  done
+}
+# Completion order, not roster order: fable, first of the roster, sleeps ten seconds while the other
+# three answer at once, and every Reviewer leaves a child that ignores SIGTERM. opus's child is the
+# one read, opus being named after fable, so a Panel waited for in roster order keeps opus's group
+# until fable has exited too. The bound is --kill-after and five seconds, generous because the claim
+# is only that the group goes with its own Reviewer and a loaded machine can be late; what it
+# separates from is a whole Reviewer's sleep away.
+repo="$(new_repo)"; rec="$work/rec-reap-order"; mkdir -p "$rec"
+( cd "$repo" && exec env --default-signal=INT,TERM PATH="$fakes:$private" RLOOP_FAKE_RECORD="$rec" RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_SLEEP_REVIEWER=10 RLOOP_FAKE_SLEEP_ONLY=fable RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=reviewer \
+    "$exe" --run-dir "$repo/run" --kill-after 1 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
+rpid=$!
+child_gone_within roster opus 6
+# And, read the instant it went, the Panel is the four RUN-8 spawns and fable — the Reviewer ahead of
+# opus in the roster, whose sleep is what roster order would have made opus's group wait for — is
+# still running. Both are positive reads, because every read above is about opus alone and the
+# absence of fable's end line is not evidence that fable ever started: a Panel of one Reviewer would
+# leave the whole row vacuous, and nothing_survived below skips a record that does not exist. So the
+# records are counted rather than globbed, a recorded child is required of each of the four — which
+# is what makes that survival read a claim about the Panel and not about however many records happen
+# to carry a GRANDCHILD line — and fable's own recorded pid must answer kill -0. The end line is read
+# as well and not instead: fable is the executable's child, and a zombie still answers kill -0.
+panel_records roster
+for f in ${panel[@]+"${panel[@]}"}; do
+  grep -q '^GRANDCHILD=' "$f" \
+    || { ok=0; detail="$detail [roster: $(basename "$f") recorded no child]"; }
+done
+fpid=$(sed -n 's/^PID=//p' "$rec"/*-reviewer-1-fable.env 2>/dev/null | head -1)
+if [ -z "$fpid" ]; then ok=0; detail="$detail [roster: fable recorded no PID]"
+elif ! kill -0 "$fpid" 2>/dev/null; then ok=0; detail="$detail [roster: fable $fpid was not running when opus's child went, so no later Reviewer was left to delay it]"
+fi
+grep -q '^reviewer:1:fable:end:' "$rec/trace" 2>/dev/null \
+  && { ok=0; detail="$detail [roster: fable had exited too when opus's child went, so no later Reviewer was left to delay it]"; }
+wait "$rpid"; e=$?
+[ "$e" = 0 ] || { ok=0; detail="$detail [roster: exit $e]"; }
+nothing_survived roster
+kill_recorded "$rec"
+# One grace each, not one after another: nobody sleeps, so the four Reviewers exit within a moment of
+# one another, and each leaves such a child. Graces taken one after another put the second group's
+# child two graces past its own Reviewer's exit and the fourth's four. The bound is the grace and
+# four seconds, for the reason above; --kill-after 5 rather than 1 is what puts the shape being
+# separated past nine seconds at all. The margin is not wide at every child: the second's two graces
+# are ten seconds and clear the bound by one. It is the third child and the fourth, three graces and
+# four — fifteen seconds and twenty — that the bound separates widely, and the first, undelayed, is
+# not separated at all.
+repo="$(new_repo)"; rec="$work/rec-reap-grace"; mkdir -p "$rec"
+( cd "$repo" && exec env --default-signal=INT,TERM PATH="$fakes:$private" RLOOP_FAKE_RECORD="$rec" RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=reviewer \
+    "$exe" --run-dir "$repo/run" --kill-after 5 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
+rpid=$!
+for rv in fable opus astra sol; do child_gone_within grace "$rv" 9; done
+wait "$rpid"; e=$?
+[ "$e" = 0 ] || { ok=0; detail="$detail [grace: exit $e]"; }
+nothing_survived grace
+kill_recorded "$rec"
+if [ "$ok" = 1 ]; then verdict CNF-35 ok "an early Reviewer's group is reaped as that Reviewer exits, while a later one still runs, and every group's grace runs on its own"; else verdict CNF-35 fail "$detail"; fi
+
 # --- CNF-18: interruption ------------------------------------------------------------------------------
 ok=1; detail=""
 for sig in INT TERM; do
@@ -688,7 +801,46 @@ sleep 0.5; kill -INT "$rpid"; sleep 1; kill -INT "$rpid"
 t0=$(date +%s); wait "$rpid"; e=$?; t1=$(date +%s)
 [ $((t1 - t0)) -lt 10 ] || { ok=0; detail="$detail [second SIGINT did not kill at once]"; }
 for f in "$rec"/*.env; do ipid=$(sed -n 's/^PID=//p' "$f"); [ -n "$ipid" ] && kill -9 "$ipid" 2>/dev/null; done
-if [ "$ok" = 1 ]; then verdict CNF-18 ok "SIGINT/SIGTERM forwarded, exit 2 'interrupted', nothing survives, run dir intact, for a sleeping Implementer and for the probe before the pick"; else verdict CNF-18 fail "$detail"; fi
+# --- and a second SIGINT during a reap rather than during a call. The Implementer fake exits at once
+# leaving a child that ignores SIGTERM, so rloop is inside that group's grace when the signals arrive;
+# --kill-after 20 makes the grace long enough to signal into and far wider than the bound read below.
+# The fake's own pid gone is what says the call has returned and the reap has the group, so that is
+# what the arm waits for before it signals. 06-conformance.md's note owns the rest of the argument.
+repo="$(new_repo)"; rec="$work/rec-sig-reap"; mkdir -p "$rec"
+( cd "$repo" && exec env --default-signal=INT,TERM PATH="$fakes:$private" RLOOP_FAKE_RECORD="$rec" RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=implementer \
+    "$exe" --run-dir "$repo/run" --kill-after 20 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
+rpid=$!
+ipid=""; gc=""
+for _ in $(seq 1 150); do
+  ipid=$(sed -n 's/^PID=//p' "$rec"/*-implementer-1.env 2>/dev/null | head -1)
+  gc=$(sed -n 's/^GRANDCHILD=//p' "$rec"/*-implementer-1.env 2>/dev/null | head -1)
+  { [ -n "$ipid" ] && [ -n "$gc" ]; } && break
+  sleep 0.2
+done
+if [ -z "$ipid" ] || [ -z "$gc" ]; then ok=0; detail="$detail [reap: the implementer recorded no PID or no child]"
+else
+  for _ in $(seq 1 150); do kill -0 "$ipid" 2>/dev/null || break; sleep 0.1; done
+  kill -0 "$ipid" 2>/dev/null && { ok=0; detail="$detail [reap: the implementer fake $ipid had not exited, so nothing was being reaped]"; }
+  # The child read alive immediately before each of the two signals, since the wait below is the only
+  # other liveness read and it would exit on its first test — green, having witnessed nothing — if the
+  # group were already empty. An Implementation that SIGKILLs a group at once instead of waiting
+  # --kill-after for it to empty is exactly that case, and exit 2 and `interrupted` do not tell the
+  # two apart. These two reads are what make the bound below a claim about the second SIGINT.
+  kill -0 "$gc" 2>/dev/null || { ok=0; detail="$detail [reap: the implementer's child $gc was already gone before the first SIGINT, so no reap was in progress]"; }
+  kill -INT "$rpid"; sleep 0.2
+  kill -0 "$gc" 2>/dev/null || { ok=0; detail="$detail [reap: the implementer's child $gc was already gone before the second SIGINT, so no escalation was exercised]"; }
+  kill -INT "$rpid"
+  deadline=$(( $(date +%s%N) + 5000000000 ))
+  while kill -0 "$gc" 2>/dev/null; do
+    [ "$(date +%s%N)" -lt "$deadline" ] && { sleep 0.1; continue; }
+    ok=0; detail="$detail [reap: the second SIGINT left the implementer's child $gc alive five seconds into a twenty-second grace]"; break
+  done
+fi
+wait "$rpid"; e=$?
+[ "$e" = 2 ] || { ok=0; detail="$detail [reap: exit $e]"; }
+grep -q interrupted "$rec/stderr" || { ok=0; detail="$detail [reap: no 'interrupted']"; }
+kill_recorded "$rec"
+if [ "$ok" = 1 ]; then verdict CNF-18 ok "SIGINT/SIGTERM forwarded, exit 2 'interrupted', nothing survives, run dir intact, for a sleeping Implementer and for the probe before the pick; a second SIGINT kills at once during a call and during a reap"; else verdict CNF-18 fail "$detail"; fi
 
 # --- CNF-19: git ------------------------------------------------------------------------------------------
 shim="$work/shim"; mkdir -p "$shim"; cp "$here/fakes/git-shim" "$shim/git"; chmod +x "$shim/git"
