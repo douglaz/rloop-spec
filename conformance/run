@@ -565,6 +565,35 @@ panel_records probe-1
 for f in ${panel[@]+"${panel[@]}"}; do gone_by probe-1 "$f" "$probe1_env"; done
 nothing_survived probe
 kill_recorded "$rec"
+# And each probe's own record, the step that follows the probe itself. RUN-21 has rloop record the
+# verdicts `After each call`, and AGT-15 has `A call is complete only once its process group has
+# been reaped that way`, so a probe's group is gone before that record is written and not merely
+# before the next call starts. The record is no agent call, so no snapshot above speaks for it and
+# the witness is the straggler again: each probe's child polls for that probe's own record —
+# probe-pick.md before the pick, probe-1.md in the Round — and must never find it. One Run per call
+# site, because RLOOP_FAKE_WATCH carries one <role>:<name> pair and both probes run under the role
+# probe: in each Run the other probe's child watches a name that is not its own record, which is
+# why every read here is scoped to the watching probe's tag rather than reading *.seen at large.
+# Sound rather than racy for the Checkpoint arm's reason: a reap that blocks has SIGKILLed the child
+# before rloop writes the record, so the file exists at no instant the child is alive, while a
+# record written first leaves the SIGTERM-ignoring child the whole --kill-after second to see it.
+# The readiness marker, the fake's WATCH_NOT_READY record of a bounded wait that fell through and
+# the child's own pid after the executable returns are read for that arm's reasons too.
+for site in probe-0:probe-pick.md probe-1:probe-1.md; do
+  ptag="${site%%:*}"; prec="${site#*:}"
+  repo="$(new_repo)"; rec="$work/rec-reap-$ptag-watch"
+  e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" \
+    RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=probe RLOOP_FAKE_WATCH="probe:$prec" \
+    run_rloop "$repo" "$rec" --run-dir "$repo/run" --kill-after 1)
+  [ "$e" = 0 ] || { ok=0; detail="$detail [$ptag watch: exit $e]"; }
+  [ -f "$repo/run/$prec" ] || { ok=0; detail="$detail [$ptag watch: no $prec, so the record had nothing to witness]"; }
+  ls "$rec"/*-"$ptag".watching >/dev/null 2>&1 || { ok=0; detail="$detail [$ptag watch: the probe's child never published that it was watching]"; }
+  grep -q '^WATCH_NOT_READY=' "$rec"/*.env 2>/dev/null && { ok=0; detail="$detail [$ptag watch: a probe fake exited before its child published that it was watching]"; }
+  ls "$rec"/*-"$ptag".seen >/dev/null 2>&1 && { ok=0; detail="$detail [$ptag watch: the probe's child saw $prec, so its group outlived the call and ran through the record]"; }
+  gc=$(sed -n 's/^GRANDCHILD=//p' "$rec"/*-"$ptag".env 2>/dev/null)
+  { [ -n "$gc" ] && ! kill -0 "$gc" 2>/dev/null; } || { ok=0; detail="$detail [$ptag watch: the probe's child ${gc:-(unrecorded)} is alive once the executable has returned]"; }
+  kill_recorded "$rec"
+done
 # And the Checkpoint boundary. RUN-7 has a Round consist of `one Implementer call`, then `the
 # Checkpoint (DIR-6)`, then `the availability probe`, so no agent call falls between the Implementer
 # and the step that follows it and no snapshot above can speak for that step: the witness has to be
@@ -593,7 +622,7 @@ ls "$rec"/*.seen >/dev/null 2>&1 && { ok=0; detail="$detail [checkpoint: the Imp
 gc=$(sed -n 's/^GRANDCHILD=//p' "$rec"/*-implementer-1.env 2>/dev/null)
 { [ -n "$gc" ] && ! kill -0 "$gc" 2>/dev/null; } || { ok=0; detail="$detail [checkpoint: the Implementer's child ${gc:-(unrecorded)} is alive once the executable has returned]"; }
 kill_recorded "$rec"
-if [ "$ok" = 1 ]; then verdict CNF-34 ok "a call that exits 0 leaves neither its own process nor anything in its group, for a Manager call, for the Implementer, for every Reviewer of the Panel read from the judge's record and for both probes read from the call that follows each, and the Implementer's group is gone before the Checkpoint that follows it"; else verdict CNF-34 fail "$detail"; fi
+if [ "$ok" = 1 ]; then verdict CNF-34 ok "a call that exits 0 leaves neither its own process nor anything in its group, for a Manager call, for the Implementer, for every Reviewer of the Panel read from the judge's record and for both probes read from the call that follows each, and the group is gone before the step that is no call: the Implementer's before the Checkpoint that follows it, and each probe's before rloop writes that probe's availability record"; else verdict CNF-34 fail "$detail"; fi
 
 # --- CNF-18: interruption ------------------------------------------------------------------------------
 ok=1; detail=""

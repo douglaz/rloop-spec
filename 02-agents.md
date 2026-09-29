@@ -224,14 +224,15 @@ subprocesses, and a killed parent leaves them orphaned and still writing.*
 **AGT-15** rloop MUST NOT exit while any agent process it started, or the **Probe** (`AGT-18`), is
 running. After every agent call and every **Probe**, once the process rloop started has exited,
 rloop MUST send SIGTERM to that call's process group, wait up to `--kill-after` seconds for the
-group to empty, then send SIGKILL to what remains, before the step that follows the call. The
-reaping leaves the call's exit status the spawned process's. A group that is already empty costs
-nothing: the wait ends as soon as the group does, where `AGT-14`'s `wait --kill-after seconds` at
-the limit is the whole grace. Reviewers run concurrently (`RUN-8`), so each Reviewer's group is
-reaped as that Reviewer exits. On SIGINT or SIGTERM it MUST send SIGTERM to every live group, wait
-for them (with `--kill-after`, then SIGKILL), and exit 2 with `interrupted` on standard error. A
-second SIGINT during that wait MUST send SIGKILL at once. The Run Directory is left as it is
-(`RUN-17`).
+group to empty, then send SIGKILL to what remains. A call is complete only once its process group
+has been reaped that way: rloop MUST read the call's output, and do anything else that follows the
+call — the **Probe**'s record (`RUN-21`) included — only after that. The reaping leaves the call's
+exit status the spawned process's. A group that is already empty costs nothing: the wait ends as
+soon as the group does, where `AGT-14`'s `wait --kill-after seconds` at the limit is the whole
+grace. Reviewers run concurrently (`RUN-8`), so each Reviewer's group is reaped as that Reviewer
+exits. On SIGINT or SIGTERM it MUST send SIGTERM to every live group, wait for them (with
+`--kill-after`, then SIGKILL), and exit 2 with `interrupted` on standard error. A second SIGINT
+during that wait MUST send SIGKILL at once. The Run Directory is left as it is (`RUN-17`).
 
 *Amended 2026-09-26 (`rl-agt15-normal-exit-stragglers-e6g`): reaping after a call that completes
 normally is new; before it a group was reaped only where the call did not complete — at the limit
@@ -240,6 +241,16 @@ normally is new; before it a group was reaped only where the call did not comple
 build, a server or a check running in the background — the habit `07-open-findings.md`'s `F16`
 records — left that process writing into the working tree while the Panel reviews and the Manager
 commits, and able to outlive the Sequence.*
+
+*Amended 2026-09-29 (`rl-agt15-probe-record-step-taf`): completion, not the step that follows the
+call, is now what the reaping precedes. Three advisers (`opus`, `astra`, `sol`) read the old wording
+the same way and each proposed this general form, which settles the **Probe**, the Checkpoint and
+`RUN-6`'s copy at once rather than defining that step per role. It closes an output-read race with
+the **Probe** besides: the **Probe**'s standard output goes to the file `DIR-4` names for it
+(`AGT-13`), a straggler of its group inherits that descriptor, and a usage line that lands after
+rloop has derived the verdicts (`RUN-21`) left the record disagreeing with the capture beside it —
+and that record is what decides which Seats the Panel calls (`RUN-7`). `07-open-findings.md`'s
+`F17` records what `CNF-34` witnesses of it.*
 
 **AGT-16** Each agent process, and the **Probe** (`AGT-18`), MUST be started in its own process group, so that `AGT-14` and
 `AGT-15` reach every descendant. A new session (`setsid`) satisfies this; so does what

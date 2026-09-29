@@ -281,8 +281,13 @@
   },
   {
     "owner": "AGT-15",
-    "sha256": "60bcec508015bd54443f8cc3e205134c7a76c8a3b9cff80a1e4089150e027d28",
-    "reason": "Owns reaping a call's process group after the call, the bound on that wait and its place before the next step; AGT-18 names the included Probe and AGT-14 separately owns the timeout that reaps at the limit."
+    "sha256": "ef23873e7b610b296fb4e74cf99ee254ed74a32a5fe8a484f3da27db0ca72aca",
+    "reason": "Owns reaping a call's process group after the call and the bound on that wait; AGT-18 names the included Probe and AGT-14 separately owns the timeout that reaps at the limit."
+  },
+  {
+    "owner": "AGT-15",
+    "sha256": "beab5c9a466e990bf9a63d6f6afcfc966bb49a3f18f1f9e6b2d886dacb3eb14b",
+    "reason": "Owns when a call is complete and the order the output read and every later step take from it; RUN-21 identifies one of those later steps and separately owns what that record holds."
   },
   {
     "owner": "RUN-18",

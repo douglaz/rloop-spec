@@ -530,24 +530,40 @@ ignores SIGTERM (`:140`), so a call that starts while the probe is still running
 `GRANDCHILD=` line in the probe's record and has nothing to report. The group half can be green with
 the group alive, and it is the two halves together that caught these mutants.
 
-*What `CNF-34` still reads at the next call alone.* The Checkpoint after the Implementer is the one
-step boundary the item now observes, and it is the boundary whose files a straggler races (`DIR-6`).
-Besides each probe's, which the reading below leaves open, the boundaries observed only at the call
-that follows are the pick's, where the next step is `RUN-6`'s `copy the Task File to` `task-1.md`;
-the Panel's, where `RUN-7` has `the Checkpoint again` and the judge's record is what the Reviewer
-row reads in its place; and the judge's, where `RUN-7` has `the decision` — and in a Run of one
-Round no later call exists at all, so the judge's own snapshot is read only to keep an unwritten one
-from passing. Each probe's boundary is read at the call that follows it as well, and by then that
-probe's verdicts are recorded: `RUN-21` has `After each call it MUST record for every Seat exactly
-one verdict`, `before the pick` for the probe before the pick and in Round `r` for the Round's. A
-straggler of the probe's group that races that record is therefore unwitnessed, and the `sol`
-Reviewer of this Round measured the gap — a mutant that writes the availability record while the
-probe's child is still alive and reaps the group before the next call starts leaves `CNF-34` green.
-Whether `AGT-15`'s `before the step that follows the call` reaches that record is `RUN-19`'s `two
-readings that lead to different behaviour`, filed as `rl-agt15-probe-record-step-taf` and the
-specification owner's to settle, so whether the Probe row's two boundaries belong in the list above
-is open with it and this finding does not say. The same watching straggler would witness each
-boundary the list names; none is witnessed today.
+*What `CNF-34` still reads at the next call alone.* The Checkpoint after the Implementer and each
+probe's availability record are the step boundaries the item now observes, and each is a boundary
+whose files a straggler races (`DIR-6`, `RUN-21`). The boundaries observed only at the call that
+follows are the pick's, where the next step is `RUN-6`'s `copy the Task File to` `task-1.md`; the
+Panel's, where `RUN-7` has `the Checkpoint again` and the judge's record is what the Reviewer row
+reads in its place; and the judge's, where `RUN-7` has `the decision` — and in a Run of one Round no
+later call exists at all, so the judge's own snapshot is read only to keep an unwritten one from
+passing. The same watching straggler would witness each boundary the list names; none is witnessed
+today.
+
+*The Probe's two boundaries, settled 2026-09-29 (`rl-agt15-probe-record-step-taf`).* They were read
+at the call that follows each, and by then that probe's verdicts are recorded: `RUN-21` has `After
+each call it MUST record for every Seat exactly one verdict`, `before the pick` for the probe before
+the pick and in Round `r` for the Round's. A straggler of the probe's group that raced that record
+was therefore unwitnessed, and the `sol` Reviewer of this finding's Round measured the gap — a
+mutant that writes the availability record while the probe's child is still alive and reaps the
+group before the next call starts left `CNF-34` green. The specification owner settled the reading
+in its general form, and `AGT-15`'s `A call is complete only once its process group has been reaped
+that way` replaced the wording that put the reaping before the step that follows the call: rloop
+reads the call's output only after the reaping, so each probe's record is on the far side of it at
+both of `RUN-21`'s call sites, and `CNF-34` gained a watching straggler at each. The gap is closed
+and the mutant is red. Rebuilt against rloop-bash `18c8807`, gated on `RLOOP_FAKE_WATCH`'s value
+beginning `probe:` — what confines it to the two new Runs, where a gate on the variable merely being
+set would mutate the Checkpoint arm too, whose value is `implementer:rejected-1-task.md`
+(`conformance/run:615`) — and with the wait loop of that executable's `reap` inlined rather than
+reordered so the verdicts still see the status the reaping sets, it gives `[probe-0 watch: the
+probe's child saw probe-pick.md, so its group outlived the call and ran through the record]` and the
+same bracket for `probe-1` and `probe-1.md` as the item's whole detail, with every other verdict
+line of the suite byte-identical. Gated that way the mutant says nothing about the item as it stood
+at `48d5f2c`: no row of that suite sets `RLOOP_FAKE_WATCH` to a `probe:` value, so the gate never
+fires and the mutation is inert by construction. Ungated instead — applied at both of `RUN-21`'s
+call sites with nothing to confine it — against that tree extracted with `git archive`, every
+verdict line of the suite is byte-identical to the unmutated executable's, the item's own included,
+so `CNF-34` stayed green there. That is the gap these two Runs close.
 
 ## F18 — `conformance/run` is not newline-safe (deferred 2026-09-27)
 

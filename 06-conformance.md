@@ -178,7 +178,15 @@ shape, the Implementer fake also appending to the Task File and its child pollin
 `rejected-1-task.md` under the Run Directory rather than sleeping: the Run exits 0,
 `rejected-1-task.md` is there, the child recorded that it was watching before its fake exited, and
 it never found the file — so the Implementer's group was gone before the Checkpoint that follows its
-call, and not only before the next call.
+call, and not only before the next call. Two Runs more of the probes' shape, one for each of
+`RUN-21`'s call sites, every probe's child polling under the Run Directory rather than sleeping: for
+the record the probe before the pick writes, `probe-pick.md`, and for the record the Round's probe
+writes, `probe-1.md`. In each the Run exits 0, that record is there, the probe whose own record is
+the watched one recorded that it was watching before its fake exited, and its child never found the
+file — so that probe's group was gone before rloop wrote that record, and not only before the next
+call. Neither Run passes on absent evidence either: a missing record, a missing readiness marker, a
+fake that exited before its child published one and a child whose pid is unrecorded or still running
+once the executable has returned are each red.
 *A call that exits 0 is what `AGT-14`'s `At the limit` never reaches, and leaving a check running is
 a habit `07-open-findings.md`'s `F16` records: the child of a healthy Implementer writes into the
 working tree through the whole Panel and the Manager's commit. `CNF-17` reads the same record for
@@ -190,9 +198,18 @@ sibling's process — or a sibling's child — alive has found that working, whi
 call after the whole Panel, is where a Reviewer is read. The Checkpoint starts no call, so no record
 of a later one speaks for that boundary and the straggler is the witness; the appended Task File is
 what makes `DIR-6` `move task.md to rejected-<r>-task.md` there, and the child's recorded readiness
-is what keeps its silence from passing for compliance. `F17` names the boundaries this item still
-reads at the next call alone.*
-(`AGT-15`, `AGT-16`, `DIR-6`)
+is what keeps its silence from passing for compliance. Each probe's record starts no call either,
+and `AGT-15`'s `A call is complete only once its process group has been reaped that way` puts it
+after the reaping, so the same straggler witnesses it; `RLOOP_FAKE_WATCH` carries one name, which is
+why the two call sites take a Run each and each Run reads the watching probe's tag alone. What that
+straggler establishes is the record and not the read: `AGT-15` has `rloop MUST read the call's
+output, and do anything else that follows the call` come `only after that`, and a child that never
+finds the record witnesses the second of those and not the first. Reading the output leaves no file
+for a straggler to poll, so a witness for the read would need one that writes into the probe's
+capture rather than one that polls — a knob the fake does not have — and that gap is filed as
+`rl-agt15-output-read-no-witness-a9h`. `F17` names the boundaries this item still reads at the next
+call alone.*
+(`AGT-15`, `AGT-16`, `DIR-6`, `RUN-21`)
 
 **CNF-18** SIGINT sent to the executable while an Implementer fake sleeps, having spawned a child
 that ignores SIGTERM: the fake records SIGTERM, the executable exits 2 with `interrupted` on
