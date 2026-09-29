@@ -683,14 +683,14 @@ done
 # and the Implementer's, whose default model is of that family, and RUN-22 exits 2 naming each. An
 # executable that reaps first has that line in the capture it then reads, so probe-pick.md records
 # those three Seats unavailable and the probe before the pick is the only call of the Run; one that
-# reads first sees the capture as its fake left it — RLOOP_FAKE_PROBE_PICK's default `clear` shape,
-# an aggregate at 67 naming no family — records every Seat `unknown` there and calls the pick. What
-# separates the two is that record and the calls after it and not the exit status, which is 2 either
-# way when the defect is the pick's alone: the Round the mutant goes on to reaches RUN-21's other
-# call site, whose probe leaves the same straggler, and RUN-22 refuses there instead. That the line
-# is byte-exactly what no probe shape writes (every shape's Fable line carries a ` · resets` suffix,
-# and `both`'s, which does not, is not the default) is what keeps the fake's own output from
-# standing in for the straggler's.
+# reads first sees the capture as its fake left it — the `clear` shape the row pins
+# RLOOP_FAKE_PROBE_PICK to, an aggregate at 67 naming no family — records every Seat `unknown` there
+# and calls the pick. What separates the two is that record and the calls after it and not the exit
+# status, which is 2 either way when the defect is the pick's alone: the Round the mutant goes on to
+# reaches RUN-21's other call site, whose probe leaves the same straggler, and RUN-22 refuses there
+# instead. That the line is byte-exactly what no probe shape writes (every shape's Fable line
+# carries a ` · resets` suffix, and `both`'s, which does not, is not the shape the row pins) is what
+# keeps the fake's own output from standing in for the straggler's.
 # The window, and why each end has margin: the child waits for its own fake to exit and then one
 # second more before its first write, so a read that comes before the reaping has that whole second
 # in which the line cannot yet be there, while --kill-after 4 leaves the SIGTERM-ignoring child
@@ -704,7 +704,8 @@ done
 straggler_line='Current week (Fable): 100% used'
 repo="$(new_repo)"; rec="$work/rec-reap-probe-read"
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" \
-  RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=probe RLOOP_FAKE_WRITE_STDOUT="probe:1:$straggler_line" \
+  RLOOP_FAKE_PROBE_PICK=clear RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=probe \
+  RLOOP_FAKE_WRITE_STDOUT="probe:1:$straggler_line" \
   run_rloop "$repo" "$rec" --run-dir "$repo/run" --kill-after 4)
 [ "$e" = 2 ] || { ok=0; detail="$detail [probe read: exit $e, not RUN-22's refusal]"; }
 [ "$(spawn_count "$rec")" = 1 ] || { ok=0; detail="$detail [probe read: $(spawn_count "$rec") calls recorded, not the probe before the pick alone]"; }
