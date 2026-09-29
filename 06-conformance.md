@@ -248,8 +248,8 @@ spawning any agent` — which makes a verdict derived from the wrong bytes a Run
 and goes on. Its window has margin at both ends: the child's first write is a second after its own
 fake exits, which a read before the reaping is well inside, and `--kill-after 4` keeps that child
 alive three seconds past that write, which a read after the reaping falls past, the line having
-reached the capture three seconds before it. `F17` names the boundaries this item still reads at the
-next call alone.*
+reached the capture three seconds before that read. `F17` names the boundaries this item still reads
+at the next call alone.*
 (`AGT-15`, `AGT-16`, `DIR-4`, `DIR-6`, `RUN-21`, `RUN-22`)
 
 **CNF-35** With one Round, `--kill-after 1`, the `fable` Reviewer fake sleeping 10 seconds while the
