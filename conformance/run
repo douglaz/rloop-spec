@@ -659,6 +659,47 @@ for site in probe-0:probe-pick.md probe-1:probe-1.md; do
   { [ -n "$gc" ] && ! kill -0 "$gc" 2>/dev/null; } || { ok=0; detail="$detail [$ptag watch: the probe's child ${gc:-(unrecorded)} is alive once the executable has returned]"; }
   kill_recorded "$rec"
 done
+# And the read itself, the clause's other half. AGT-15 has `rloop MUST read the call's output, and
+# do anything else that follows the call` come only after the reaping, and every arm above witnesses
+# the second of those alone: a child that polls for a file finds nothing whether the read came
+# before the reaping or after. The witness for the first is a child that *writes* where those poll,
+# into the capture DIR-4 gives the Probe `entire and unmodified`. The site is the probe before the
+# pick, because RUN-22 stops the Run on that probe's verdicts: the child writes `Current week
+# (Fable): 100% used`, which RUN-21 reads as unavailable for the fable Seat and so for the Manager's
+# and the Implementer's, whose default model is of that family, and RUN-22 exits 2 naming each. An
+# executable that reaps first has that line in the capture it then reads, so probe-pick.md records
+# those three Seats unavailable and the probe before the pick is the only call of the Run; one that
+# reads first sees the capture as its fake left it — RLOOP_FAKE_PROBE_PICK's default `clear` shape,
+# an aggregate at 67 naming no family — records every Seat `unknown` there and calls the pick. What
+# separates the two is that record and the calls after it and not the exit status, which is 2 either
+# way when the defect is the pick's alone: the Round the mutant goes on to reaches RUN-21's other
+# call site, whose probe leaves the same straggler, and RUN-22 refuses there instead. That the line
+# is byte-exactly what no probe shape writes (every shape's Fable line carries a ` · resets` suffix,
+# and `both`'s, which does not, is not the default) is what keeps the fake's own output from
+# standing in for the straggler's.
+# The window, and why each end has margin: the child waits for its own fake to exit and then one
+# second more before its first write, so a read that comes before the reaping has that whole second
+# in which the line cannot yet be there, while --kill-after 4 leaves the SIGTERM-ignoring child
+# alive four seconds past that exit, three of them after it has begun writing. Both margins are
+# twenty of the child's poll intervals, which is what keeps the row from being green against a
+# reordering it cannot resolve.
+# Nor may it pass on absent evidence: that the line reached the capture at all is read, since a
+# child that wrote nothing leaves the row nothing to witness and every Seat `unknown` for a reason
+# that is not the Implementation's, and so is the child's own pid once the executable has returned,
+# as every arm above reads it.
+straggler_line='Current week (Fable): 100% used'
+repo="$(new_repo)"; rec="$work/rec-reap-probe-read"
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" \
+  RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=probe RLOOP_FAKE_WRITE_STDOUT="probe:1:$straggler_line" \
+  run_rloop "$repo" "$rec" --run-dir "$repo/run" --kill-after 4)
+[ "$e" = 2 ] || { ok=0; detail="$detail [probe read: exit $e, not RUN-22's refusal]"; }
+[ "$(spawn_count "$rec")" = 1 ] || { ok=0; detail="$detail [probe read: $(spawn_count "$rec") calls recorded, not the probe before the pick alone]"; }
+grep -qxF -- "$straggler_line" "$repo/run/probe-pick.out" 2>/dev/null \
+  || { ok=0; detail="$detail [probe read: nothing of the probe's straggler reached probe-pick.out, so the read had nothing to witness]"; }
+record_is "$repo/run/probe-pick.md" "probe read" unavailable unavailable unavailable unknown unknown unknown
+gc=$(sed -n 's/^GRANDCHILD=//p' "$rec"/*-probe-0.env 2>/dev/null)
+{ [ -n "$gc" ] && ! kill -0 "$gc" 2>/dev/null; } || { ok=0; detail="$detail [probe read: the probe's child ${gc:-(unrecorded)} is alive once the executable has returned]"; }
+kill_recorded "$rec"
 # And the Checkpoint boundary. RUN-7 has a Round consist of `one Implementer call`, then `the
 # Checkpoint (DIR-6)`, then `the availability probe`, so no agent call falls between the Implementer
 # and the step that follows it and no snapshot above can speak for that step: the witness has to be
@@ -687,7 +728,7 @@ ls "$rec"/*.seen >/dev/null 2>&1 && { ok=0; detail="$detail [checkpoint: the Imp
 gc=$(sed -n 's/^GRANDCHILD=//p' "$rec"/*-implementer-1.env 2>/dev/null)
 { [ -n "$gc" ] && ! kill -0 "$gc" 2>/dev/null; } || { ok=0; detail="$detail [checkpoint: the Implementer's child ${gc:-(unrecorded)} is alive once the executable has returned]"; }
 kill_recorded "$rec"
-if [ "$ok" = 1 ]; then verdict CNF-34 ok "a call that exits 0 leaves neither its own process nor anything in its group, for a Manager call, for the Implementer, for every Reviewer of the Panel read from the judge's record and for both probes read from the call that follows each, and the group is gone before the step that is no call: the Implementer's before the Checkpoint that follows it, and each probe's before rloop writes that probe's availability record"; else verdict CNF-34 fail "$detail"; fi
+if [ "$ok" = 1 ]; then verdict CNF-34 ok "a call that exits 0 leaves neither its own process nor anything in its group, for a Manager call, for the Implementer, for every Reviewer of the Panel read from the judge's record and for both probes read from the call that follows each, and the group is gone before the step that is no call: the Implementer's before the Checkpoint that follows it, and each probe's before rloop writes that probe's availability record — and before rloop reads that probe's output, a straggler's usage line reaching the verdicts and refusing the Run"; else verdict CNF-34 fail "$detail"; fi
 
 # --- CNF-35: each Reviewer's group is reaped as that Reviewer exits, on a grace of its own -------
 # Both rows are about when a group goes, not about what had gone by the next call, so neither reads a

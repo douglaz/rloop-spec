@@ -61,7 +61,7 @@
 #                            one that published after its fake exited can leave the witness absent
 #                            by silence. Both files go under RLOOP_FAKE_RECORD and never into the
 #                            working tree, which RLOOP_FAKE_DIRTY_AT_DONE is the knob for
-#   RLOOP_FAKE_WRITE_STDOUT  a role name = what that role's SIGTERM-ignoring child does instead of
+#   RLOOP_FAKE_WRITE_STDOUT  <role>[:<seconds>[:<line>]] = what that role's child does instead of
 #                            sleeping: wait for its own fake to exit, then write one line to the
 #                            standard output it inherited every twentieth of a second. It is the same
 #                            child RLOOP_FAKE_GRANDCHILD_IGNORE_TERM spawns and records, as
@@ -73,7 +73,14 @@
 #                            appends while the group is still alive sits where the child's next write
 #                            overwrites it, which is how a note written before the reap is witnessed
 #                            at all. The wait for its own fake is what keeps anything it writes from
-#                            landing ahead of that fake's own line
+#                            landing ahead of that fake's own line. <seconds> (default 0) delays the
+#                            first write that much past its fake's exit and <line> (default
+#                            `straggler of <tag>`) is what it writes, which is what a row separating
+#                            an executable that reads a call's output before reaping its group from
+#                            one that reads after needs both of: the delay is the window in which
+#                            the early read can see nothing, and a line the reader acts on is what
+#                            makes the late read visible, an inert one changing no verdict. A <line>
+#                            may hold colons; nothing past the second one is split
 #   RLOOP_FAKE_DIRTY_AT_DONE 1 = the Manager leaves an untracked file in the tree when it writes done
 #   RLOOP_FAKE_COMMIT        1 = the Implementer commits a file during its call
 #   RLOOP_FAKE_THREAD_ID     the thread_id a codex Manager pick reports (default: …cafe)
@@ -126,7 +133,7 @@ if [ "$role" = reviewer ] && [ -n "${RLOOP_FAKE_SLEEP_ONLY:-}" ] && [ "$reviewer
 if [ "${RLOOP_FAKE_IGNORE_TERM:-0}" = 1 ]; then trap '' TERM; else trap 'echo "SIGTERM" >> "$rec/$tag.env"; exit 143' TERM; fi
 gc_ignore_term="${RLOOP_FAKE_GRANDCHILD_IGNORE_TERM:-0}"
 watch="${RLOOP_FAKE_WATCH:-}"
-write_stdout="${RLOOP_FAKE_WRITE_STDOUT:-}"
+IFS=: read -r ws_role ws_delay ws_line <<< "${RLOOP_FAKE_WRITE_STDOUT:-}"   # <role>[:<seconds>[:<line>]]
 # How long a child lives, and the invariant the items that read one rest on: it outlasts the
 # longest RLOOP_FAKE_SLEEP_<ROLE> any row of conformance/run gives a fake that spawns one, so that a
 # child still running when an item reads it is evidence about the Implementation and not about the
@@ -150,14 +157,17 @@ if { [ "$gc_ignore_term" = 1 ] && [ "$sleep_for" != 0 ]; } || [ "$gc_ignore_term
     # publishing after the fake exited is a red item, not a witness that was never watching.
     i=0; while [ ! -e "$rec/$tag.watching" ] && [ "$i" -lt 200 ]; do sleep 0.05; i=$(( i + 1 )); done
     [ -e "$rec/$tag.watching" ] || echo "WATCH_NOT_READY=1" >> "$rec/$tag.env"
-  elif [ "$write_stdout" = "$role" ]; then
+  elif [ "$ws_role" = "$role" ]; then
     # The same child, writing to the standard output this fake inherited rather than sleeping, for
     # the same gc_life seconds in twentieths. It waits for this fake to exit first because the
     # descriptor's file offset is shared: a line written earlier would land ahead of the fake's own.
+    # Then it waits out the delay the knob asks for, which is how a row puts a bound below the
+    # window it separates in, and writes the line the knob names.
     ( trap '' TERM; while kill -0 "$$" 2>/dev/null; do sleep 0.05; done
+      sleep "${ws_delay:-0}"
       i=0
       while [ "$i" -lt $(( gc_life * 20 )) ]; do
-        echo "straggler of $tag"; sleep 0.05; i=$(( i + 1 ))
+        echo "${ws_line:-straggler of $tag}"; sleep 0.05; i=$(( i + 1 ))
       done ) & echo "GRANDCHILD=$!" >> "$rec/$tag.env"
   else
     ( trap '' TERM; sleep "$gc_life" ) & echo "GRANDCHILD=$!" >> "$rec/$tag.env"

@@ -213,7 +213,15 @@ the watched one recorded that it was watching before its fake exited, and its ch
 file — so that probe's group was gone before rloop wrote that record, and not only before the next
 call. Neither Run passes on absent evidence either: a missing record, a missing readiness marker, a
 fake that exited before its child published one and a child whose pid is unrecorded or still running
-once the executable has returned are each red.
+once the executable has returned are each red. A last Run of the probes' shape, for the read of a
+probe's output rather than for the record: every probe's child writing to the standard output it
+inherited rather than sleeping — one second after its own fake has exited, the line `Current week
+(Fable): 100% used` — and `--kill-after 4`. The Run exits 2, the probe before the pick is the only
+call it makes, that line is in `probe-pick.out`, `probe-pick.md` records the Manager's Seat, the
+Implementer's and `fable` unavailable and the other three unknown, and the child's pid is recorded
+and not running once the executable has returned — so rloop read that probe's output after reaping
+its group and not before. Nor does that Run pass on absent evidence: a line that never reached the
+capture leaves the read nothing to witness and is red.
 *A call that exits 0 is what `AGT-14`'s `At the limit` never reaches, and leaving a check running is
 a habit `07-open-findings.md`'s `F16` records: the child of a healthy Implementer writes into the
 working tree through the whole Panel and the Manager's commit. `CNF-17` reads the same record for
@@ -232,11 +240,16 @@ why the two call sites take a Run each and each Run reads the watching probe's t
 straggler establishes is the record and not the read: `AGT-15` has `rloop MUST read the call's
 output, and do anything else that follows the call` come `only after that`, and a child that never
 finds the record witnesses the second of those and not the first. Reading the output leaves no file
-for a straggler to poll, so a witness for the read would need one that writes into the probe's
-capture rather than one that polls — a knob the fake does not have — and that gap is filed as
-`rl-agt15-output-read-no-witness-a9h`. `F17` names the boundaries this item still reads at the next
-call alone.*
-(`AGT-15`, `AGT-16`, `DIR-6`, `RUN-21`)
+for a straggler to poll, so the last Run gives the read a straggler that writes where those poll:
+into the capture `DIR-4` has the probe's standard output reach `entire and unmodified`, so that
+an executable which reads before reaping reads bytes that line has not arrived in yet. The probe
+before the pick is that Run's site because `RUN-22` ends the Run on its verdicts — `exit 2 without
+spawning any agent` — which makes a verdict derived from the wrong bytes a Run that calls the pick
+and goes on. Its window has margin at both ends: the child's first write is a second after its own
+fake exits, which a read before the reaping is well inside, and `--kill-after 4` keeps that child
+alive three seconds past that write, which a read after the reaping is well inside. `F17` names the
+boundaries this item still reads at the next call alone.*
+(`AGT-15`, `AGT-16`, `DIR-4`, `DIR-6`, `RUN-21`, `RUN-22`)
 
 **CNF-35** With one Round, `--kill-after 1`, the `fable` Reviewer fake sleeping 10 seconds while the
 other three answer at once, and every Reviewer fake spawning a child that ignores SIGTERM: the child

@@ -538,7 +538,9 @@ Panel's, where `RUN-7` has `the Checkpoint again` and the judge's record is what
 reads in its place; and the judge's, where `RUN-7` has `the decision` — and in a Run of one Round no
 later call exists at all, so the judge's own snapshot is read only to keep an unwritten one from
 passing. The same watching straggler would witness each boundary the list names; none is witnessed
-today.
+today. That list is of *steps*. `AGT-15`'s clause has another half — the read of the call's own
+output — and the paragraph below settles it at one call site and leaves it unobserved at every
+other.
 
 *The Probe's two boundaries, settled 2026-09-29 (`rl-agt15-probe-record-step-taf`).* They were read
 at the call that follows each, and by then that probe's verdicts are recorded: `RUN-21` has `After
@@ -564,6 +566,42 @@ fires and the mutation is inert by construction. Ungated instead — applied at 
 call sites with nothing to confine it — against that tree extracted with `git archive`, every
 verdict line of the suite is byte-identical to the unmutated executable's, the item's own included,
 so `CNF-34` stayed green there. That is the gap these two Runs close.
+
+*The read of a call's output, witnessed 2026-09-29 (`rl-agt15-output-read-no-witness-a9h`).*
+The straggler those two Runs gave each probe witnesses the record and not the read: it *polls*, and
+reading a call's output leaves it no file to find, so a read taken before the reaping and one taken
+after look the same to it. The witness for the read is a straggler that *writes* into the capture
+`DIR-4` has the probe's standard output reach `entire and unmodified` — a line the reader acts on,
+since an inert one changes no verdict — and `CNF-34` gained one Run of it, at the probe before the
+pick (`conformance/run:662-702`). `RUN-22` is what makes the read observable there: it has rloop
+`exit 2 without spawning any agent` on that probe's verdicts, so an executable that derives them
+from bytes the straggler's line has not reached yet calls the pick and runs on. The knob is
+`RLOOP_FAKE_WRITE_STDOUT`, which had only a role and a fixed line and now takes a first-write delay
+and the line with it (`conformance/fakes/agent:64-83`, `:136`, `:167-170`); the row asks for one
+second and `--kill-after 4`, so an early read is a second short of the line and a reaping one has
+three seconds of the child's writing behind it before it reads.
+
+The mutant is a scratch copy of rloop-bash `19f532a`, run behind a stand-in for that repository's
+flake wrapper, which appends `diffutils` to `PATH`: `bin/rloop` calls `cmp`, which `CNF-2`'s PATH
+does not carry, so run bare it is red on `CNF-3` and `CNF-9` whatever the mutation.
+Its probe call sites snapshot the capture between the wait and the reaping and derive the verdicts
+from that snapshot, leaving the record — and the refusal, and every other step — after the reaping,
+so that it violates the read half alone and the two watching Runs above stay green. Ungated, at both
+of `RUN-21`'s call sites: against the suite as it stood at `9d85f6f` every verdict line is
+byte-identical to the unmutated executable's, `CNF-34`'s included, which is the blindness this Run
+ends; against the amended suite its whole detail is `[probe read: exit 0, not RUN-22's refusal]
+[probe read: 9 calls recorded, not the probe before the pick alone] [probe read: probe-pick.md is
+not unavailable unavailable unavailable unknown unknown unknown: 'manager:unknown
+implementer:unknown fable:unknown opus:unknown astra:unknown sol:unknown ']`, with every other
+verdict line byte-identical. No gate confines it because none is needed: exactly one item's
+verdict moves. A mutant that moves the *whole* verdict step ahead of the reaping instead — the
+record with the read — is a different defect and the two watching Runs already red it (`[probe-0
+watch: the probe's child saw probe-pick.md, so its group outlived the call and ran through the
+record]` and the same for `probe-1`), which is why it witnesses nothing about this half.
+
+Still unobserved: every other call's output read — the pick's, the Implementer's, each Reviewer's,
+the judge's and the Round's probe's. `RUN-22` gives the probe before the pick an observable no other
+call has, and `rl-cnf34-probe0-read-fast-fake-8et` holds the remaining `probe-0` gap.
 
 ## F18 — `conformance/run` is not newline-safe (deferred 2026-09-27)
 
