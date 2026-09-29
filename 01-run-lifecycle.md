@@ -31,6 +31,20 @@ which is the check working, not a defect.*
 **RUN-4** rloop MUST create the Run Directory (`DIR-1`–`DIR-3`) before the pick and MUST NOT
 create any other file outside it, save the `.rloop/.gitignore` `DIR-2` names.
 
+**RUN-23** The git working tree's path, the Run Directory's path, and every path rloop renders into
+a prompt or passes on a command line, MAY hold whitespace — a space, a tab — and rloop MUST handle
+one that does: every file it reads or writes, and every argument it passes, names the path it was
+given, byte for byte. A newline is out of scope: the suite cannot drive a path holding one, and
+`07-open-findings.md` records why.
+
+*Added 2026-09-29 (`rl-impl-whitespace-path-obligation-73y`): the Conformance Suite makes the
+repository and the Run Directory it hands the executable under `TMPDIR`, so without this clause an
+executable that word-splits a path is green under a `TMPDIR` holding no whitespace and red under one
+holding some — the same executable, the same suite, two verdicts. One obligation over both paths
+rather than an amendment to `RUN-1`, which owns the tree, or to `DIR-1` and `DIR-2`, which own the
+Run Directory's: amending either would have left the other's path without an owner or written the
+rule a second time.*
+
 ## The pick
 
 **RUN-5** The Run MUST begin with exactly one Manager call — the **pick**, unless withheld

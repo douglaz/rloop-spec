@@ -91,7 +91,11 @@ pre-existing `.gitignore` of either shape a check by eye accepts, `*` followed b
 Rounds and nothing else, `probe-pick.out`, `probe-pick.err` and `probe-pick.md` among them; each
 agent's `.out` and `.err` hold that fake's standard output and standard error entire; `session`
 holds the Manager's session id as a UUID, whichever preset established it (`RUN-16`); and the
-directory is intact after a Run that ended 2. (`DIR-4`, `RUN-17`)
+directory is intact after a Run that ended 2. One further two-Round Run has the repository's own
+path hold a space and a tab, and its `--run-dir` a space as well, and leaves that same listing; the
+suite makes that path itself rather than reading it out of `TMPDIR`, since an item that sees
+whitespace only when the caller exports it is exactly the verdict that moves with `TMPDIR`.
+(`DIR-4`, `RUN-17`, `RUN-23`)
 
 ## What agents receive
 

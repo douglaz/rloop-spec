@@ -3,8 +3,11 @@
 # Caller supplies work, fakes and exe, calls restrict_path once, and owns scratch-directory cleanup.
 
 # --- a fresh repository per run ----------------------------------------------------------------
-new_repo() { # new_repo -> prints path; a git repo with one commit
-  local r; r="$(mktemp -d "$work/repo.XXXXXX")"
+new_repo() { # new_repo [path] -> prints path; a git repo with one commit. Without an argument
+             # mktemp names it; with one the caller does, which is how an item asks for a
+             # repository whose own path holds whitespace (CNF-9) instead of taking TMPDIR's.
+  local r="${1:-}"
+  if [ -n "$r" ]; then mkdir -p "$r" || return 1; else r="$(mktemp -d "$work/repo.XXXXXX")"; fi
   ( cd "$r" && git init -q -b master && echo hello > README && git add README \
     && git -c user.email=s@s -c user.name=suite commit -q -m init ) || return 1
   echo "$r"
