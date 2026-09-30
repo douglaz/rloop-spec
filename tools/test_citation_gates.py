@@ -102,10 +102,9 @@ class CitationControls(unittest.TestCase):
         if any("CITATION:" in r or "RESTATEMENT:" in r for r in reasons):
             # Tier, location, owner and words must describe the same finding;
             # the restored corpus's advisories cannot satisfy a mutant's check.
-            details = [r for r in reasons if not r.startswith("Quoted attributions:")]
             findings = re.findall(r"^(?:BLOCKING|ADVISORY) (?:CITATION|RESTATEMENT):[^\n]*"
                                   r"(?:\n  [^\n]*)*", result.stdout, re.M)
-            self.assertTrue(any(all(r in finding for r in details) for finding in findings),
+            self.assertTrue(any(all(r in finding for r in reasons) for finding in findings),
                             result.stdout)
         return result.stdout
 
@@ -113,9 +112,43 @@ class CitationControls(unittest.TestCase):
         reasons = [r.replace("RESTATEMENT:", f"{tier} RESTATEMENT:") for r in reasons]
         return self.gate("check_ids.py", status, *reasons)
 
-    def citations(self, status=0, *reasons, tier="BLOCKING"):
+    def summary(self, output):
+        """`tools/check_citations.py`'s own counts, as (blocking, advisory), for the delta in
+        `citations` -- which has already required that output to carry the one summary line its
+        findings imply, so no missing line can reach the (0, 0) here."""
+        line = re.search(r"^Quoted attributions: (\d+) blocking, (\d+) advisory\.$", output, re.M)
+        return (int(line[1]), int(line[2])) if line else (0, 0)
+
+    def citations(self, status=0, *reasons, tier="BLOCKING", since=None):
+        """The citation gate over this copy, with two readings of the run's own output. Neither
+        is redundant, and between them they witness what one pinned corpus-wide total did.
+
+        The tally: `tools/check_citations.py` prints one block per finding and then exactly one
+        summary line, `Quoted attributions: {blocking} blocking, {len(bad) - blocking}
+        advisory.` or `Quoted attributions verified: clean`. Every run here re-derives that line
+        from the blocks printed beside it, which is what witnesses the summary's arithmetic --
+        and it sees what no reading of those numbers alone can, a run that prints one finding
+        twice while counting it once.
+
+        The delta: `since` is a summary read off this copy before the caller's first mutation,
+        and the run must exceed it by exactly one finding of `tier` and none of the other. That
+        is the half the tally cannot supply, because a spurious second finding tallies
+        consistently with its own summary. Read as a difference and never pinned to a literal,
+        an advisory that arrives anywhere else in the set raises both readings together and
+        reddens only `test_current_definitions_and_quotes`, the one control that is about the
+        corpus being clean. One baseline per test method and never inside a `subTest`: a loop
+        that rewrites the same copy would otherwise read its baseline off a mutated one."""
         reasons = [r.replace("CITATION:", f"{tier} CITATION:") for r in reasons]
-        return self.gate("check_citations.py", status, *reasons)
+        output = self.gate("check_citations.py", status, *reasons)
+        blocks = re.findall(r"^(BLOCKING|ADVISORY) CITATION:", output, re.M)
+        self.assertEqual(re.findall(r"^Quoted attributions.*$", output, re.M),
+                         [f"Quoted attributions: {blocks.count('BLOCKING')} blocking, "
+                          f"{blocks.count('ADVISORY')} advisory." if blocks else
+                          "Quoted attributions verified: clean"], output)
+        if since is not None:
+            self.assertEqual(tuple(now - was for now, was in zip(self.summary(output), since)),
+                             (1, 0) if tier == "BLOCKING" else (0, 1), output)
+        return output
 
     def test_current_definitions_and_quotes(self):
         history = self.corpus_line("01-run-lifecycle.md", "pick MUST start")
@@ -196,14 +229,14 @@ class CitationControls(unittest.TestCase):
 
     def test_short_explicit_quote_checks_attached_owners(self):
         path = self.root / "control.md"
+        baseline = self.summary(self.citations())
         for intro in (" says", ":", "'s"):
             for owners in ("`SEQ-4`", "`RUN-16`, `SEQ-4`"):
                 with self.subTest(intro=intro, owners=owners):
                     path.write_text(f"`RUN-16`{intro} `one session` ({owners}).")
                     self.ids()
                     self.citations(1, "CITATION: control.md:1",
-                                   "SEQ-4 (05-sequence.md)", "one session",
-                                   "Quoted attributions: 1 blocking, 0 advisory.")
+                                   "SEQ-4 (05-sequence.md)", "one session", since=baseline)
             with self.subTest(intro=intro, owners="valid only"):
                 path.write_text(f"`RUN-16`{intro} `one session` (`RUN-16`).")
                 self.ids()
@@ -211,22 +244,24 @@ class CitationControls(unittest.TestCase):
 
     def test_parenthetical_explanatory_reference_is_not_an_owner(self):
         path = self.root / "control.md"
+        baseline = self.summary(self.citations())
         path.write_text(f"`{QUOTE}` (`RUN-16`; but see `SEQ-4` for the Sequence rule).")
         self.ids()
         self.citations()
         path.write_text(f"`{QUOTE}` (`SEQ-4`; but see `RUN-16` for the session rule).")
         self.ids()
         self.citations(1, "CITATION: control.md:1", "SEQ-4 (05-sequence.md)", QUOTE,
-                       "Quoted attributions: 1 blocking, 0 advisory.")
+                       since=baseline)
 
     def test_explanatory_reference_preserves_preceding_owner_list(self):
         path = self.root / "control.md"
+        baseline = self.summary(self.citations())
         for suffix in ("", "; but see `RUN-16` for the session rule"):
             with self.subTest(suffix=suffix):
                 path.write_text(f"`{QUOTE}` (`RUN-16`, `SEQ-4`{suffix}).")
                 self.ids()
                 self.citations(1, "CITATION: control.md:1", "SEQ-4 (05-sequence.md)",
-                               QUOTE, "Quoted attributions: 1 blocking, 0 advisory.")
+                               QUOTE, since=baseline)
         path.write_text("`MUST exit 2` (`SEQ-5`, `RUN-1`; but see `RUN-16` for sessions).")
         self.ids()
         self.citations()
@@ -804,22 +839,31 @@ class CitationControls(unittest.TestCase):
                     "reads out of it a line\nbeginning `Current week (<family>): 100% used`.")
         text = (self.root / document).read_text()
         self.assertIn(sentence, text)
-        # The corruption below rewrites the first occurrence and the gate is read back
-        # for that one finding, so a second occurrence would decide which one is read.
-        self.assertEqual(text.count("Current week (<family>): 100% used"), 1)
+        # The corruption below rewrites the first occurrence and the gate is read back for
+        # that one finding, so a second occurrence would decide which one is read. corpus_line
+        # asserts that uniqueness on the way to the line the citation gate prints for this
+        # quotation, which is the line the quotation opens on and not the sentence's first.
+        quotation = self.corpus_line(document, "Current week (<family>): 100% used")
         # No restatement is excluded here. check_ids reaches its restatement rule only
         # through an association unit that holds an RFC keyword, and this ADR holds
         # none, so no behaviour of that gate can report one in this file; an exclusion
         # would be true whatever the gate did. Its exit status is still asserted.
         self.ids()
-        self.citations(0, "Quoted attributions verified: clean")  # 3ca7e1d: the quote verifies
+        # 3ca7e1d: the quote verifies, so this line carries no finding. Keyed on the line
+        # rather than read off the corpus's summary, which says nothing about this sentence.
+        # The exact string the corrupted run below is required to print, the word after the
+        # line number included: that is what pairs the absence with a witness that the gate
+        # prints it at all, and what stops a bare `:12` matching a finding on `:120`.
+        restored = self.citations()
+        self.assertNotIn(f"CITATION: {document}:{quotation} attributes", restored)
         # The shape is still recognised, still attributed and still advisory; only the
         # quote came true. Corrupt it in this copy alone -- the corpus keeps RUN-21's words.
         self.replace(document, "Current week (<family>): 100% used",
                      "Current week (<family>): 17% used")
-        self.citations(0, f"CITATION: {document}:", "RUN-21 (01-run-lifecycle.md)",
-                       "Current week (<family>): 17% used",
-                       "Quoted attributions: 0 blocking, 1 advisory.", tier="ADVISORY")
+        self.citations(0, f"CITATION: {document}:{quotation} attributes",
+                       "RUN-21 (01-run-lifecycle.md)",
+                       "Current week (<family>): 17% used", tier="ADVISORY",
+                       since=self.summary(restored))
 
     def test_restored_run16_history_has_no_quote_owner(self):
         document = "01-run-lifecycle.md"
