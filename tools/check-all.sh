@@ -42,26 +42,38 @@ run "panel-trace  (the suite's comparator on hand-written traces, the fake past 
 
 # The last gate runs this script: tools/test_citation_gates.py's aggregate control copies
 # the set and runs check-all.sh in the copy, once for every mutation in the list its subTest
-# loop iterates. Each of those runs is passed RLOOP_SPEC_CITATION_CONTROLS_NESTED holding the
-# control's own process id, which is the evidence that the control started this run: the
-# value is honoured only when it is this run's parent, and then this one step is skipped and
-# announced, taking no SUMMARY row, so neither entry point -- this script, or
-# `python3 tools/test_citation_gates.py` run directly -- recurses. The same variable reaching
-# a run from any other environment -- exported in a shell, left in a wrapper, inherited from
-# a parent that is not that control -- takes a FAIL row instead: a gate that a variable
-# silences on presence alone is a gate any stray environment turns off, and failing makes
-# every mismatch between the value the control writes and the value read here a red aggregate
-# control rather than an unbounded recursion. A PASS for a gate that did not run is the false
-# green this step exists to close, which is why the skip takes no row.
+# loop iterates. Each of those runs is passed RLOOP_SPEC_CITATION_CONTROLS_NESTED holding
+# aggregate-control: and the control's own process id, and that string, with this run's
+# parent id in it, is the one value that skips this step -- announced, and taking no SUMMARY
+# row -- so that neither entry point, this script or `python3 tools/test_citation_gates.py`
+# run directly, recurses. Both halves are what make the value evidence that the control
+# started this run rather than something an environment merely carries: the prefix is written
+# nowhere but there, so nothing holds it by accident, and the id makes even that string stale
+# for every run but the one child it was written for. A bare process id would not be
+# evidence. A Nix build runs its builder as PID 1 in a PID namespace, so under checks.gates
+# -- this repository's own entry point -- this script's $PPID is 1, and the legacy value 1,
+# which this repository's commit messages and earlier reports carry, would have been honoured
+# by that build. A value built to match the token is forgery, not an accident, and is out of
+# scope. Every other present value takes a FAIL row, the empty string included: a gate that a
+# variable silences on presence alone is a gate any stray environment turns off, and failing
+# makes every mismatch between the value the control writes and the value read here a red
+# aggregate control rather than an unbounded recursion. A PASS for a gate that did not run is
+# the false green this step exists to close, which is why the skip takes no row.
 controls="controls     (the identifier and citation gates' own positive and negative controls, each in a disposable copy of the set)"
-guard="${RLOOP_SPEC_CITATION_CONTROLS_NESTED:-}"
-if [ "$guard" = "$PPID" ]; then
+# `+` and `-`, never the `:` forms: `${x:-}` reads a set-but-empty variable as unset, and an
+# empty value is present -- it is no evidence of anything, and reading it as absence is how a
+# writer side that produced one would reach this step again. Only an unset variable runs the
+# step; `set -u` (:10) is why the expansion cannot be dropped. Both checks below read this
+# one `present`, so that no condition is counted twice.
+present="${RLOOP_SPEC_CITATION_CONTROLS_NESTED+set}"
+guard="${RLOOP_SPEC_CITATION_CONTROLS_NESTED-}"
+if [ "$guard" = "aggregate-control:$PPID" ]; then
   echo
   echo "=============================================================="
-  echo "  SKIPPED  controls (nested run: RLOOP_SPEC_CITATION_CONTROLS_NESTED is this run's parent, PID $PPID)"
+  echo "  SKIPPED  controls (nested run: RLOOP_SPEC_CITATION_CONTROLS_NESTED is the aggregate control's token for this run's parent, PID $PPID)"
   echo "=============================================================="
-elif [ -n "$guard" ]; then
-  NAMES+=("controls     (RLOOP_SPEC_CITATION_CONTROLS_NESTED=$guard is not this run's parent, $PPID: only the nested run the aggregate control starts may skip this step -- see tools/check-all.sh)")
+elif [ -n "$present" ]; then
+  NAMES+=("controls     (RLOOP_SPEC_CITATION_CONTROLS_NESTED='$guard' is not the aggregate control's token for this run's parent, $PPID: only the nested run it starts may skip this step -- see tools/check-all.sh)")
   CODES+=(1)
   overall=1
 else
@@ -73,7 +85,7 @@ fi
 # every other row PASS and no trace of this gate at all. So the absence of the row is
 # itself a failure here -- the same false green, seen from the other side, and the one a
 # broken guard produces rather than a nested run.
-if [ -z "${RLOOP_SPEC_CITATION_CONTROLS_NESTED:-}" ] && [[ " ${NAMES[*]} " != *"$controls"* ]]; then
+if [ -z "$present" ] && [[ " ${NAMES[*]} " != *"$controls"* ]]; then
   NAMES+=("controls     (skipped by the nested-run guard in a run that set nothing: see tools/check-all.sh)")
   CODES+=(1)
   overall=1
