@@ -910,11 +910,22 @@ class CitationControls(unittest.TestCase):
         # `1` is the value a Nix build's PID-namespaced builder holds, and the value earlier
         # revisions of this mechanism honoured; this process id is the nested run's own
         # parent, the one bare integer a guard keyed on an id alone would still have
-        # honoured; `aggregate-control:1` is the prefix with another run's id behind it, the
-        # one value a guard keyed on the prefix alone would still have skipped. None of the
-        # three is the token, which is both halves at once.
+        # honoured; `aggregate-control:0` is the prefix with an id behind it that this process
+        # cannot hold, a value a guard keyed on the prefix alone would still have skipped. None
+        # of them is the token, which is both halves at once.
+        #
+        # `0`, and not the `1` an earlier revision sampled here, because the token every
+        # witness in this method is compared against is built above from this process's own
+        # `os.getpid()` -- which nested_guard makes the nested run's `$PPID`, by spawning
+        # check-all.sh directly -- and `os.getpid()` is never `0`. So this literal cannot be
+        # the token in any process this file runs in, where `aggregate-control:1` is the token
+        # whenever the control is itself PID 1 -- a container entrypoint, or a builder that
+        # `exec`s this file -- and asserting a row for it reddens an unmutated tree there. The
+        # argument has to be about `os.getpid()` and not about `$PPID`: a process whose parent
+        # lives outside its PID namespace reads `getppid()` as `0`, so there is no general
+        # claim that `$PPID` is never `0` to lean on.
         for value, row in ((None, "PASS"), ("", "FAIL"), ("1", "FAIL"), (str(os.getpid()), "FAIL"),
-                           ("aggregate-control:1", "FAIL")):
+                           ("aggregate-control:0", "FAIL")):
             with self.subTest(guard=value):
                 self.nested_guard(value, 0 if row == "PASS" else 1, row, skipped=False)
         # The guard line forced to always skip: the one mutation that reaches the backstop,
@@ -925,11 +936,14 @@ class CitationControls(unittest.TestCase):
         always = 'if [ "$guard" = "$token" ]; then'
         self.assertEqual((self.root / script).read_text().count(always), 1, always)
         self.replace(script, always, "if true; then")
-        # This process id again, because the backstop is the side a guard keyed on the bare
-        # parent id rather than on the token leaves quiet: every other value here would still
-        # take its row under one.
+        # This process id again, and `aggregate-control:0` again -- its safety is argued above,
+        # where it first appears -- because the backstop is the side a guard reading half the
+        # token leaves quiet, and each half needs a witness carrying the other: a backstop
+        # reading the parent id alone takes no row for this process id, and one reading the
+        # prefix alone takes none for a prefixed non-token value such as `aggregate-control:0`.
         for value, row in ((None, "FAIL"), ("", "FAIL"), ("1", "FAIL"),
-                           (str(os.getpid()), "FAIL"), (token, None)):
+                           (str(os.getpid()), "FAIL"), ("aggregate-control:0", "FAIL"),
+                           (token, None)):
             with self.subTest(guard=value, always_skips=True):
                 self.nested_guard(value, 1 if row else 0, row, skipped=True)
 
