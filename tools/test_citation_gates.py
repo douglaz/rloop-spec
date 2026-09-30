@@ -953,12 +953,12 @@ class CitationControls(unittest.TestCase):
         # in every run below whatever the guard did, which is why it is removed here and not
         # beside the stub above.
         path.unlink()
-        # `1` is the value a Nix build's PID-namespaced builder holds, and the value earlier
-        # revisions of this mechanism honoured; this process id is the nested run's own
-        # parent, the one bare integer a guard keyed on an id alone would still have
-        # honoured; `aggregate-control:0` is the prefix with an id behind it that this process
-        # cannot hold, a value a guard keyed on the prefix alone would still have skipped. None
-        # of them is the token, which is both halves at once.
+        # `1` is the value a Nix build's PID-namespaced builder holds, and the value this
+        # mechanism honoured until `99057a7` keyed the skip on the whole token; this process id
+        # is the nested run's own parent, the one bare integer a guard keyed on an id alone
+        # would still have honoured; `aggregate-control:0` is the prefix with an id behind it
+        # that this process cannot hold, a value a guard keyed on the prefix alone would still
+        # have skipped. None of them is the token, which is both halves at once.
         #
         # `0`, and not the `1` that `1475d36` sampled here, because the token every
         # witness in this method is compared against is built above from this process's own

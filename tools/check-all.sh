@@ -52,13 +52,14 @@ run "panel-trace  (the suite's comparator on hand-written traces, the fake past 
 # for every run but the one child it was written for. A bare process id would not be
 # evidence. A Nix build runs its builder as PID 1 in a PID namespace, so under checks.gates
 # -- this repository's own entry point -- this script's $PPID is 1, and the legacy value 1,
-# which this repository's commit messages and earlier reports carry, would have been honoured
-# by that build. A value built to match the token is forgery, not an accident, and is out of
-# scope. Every other present value takes a FAIL row, the empty string included: a gate that a
-# variable silences on presence alone is a gate any stray environment turns off, and failing
-# makes every mismatch between the value the control writes and the value read here a red
-# aggregate control rather than an unbounded recursion. A PASS for a gate that did not run is
-# the false green this step exists to close, which is why the skip takes no row.
+# which the aggregate control itself wrote from `64252d7` until `a948618` replaced it with
+# its own process id, would have been honoured by that build. A value built to match the
+# token is forgery, not an accident, and is out of scope. Every other present value takes a
+# FAIL row, the empty string included: a gate that a variable silences on presence alone is a
+# gate any stray environment turns off, and failing makes every mismatch between the value
+# the control writes and the value read here a red aggregate control rather than an unbounded
+# recursion. A PASS for a gate that did not run is the false green this step exists to close,
+# which is why the skip takes no row.
 controls="controls     (the identifier and citation gates' own positive and negative controls, each in a disposable copy of the set)"
 # The one value that skips this step, and the prefix every row below opens with: `%%"("*`
 # cuts the gate's name at its first parenthesis, so that formatting has one home and renaming
