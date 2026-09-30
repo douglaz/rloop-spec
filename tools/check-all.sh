@@ -53,7 +53,7 @@ run "panel-trace  (the suite's comparator on hand-written traces, the fake past 
 # evidence. A Nix build runs its builder as PID 1 in a PID namespace, so under checks.gates
 # -- this repository's own entry point -- this script's $PPID is 1, and the legacy value 1,
 # which the aggregate control itself wrote from `64252d7` until `a948618` replaced it with
-# its own process id, would have been honoured by that build. A value built to match the
+# the control's own process id, would have been honoured by that build. A value built to match the
 # token is forgery, not an accident, and is out of scope. Every other present value takes a
 # FAIL row, the empty string included: a gate that a variable silences on presence alone is a
 # gate any stray environment turns off, and failing makes every mismatch between the value
