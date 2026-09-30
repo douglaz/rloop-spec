@@ -855,8 +855,7 @@ class CitationControls(unittest.TestCase):
         # rather than read off the corpus's summary, which says nothing about this sentence.
         # The exact string the corrupted run below is required to print, the word after the
         # line number included: that is what pairs the absence with a witness that the gate
-        # prints it at all, and what keeps this line's digits from matching a finding on a
-        # longer line number that begins with them.
+        # prints it at all.
         restored = self.citations()
         self.assertNotIn(f"CITATION: {document}:{quotation} attributes", restored)
         # The shape is still recognised, still attributed and still advisory; only the
@@ -961,11 +960,11 @@ class CitationControls(unittest.TestCase):
         # cannot hold, a value a guard keyed on the prefix alone would still have skipped. None
         # of them is the token, which is both halves at once.
         #
-        # `0`, and not the `1` an earlier revision sampled here, because the token every
+        # `0`, and not the `1` that `1475d36` sampled here, because the token every
         # witness in this method is compared against is built above from this process's own
         # `os.getpid()` -- which nested_guard makes the nested run's `$PPID`, by spawning
         # check-all.sh directly -- and `os.getpid()` is never `0`. So this literal cannot be
-        # the token in any process this file runs in, where `aggregate-control:1` is the token
+        # the token in any process this file runs in, whereas `aggregate-control:1` is the token
         # whenever the control is itself PID 1 -- a container entrypoint, or a builder that
         # `exec`s this file -- and asserting a row for it reddens an unmutated tree there. The
         # argument has to be about `os.getpid()` and not about `$PPID`: a process whose parent
