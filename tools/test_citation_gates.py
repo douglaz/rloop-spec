@@ -807,12 +807,16 @@ class CitationControls(unittest.TestCase):
                 self.citations(status if "BLOCKING" in diagnostic else 0,
                                "CITATION: control.md:", "SEQ-4", QUOTE, tier="ADVISORY")
                 # check-all.sh runs this file as its last gate. The guard is set here, not
-                # merely inherited, so that the standalone invocation gates.yml and AGENTS.md
-                # use -- which has no guard in its environment -- terminates too.
+                # merely inherited, so that the standalone invocation gates.yml uses -- which
+                # has no guard in its environment -- terminates too. Its value is this
+                # process's id, the nested run's parent: check-all.sh skips its controls step
+                # for that value alone and fails a run carrying any other, so a value this
+                # side stopped writing is a red control here and never a recursion.
                 result = subprocess.run(["bash", "tools/check-all.sh"], cwd=self.root,
-                                        capture_output=True, text=True,
+                                        capture_output=True, text=True, timeout=600,
                                         env={**os.environ,
-                                             "RLOOP_SPEC_CITATION_CONTROLS_NESTED": "1"})
+                                             "RLOOP_SPEC_CITATION_CONTROLS_NESTED":
+                                                 str(os.getpid())})
                 output = result.stdout + result.stderr
                 self.assertEqual(result.returncode, status, output)
                 self.assertIn(diagnostic, output)

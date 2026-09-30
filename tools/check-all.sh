@@ -41,19 +41,29 @@ run "scenarios    (the committed scenarios are what the model enumerates)" pytho
 run "panel-trace  (the suite's comparator on hand-written traces, the fake past a script's last Round and probe shape, restrict_path's skip, its refusals and its relative-entry normalisation; the executable checks run in an Implementation's CI)" conformance/test-panel-trace
 
 # The last gate runs this script: tools/test_citation_gates.py's aggregate control copies
-# the set and runs check-all.sh in the copy, three times. That control sets
-# RLOOP_SPEC_CITATION_CONTROLS_NESTED in the environment it passes to each of those runs,
-# and a run that sees it skips this one step, so neither entry point -- this script, or
-# `python3 tools/test_citation_gates.py` run directly -- recurses. The skip is announced
-# and takes no SUMMARY row: a PASS for a gate that did not run is the false green this
-# step exists to close. Nothing else sets this variable; anything that did would hide the
-# step from a top-level run.
+# the set and runs check-all.sh in the copy, once for every mutation in the list its subTest
+# loop iterates. Each of those runs is passed RLOOP_SPEC_CITATION_CONTROLS_NESTED holding the
+# control's own process id, which is the evidence that the control started this run: the
+# value is honoured only when it is this run's parent, and then this one step is skipped and
+# announced, taking no SUMMARY row, so neither entry point -- this script, or
+# `python3 tools/test_citation_gates.py` run directly -- recurses. The same variable reaching
+# a run from any other environment -- exported in a shell, left in a wrapper, inherited from
+# a parent that is not that control -- takes a FAIL row instead: a gate that a variable
+# silences on presence alone is a gate any stray environment turns off, and failing makes
+# every mismatch between the value the control writes and the value read here a red aggregate
+# control rather than an unbounded recursion. A PASS for a gate that did not run is the false
+# green this step exists to close, which is why the skip takes no row.
 controls="controls     (the identifier and citation gates' own positive and negative controls, each in a disposable copy of the set)"
-if [ -n "${RLOOP_SPEC_CITATION_CONTROLS_NESTED:-}" ]; then
+guard="${RLOOP_SPEC_CITATION_CONTROLS_NESTED:-}"
+if [ "$guard" = "$PPID" ]; then
   echo
   echo "=============================================================="
-  echo "  SKIPPED  controls (nested run: RLOOP_SPEC_CITATION_CONTROLS_NESTED is set)"
+  echo "  SKIPPED  controls (nested run: RLOOP_SPEC_CITATION_CONTROLS_NESTED is this run's parent, PID $PPID)"
   echo "=============================================================="
+elif [ -n "$guard" ]; then
+  NAMES+=("controls     (RLOOP_SPEC_CITATION_CONTROLS_NESTED=$guard is not this run's parent, $PPID: only the nested run the aggregate control starts may skip this step -- see tools/check-all.sh)")
+  CODES+=(1)
+  overall=1
 else
   run "$controls" python3 tools/test_citation_gates.py
 fi
