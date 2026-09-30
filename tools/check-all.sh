@@ -59,8 +59,8 @@ else
 fi
 
 # Announcing the skip is not enough on its own: a run whose environment carries no guard
-# is the top-level one, the skip above is not for it, and a skip it takes anyway leaves a
-# summary of nine PASS rows and no trace of the tenth gate. So the absence of the row is
+# is the top-level one, the skip above is not for it, and a skip it takes anyway leaves
+# every other row PASS and no trace of this gate at all. So the absence of the row is
 # itself a failure here -- the same false green, seen from the other side, and the one a
 # broken guard produces rather than a nested run.
 if [ -z "${RLOOP_SPEC_CITATION_CONTROLS_NESTED:-}" ] && [[ " ${NAMES[*]} " != *"$controls"* ]]; then
