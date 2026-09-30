@@ -48,13 +48,25 @@ run "panel-trace  (the suite's comparator on hand-written traces, the fake past 
 # and takes no SUMMARY row: a PASS for a gate that did not run is the false green this
 # step exists to close. Nothing else sets this variable; anything that did would hide the
 # step from a top-level run.
+controls="controls     (the identifier and citation gates' own positive and negative controls, each in a disposable copy of the set)"
 if [ -n "${RLOOP_SPEC_CITATION_CONTROLS_NESTED:-}" ]; then
   echo
   echo "=============================================================="
   echo "  SKIPPED  controls (nested run: RLOOP_SPEC_CITATION_CONTROLS_NESTED is set)"
   echo "=============================================================="
 else
-  run "controls     (the identifier and citation gates' own positive and negative controls, each in a disposable copy of the set)" python3 tools/test_citation_gates.py
+  run "$controls" python3 tools/test_citation_gates.py
+fi
+
+# Announcing the skip is not enough on its own: a run whose environment carries no guard
+# is the top-level one, the skip above is not for it, and a skip it takes anyway leaves a
+# summary of nine PASS rows and no trace of the tenth gate. So the absence of the row is
+# itself a failure here -- the same false green, seen from the other side, and the one a
+# broken guard produces rather than a nested run.
+if [ -z "${RLOOP_SPEC_CITATION_CONTROLS_NESTED:-}" ] && [[ " ${NAMES[*]} " != *"$controls"* ]]; then
+  NAMES+=("controls     (skipped by the nested-run guard in a run that set nothing: see tools/check-all.sh)")
+  CODES+=(1)
+  overall=1
 fi
 
 echo

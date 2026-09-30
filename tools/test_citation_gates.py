@@ -41,9 +41,11 @@ class CitationControls(unittest.TestCase):
     def corpus_line(self, document, needle):
         """The line `needle` is on in this copy of the corpus. A control that pins a
         corpus location derives it here rather than carrying a literal, which prose
-        above the line silently stales -- `47c3b48` moved RUN-16's history by 14."""
+        above the line silently stales -- `47c3b48` moved RUN-16's history by 14.
+        A second occurrence would silently decide which line the caller pins, so
+        uniqueness is asserted rather than left to hold by coincidence."""
         text = (self.root / document).read_text()
-        self.assertIn(needle, text)
+        self.assertEqual(text.count(needle), 1, needle)
         return text.count("\n", 0, text.index(needle)) + 1
 
     def gate(self, script, status=0, *reasons):
@@ -755,8 +757,16 @@ class CitationControls(unittest.TestCase):
         document = "docs/adr/0006-rloop-reads-a-vendors-quota-report-and-fails-open.md"
         sentence = ("So rloop runs the probe `AGT-18` states before each Panel, and `RUN-21` "
                     "reads out of it a line\nbeginning `Current week (<family>): 100% used`.")
-        self.assertIn(sentence, (self.root / document).read_text())
-        self.assertNotIn(f"RESTATEMENT: {document}:", self.ids())
+        text = (self.root / document).read_text()
+        self.assertIn(sentence, text)
+        # The corruption below rewrites the first occurrence and the gate is read back
+        # for that one finding, so a second occurrence would decide which one is read.
+        self.assertEqual(text.count("Current week (<family>): 100% used"), 1)
+        # No restatement is excluded here. check_ids reaches its restatement rule only
+        # through an association unit that holds an RFC keyword, and this ADR holds
+        # none, so no behaviour of that gate can report one in this file; an exclusion
+        # would be true whatever the gate did. Its exit status is still asserted.
+        self.ids()
         self.citations(0, "Quoted attributions verified: clean")  # 3ca7e1d: the quote verifies
         # The shape is still recognised, still attributed and still advisory; only the
         # quote came true. Corrupt it in this copy alone -- the corpus keeps RUN-21's words.
@@ -769,9 +779,14 @@ class CitationControls(unittest.TestCase):
     def test_restored_run16_history_has_no_quote_owner(self):
         document = "01-run-lifecycle.md"
         self.assertIn('this read "the\npick MUST start', (self.root / document).read_text())
-        line = self.corpus_line(document, "pick MUST start")
-        self.ids(0, f"RESTATEMENT: {document}:{line}", "pick MUST start", tier="ADVISORY")
-        self.assertNotIn(f"CITATION: {document}:{line}", self.citations())
+        clause = self.corpus_line(document, "pick MUST start")
+        self.ids(0, f"RESTATEMENT: {document}:{clause}", "pick MUST start", tier="ADVISORY")
+        # The two gates report this one sentence on two different lines: the identifier
+        # gate at the modal it leaves uncovered, the citation gate where the quotation
+        # opens, and the quotation opens a line earlier. Keying the exclusion on the
+        # clause's line excludes a string the citation gate cannot print for this quote.
+        quotation = self.corpus_line(document, 'this read "the')
+        self.assertNotIn(f"CITATION: {document}:{quotation}", self.citations())
 
     def test_aggregate_advisories_and_blockers(self):
         # Copy the actual runner, formal model and generated assets, including
