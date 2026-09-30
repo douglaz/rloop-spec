@@ -114,8 +114,10 @@ class CitationControls(unittest.TestCase):
 
     def summary(self, output):
         """`tools/check_citations.py`'s own counts, as (blocking, advisory), for the delta in
-        `citations` -- which has already required that output to carry the one summary line its
-        findings imply, so no missing line can reach the (0, 0) here."""
+        `citations`. The (0, 0) is the reading of `Quoted attributions verified: clean`, the line
+        a run with no findings prints in place of the counted one. No other output reaches it:
+        every call is on output whose tally in `citations` has already required it to carry
+        exactly the one summary line its printed blocks imply."""
         line = re.search(r"^Quoted attributions: (\d+) blocking, (\d+) advisory\.$", output, re.M)
         return (int(line[1]), int(line[2])) if line else (0, 0)
 
@@ -853,7 +855,8 @@ class CitationControls(unittest.TestCase):
         # rather than read off the corpus's summary, which says nothing about this sentence.
         # The exact string the corrupted run below is required to print, the word after the
         # line number included: that is what pairs the absence with a witness that the gate
-        # prints it at all, and what stops a bare `:12` matching a finding on `:120`.
+        # prints it at all, and what keeps this line's digits from matching a finding on a
+        # longer line number that begins with them.
         restored = self.citations()
         self.assertNotIn(f"CITATION: {document}:{quotation} attributes", restored)
         # The shape is still recognised, still attributed and still advisory; only the
