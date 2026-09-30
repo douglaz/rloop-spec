@@ -60,33 +60,45 @@ run "panel-trace  (the suite's comparator on hand-written traces, the fake past 
 # aggregate control rather than an unbounded recursion. A PASS for a gate that did not run is
 # the false green this step exists to close, which is why the skip takes no row.
 controls="controls     (the identifier and citation gates' own positive and negative controls, each in a disposable copy of the set)"
+# The one value that skips this step, and the prefix every row below opens with: `%%"("*`
+# cuts the gate's name at its first parenthesis, so that formatting has one home and renaming
+# the gate moves the rows and the backstop's pattern with it. A pattern carrying the name as a
+# literal would stop matching the row this step's own run takes, and an ordinary run would
+# gain a spurious FAIL.
+token="aggregate-control:$PPID"
+controls_row="${controls%%"("*}("
 # `+` and `-`, never the `:` forms: `${x:-}` reads a set-but-empty variable as unset, and an
 # empty value is present -- it is no evidence of anything, and reading it as absence is how a
 # writer side that produced one would reach this step again. Only an unset variable runs the
-# step; `set -u` (:10) is why the expansion cannot be dropped. Both checks below read this
-# one `present`, so that no condition is counted twice.
+# step; `set -u` (:10) is why the expansion cannot be dropped. `present` answers that one
+# question and nothing else: the backstop below reads the token instead, because presence is
+# what a stray environment supplies and the token is what it cannot.
 present="${RLOOP_SPEC_CITATION_CONTROLS_NESTED+set}"
 guard="${RLOOP_SPEC_CITATION_CONTROLS_NESTED-}"
-if [ "$guard" = "aggregate-control:$PPID" ]; then
+if [ "$guard" = "$token" ]; then
   echo
   echo "=============================================================="
   echo "  SKIPPED  controls (nested run: RLOOP_SPEC_CITATION_CONTROLS_NESTED is the aggregate control's token for this run's parent, PID $PPID)"
   echo "=============================================================="
 elif [ -n "$present" ]; then
-  NAMES+=("controls     (RLOOP_SPEC_CITATION_CONTROLS_NESTED='$guard' is not the aggregate control's token for this run's parent, $PPID: only the nested run it starts may skip this step -- see tools/check-all.sh)")
+  NAMES+=("${controls_row}RLOOP_SPEC_CITATION_CONTROLS_NESTED='$guard' is not the aggregate control's token for this run's parent, $PPID: only the nested run it starts may skip this step -- see tools/check-all.sh)")
   CODES+=(1)
   overall=1
 else
   run "$controls" python3 tools/test_citation_gates.py
 fi
 
-# Announcing the skip is not enough on its own: a run whose environment carries no guard
-# is the top-level one, the skip above is not for it, and a skip it takes anyway leaves
-# every other row PASS and no trace of this gate at all. So the absence of the row is
-# itself a failure here -- the same false green, seen from the other side, and the one a
-# broken guard produces rather than a nested run.
-if [ -z "$present" ] && [[ " ${NAMES[*]} " != *"$controls"* ]]; then
-  NAMES+=("controls     (skipped by the nested-run guard in a run that set nothing: see tools/check-all.sh)")
+# Announcing the skip is not enough on its own: a run that does not carry the token is not
+# the nested run the skip above is for, and a skip it takes anyway leaves every other row
+# PASS and no trace of this gate at all. So the absence of the row is itself a failure here
+# -- the same false green, seen from the other side, and the one a broken guard produces
+# rather than a nested run. Keyed on the token and not on presence, because the only run
+# this can catch is one whose guard is already broken, so the branches above cannot be
+# relied on to have read the value the way they read it here. Matching any row that opens
+# with the gate's name is what holds every case to exactly one row: each branch above adds
+# at most one row, and this adds one only where they added none.
+if [ "$guard" != "$token" ] && [[ " ${NAMES[*]} " != *" $controls_row"* ]]; then
+  NAMES+=("${controls_row}skipped by the nested-run guard in a run that did not carry the aggregate control's token: see tools/check-all.sh)")
   CODES+=(1)
   overall=1
 fi

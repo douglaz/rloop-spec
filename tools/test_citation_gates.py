@@ -15,6 +15,7 @@ from spec_text import INTRODUCING_PHRASES, attributions, quotations, units
 ROOT = Path(__file__).resolve().parent.parent
 QUOTE = "The Manager MUST be one session for the whole Run"
 FALSE_QUOTE = QUOTE.replace("one", "seventeen")
+GUARD = "RLOOP_SPEC_CITATION_CONTROLS_NESTED"
 
 
 class CitationControls(unittest.TestCase):
@@ -47,6 +48,44 @@ class CitationControls(unittest.TestCase):
         text = (self.root / document).read_text()
         self.assertEqual(text.count(needle), 1, needle)
         return text.count("\n", 0, text.index(needle)) + 1
+
+    def controls_rows(self, output):
+        """The SUMMARY rows the controls gate took in a nested check-all.sh run. Counted by
+        the callers rather than searched for with `in`: only a count catches one condition
+        taking two rows -- which is what `a948618` did to an empty value, by expanding the
+        variable separately in the two checks -- and only a count catches one row twice."""
+        return re.findall(r"^  (?:PASS|FAIL)  controls .*", output, re.M)
+
+    def nested_guard(self, value, status, row, skipped, others=0):
+        """One case of the nested-run guard's table: check-all.sh over this copy of the set
+        with the guard variable holding `value`, or filtered out of the environment when that
+        is None -- filtered, and not left to os.environ, because a shell, a CI step or a stray
+        export that carries the name would make an unset case witness a present-value row.
+        `row` is the status of the one row this gate takes, or None for the cases that take
+        none, `skipped` whether the run announced the skip, and `others` how many rows other
+        than this gate's are FAIL -- none for any case of the guard's own table, one for a
+        caller whose control.md mutation fails a gate."""
+        env = {k: v for k, v in os.environ.items() if k != GUARD}
+        if value is not None:
+            env[GUARD] = value
+        result = subprocess.run(["bash", "tools/check-all.sh"], cwd=self.root,
+                                capture_output=True, text=True, timeout=600, env=env)
+        output = result.stdout + result.stderr
+        rows = self.controls_rows(output)
+        self.assertEqual(len(rows), 0 if row is None else 1, output)
+        if row is not None:
+            self.assertTrue(rows[0].startswith(f"  {row}  controls "), output)
+        self.assertEqual(result.returncode, status, output)
+        self.assertEqual(len([r for r in re.findall(r"^  FAIL  (.*)$", output, re.M)
+                              if not r.startswith("controls")]), others, output)
+        # The announced skip is what tells the row a present non-token value takes from the
+        # backstop's row: without it, a guard that skipped a stray value would leave the
+        # backstop to supply the one FAIL row and every assertion above would still hold.
+        if skipped:
+            self.assertIn("SKIPPED  controls", output)
+        else:
+            self.assertNotIn("SKIPPED  controls", output)
+        return output
 
     def gate(self, script, status=0, *reasons):
         result = subprocess.run([sys.executable, str(self.root / "tools" / script)],
@@ -796,6 +835,7 @@ class CitationControls(unittest.TestCase):
                                      str(self.root)], capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
         path = self.root / "control.md"
+        token = f"aggregate-control:{os.getpid()}"
         warning = f"`SEQ-4` says the rule is `{QUOTE}` (`RUN-16`)."
         for mutation, status, diagnostic in (
                 (warning, 0, "ADVISORY CITATION: control.md:"),
@@ -814,18 +854,62 @@ class CitationControls(unittest.TestCase):
                 # id, so the token is stale for every other run. check-all.sh fails a run
                 # carrying any other value, so a value this side stopped writing is a red
                 # control here and never a recursion.
-                result = subprocess.run(["bash", "tools/check-all.sh"], cwd=self.root,
-                                        capture_output=True, text=True, timeout=600,
-                                        env={**os.environ,
-                                             "RLOOP_SPEC_CITATION_CONTROLS_NESTED":
-                                                 f"aggregate-control:{os.getpid()}"})
-                output = result.stdout + result.stderr
-                self.assertEqual(result.returncode, status, output)
+                # Skipped, and taking no row: without those two, two of these three cases
+                # witness only the exit status of 1 their own control.md mutation produces,
+                # whatever the guard did.
+                output = self.nested_guard(token, status, None, skipped=True,
+                                           others=1 if status else 0)
                 self.assertIn(diagnostic, output)
                 self.assertIn("ADVISORY CITATION: control.md:", output)
                 self.assertIn("PASS  formal", output)
                 self.assertIn("PASS  scenarios", output)
                 self.assertIn("All gates passed" if status == 0 else "One or more gates FAILED", output)
+
+        # The rest of the guard's table, in the copy already made rather than a second one.
+        # Every step that mutates the copy runs at this level and never inside a subTest: a
+        # failed assertion inside one is recorded and the method carries on, which would run
+        # a witness against an unstubbed script -- and a run that reaches the controls step
+        # runs this file again, which copies the set again, without bound. subprocess's
+        # timeout bounds the direct child only.
+        #
+        # The loop above leaves control.md holding a dangling identifier, which fails a gate
+        # in every run below whatever the guard did.
+        path.unlink()
+        # The whole line, never the bare command, which the comment above the step also
+        # carries and carries first, where replace() -- first occurrence only -- would stub
+        # the comment and leave the step running the file. Unique before it is replaced:
+        # replace() asserts presence, not uniqueness.
+        script = "tools/check-all.sh"
+        text = (self.root / script).read_text()
+        step = 'run "$controls" python3 tools/test_citation_gates.py'
+        self.assertEqual(text.count(step), 1, step)
+        # `true` keeps the step's own PASS row, through the same `run` the real step uses, so
+        # the first case below still witnesses the backstop staying quiet where a row exists;
+        # what it stops is the recursion. The half it cannot witness -- that the file really
+        # ran -- stays with a top-level check-all.sh run.
+        self.replace(script, step, 'run "$controls" true')
+        # A stub that cannot be seen is a recursion that cannot be seen.
+        for line in (self.root / script).read_text().splitlines():
+            if "test_citation_gates.py" in line:
+                self.assertTrue(line.lstrip().startswith("#"), line)
+        # `1` is the value a Nix build's PID-namespaced builder holds, and the value earlier
+        # revisions of this mechanism honoured; this process id is the nested run's own
+        # parent, the one bare integer a guard keyed on an id alone would still have
+        # honoured. Two different values, and neither of them the token.
+        for value, row in ((None, "PASS"), ("", "FAIL"), ("1", "FAIL"), (str(os.getpid()), "FAIL")):
+            with self.subTest(guard=value):
+                self.nested_guard(value, 0 if row == "PASS" else 1, row, skipped=False)
+        # The guard line forced to always skip: the one mutation that reaches the backstop,
+        # and safe by construction, since a script that always skips never runs this file.
+        # Asserted unique so that it cannot also match the backstop's own comparison, and
+        # applied through replace(), so that a reworded guard line fails this control rather
+        # than leaving an unmutated script for the cases below to run.
+        always = 'if [ "$guard" = "$token" ]; then'
+        self.assertEqual((self.root / script).read_text().count(always), 1, always)
+        self.replace(script, always, "if true; then")
+        for value, row in ((None, "FAIL"), ("", "FAIL"), ("1", "FAIL"), (token, None)):
+            with self.subTest(guard=value, always_skips=True):
+                self.nested_guard(value, 1 if row else 0, row, skipped=True)
 
 
 if __name__ == "__main__":
