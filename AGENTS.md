@@ -77,11 +77,17 @@ Interference, Idle — and not their avoided aliases. "Tampering" is on the avoi
 ### Issue tracker
 
 Beads (`br`), local-first in `.beads/`, committed with the specs. Issue prefix `rl`. Never
-hand-edit `issues.jsonl`; `br sync --flush-only` before committing.
+hand-edit `issues.jsonl`; `br sync --flush-only` before committing. GitHub Issues are intake for
+triage only. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Roles are places, not labels: an open GitHub issue, an open bead, an owner-picked bead, or a
+closed issue. See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 
-Single-context: `CONTEXT.md` and `docs/adr/` at the root.
+Single-context: `CONTEXT.md` and `docs/adr/` at the root. See `docs/agents/domain.md`.
 
 ## Conventions with a home already
 
