@@ -144,15 +144,17 @@ For whoever runs an Implementation:
   when closing the Run was never filed.
   *An operator did exactly this reconstruction on 2026-09-19 (`F10`) and kept the work: all four
   Reviewers had reported no findings and every gate passed.*
-- **A Run is long.** A Round takes 15–30 minutes and a Run may take an hour. Run rloop in the
-  foreground, in a terminal or a tmux window, and read the exit status from the shell as with any
-  command. A caller that cannot wait that long — an agent whose command tool has a timeout —
-  should use that tool's own background facility, which keeps the process tracked and returns the
-  exit status, rather than detaching with `setsid nohup … &`: a detached process reports its exit
-  status to nobody, and under `nix run` the PID the shell hands back is the wrapper's, which exits
-  once rloop starts. If you must detach, the Run's own PID is the suffix of its Run Directory name
-  and on the first lines rloop prints on standard error, and the exit status survives only if you
-  wrap the command: `sh -c 'nix run …; echo $? > rloop.exit'`.
+- **A Run is long.** A Round takes 15–30 minutes, and one Implementer call may run for
+  `--implementer-timeout`, four hours by default (`AGT-1`), so a Run of several hours is ordinary.
+  Run rloop in the foreground, in a terminal or a tmux window, and read the exit status from the
+  shell as with any command. A caller that may not outlast the Run — an agent whose command tool
+  stops a command on its own timer or with its session — should hand it to a service manager that
+  keeps the exit status, not to that tool's background facility and not to `setsid nohup … &`. On
+  2026-10-02 an agent's background command stopped a Run at two hours, mid-review; a detached
+  process reports its exit status to nobody, and under `nix run` the PID the shell hands back is
+  the wrapper's. Stopping a Run with SIGINT or SIGTERM ends it with exit 2 and `interrupted` once
+  rloop has reaped its agents (`AGT-15`); a task the Manager claimed is still claimed. Each
+  Implementation's README gives its recipe: rloop-bash's uses a transient systemd user unit.
 - **The Run Directory** — `.rloop/runs/<timestamp>-<pid>/` by default — holds every brief, every
   Reviewer's feedback, every agent's output and the Manager's report. It is never deleted.
 
