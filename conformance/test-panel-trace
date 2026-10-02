@@ -124,6 +124,7 @@ cmp -s "$work/probe/fable-2" "$work/probe/clear" \
   || die 'Round 2 of a fable-only probe script: not the bytes of clear'
 # A longer script too: a fake that repeated the script's last shape would pass the check above.
 probe_writes 1 opus > "$work/probe/opus-1"
+cmp -s "$work/probe/opus-1" "$work/probe/clear" && die 'Round 1 of opus writes clear'
 probe_writes 3 'fable|opus' > "$work/probe/late-3"
 cmp -s "$work/probe/late-3" "$work/probe/clear" \
   || die 'Round 3 of a two-shape probe script: not the bytes of clear'
@@ -153,17 +154,27 @@ rounds_case() { # rounds_case <fake>; the assertions alone, so the control can r
   [ -e "$rounds_dir/finished.md" ] || die 'Round 1 judge wrote no Finished File'
 }
 rounds_case "$fakes/claude"
-# The control (F5): a scratch copy with the old succeeding defaults restored must be red. Each
-# site must exist exactly once, or the restoration proves nothing.
-for site in 'o:-fail' 'p:-none' '; judge="${judge:-fail}"'; do
-  assert_equal "$(grep -cF -- "$site" "$fakes/claude")" 1 "old-defaults control: site $site"
-done
-sed -e 's/o:-fail/o:-ok/' -e 's/p:-none/p:-all/' -e 's/; judge="${judge:-fail}"//' \
-  "$fakes/claude" > "$work/old-defaults"
-chmod +x "$work/old-defaults"
-cmp -s "$fakes/claude" "$work/old-defaults" && die 'old-defaults control: restored nothing'
-( rounds_case "$work/old-defaults" ) 2>/dev/null \
-  && die 'old-defaults control: the succeeding defaults passed the new assertions'
+# The controls (F5): restore each old default independently from the original fake, so an
+# earlier role's assertion cannot mask a later one's. Each site must exist exactly once and
+# change, and each run must fail on that role's precise mismatch, not an unrelated error.
+old_defaults_control() { # <site> <sed expression> <role> <expected exit>
+  local site="$1" mutation="$2" role="$3" expected="$4" st=0
+  local mutant="$work/old-defaults-$role" diagnostic="$work/old-defaults-$role.out"
+  assert_equal "$(grep -oF -- "$site" "$fakes/claude" | wc -l | tr -d ' ')" 1 \
+    "old-defaults control: site $site"
+  sed "$mutation" "$fakes/claude" > "$mutant" || die "old-defaults control: $role mutation failed"
+  cmp -s "$fakes/claude" "$mutant" && die "old-defaults control: $role restored nothing"
+  bash -n "$mutant" || die "old-defaults control: $role fake does not parse"
+  chmod +x "$mutant" || die "old-defaults control: $role chmod failed"
+  ( rounds_case "$mutant" ) > "$diagnostic" 2>&1 || st=$?
+  assert_equal "$st" 1 "old-defaults control: $role assertion exit"
+  assert_equal "$(cat "$diagnostic")" "FAIL: Round 2 $role: expected '$expected', got '0'" \
+    "old-defaults control: $role diagnostic"
+  echo "PASS: old-defaults control: $role, exit $st, $(cat "$diagnostic")"
+}
+old_defaults_control 'o:-fail' 's/o:-fail/o:-ok/' Implementer 1
+old_defaults_control 'p:-none' 's/p:-none/p:-all/' Reviewer 7
+old_defaults_control '; judge="${judge:-fail}"' 's/; judge="${judge:-fail}"//' judge 1
 echo "PASS: a Round past the script's last one fails in all three roles;" \
   'the old succeeding defaults are red'
 # CNF-2's executable PATH: restrict_path's skip line, each of its refusals, and its normalisation

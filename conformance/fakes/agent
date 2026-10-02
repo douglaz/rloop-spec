@@ -10,10 +10,10 @@
 #                            (ok:other writes STATUS: maybe; ok:nul writes STATUS: done with a NUL byte
 #                            between do and ne, which a reader that drops NUL bytes sees as done, RUN-9)
 #   RLOOP_FAKE_ROUNDS        impl=<ok|fail>;panel=<all|some|none>;judge=<...>  joined by |, one per
-#                            Round (a Round past the last group, and a field its group omits,
-#                            gives a failing Implementer, a Panel no Reviewer passes and a judge
-#                            that exits non-zero having written neither file, which is what
-#                            Scenarios.lean's behaviour defaults to there)
+#                            Round. Past the last group, defaults fail the Implementer, every Reviewer
+#                            and the judge (which writes neither file), matching Scenarios.lean's behaviour.
+#                            An omitted field also defaults to failure; this is fake-only, since the
+#                            model's RoundChoice values always contain all fields.
 #   RLOOP_FAKE_INTERFERENCE  - | <round>:<afterImplementer|afterPanel>:<editTask|writeFinished|both>
 #   RLOOP_FAKE_RUNS          for a Sequence: pick outcomes per Run, comma-separated (done,done,idle);
 #                            each Run's Rounds are then RLOOP_FAKE_ROUNDS. Any word after ok: in
