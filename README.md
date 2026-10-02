@@ -27,7 +27,7 @@ script runs every gate below:
 | `tools/check_line_citations.py` | Verifies a `<path>:<line>` or `<path>:<line>-<line>` citation against the cited lines: some other backticked literal from the citing sentence must still appear there. A range that cannot exist — a line below one, a range that runs backwards, an end past the file's last line — blocks; a citation that anchors nothing reports an advisory finding, since prose may describe lines rather than quote them (`ADR-0007`). A path that resolves outside this repository is reported unchecked rather than skipped. The gate prints the count it checked and which literal anchored each citation, because the rule is any-of and the weakest literal in the sentence decides |
 | `tools/check_coverage.py` | A requirement that no `CNF` item cites and that `06-conformance.md` does not excuse with a reason |
 | `tools/check_regions.py` | A marked region — the decision table in `01-run-lifecycle.md` — that is not what its Lean declaration emits |
-| `tools/check_fixtures.py` | A prompt or command-line fixture in `conformance/fixtures/` that differs from its block in `02-agents.md` or `03-prompts.md`; the Markdown is the home (`ADR-0001`) |
+| `tools/check_fixtures.py` | A prompt or command-line fixture in `conformance/fixtures/` that differs from its block in `02-agents.md` or `03-prompts.md`; the Markdown is the home (`ADR-0001`). And a requirement identifier, backticked or bare, in the text either kind of block renders, whether or not the fixtures were regenerated (*Requirement conventions*) |
 | `tools/check_scenarios.py` | A committed `conformance/scenarios.tsv` that is not what the model enumerates; it prints the count so growth shows in review |
 | `conformance/test-panel-trace` | A regression in the suite's Panel-membership comparator, `observed_trace` in `conformance/scenario-lib.sh`, caught on hand-written traces — such as a comparator that observes only `end` records and so loses a Reviewer that started and never finished — and a fake that, past its script's last entry, writes anything but `clear` for the probe or does not fail as Implementer, Panel and judge; and a regression in `restrict_path`, the same library's builder of the executable's PATH, driven against a PATH built here so the paths this repository's own hosts never take are reached — a name the host lacks linked anyway or not named in one skip line, either refusal that does not exit 2 with its message alone, and a link left relative when the `PATH` entry that found it was relative. The checks that need an executable — a real fake-agent timeout, the positive scenario replays and the mutants of `rloop-bash` — are not run here, and the gate says so in one `NOT RUN:` line; an Implementation that is `rloop-bash` runs them in its CI with `spec/conformance/test-panel-trace ./result/bin/rloop` |
 | `tools/test_citation_gates.py` | A regression in the identifier and citation gates themselves: each control mutates a disposable copy of the set and asserts those gates' exit statuses, diagnostics and tiers, over changed words, misleading code spans, owner-boundary failures and the set's own current findings. Its aggregate control runs the gates' runner, `tools/check-gates.sh`, over such a copy, proving that an advisory stays visible with exit zero while an explicit false attribution or an unrelated identifier failure still fails the build alongside it, and that a step the runner is handed as arguments — which is how `tools/check-all.sh` runs this row — takes its own row and joins the exit status |
@@ -86,6 +86,12 @@ a stable identifier:
 **Identifiers are append-only.** An identifier is never reused and never renumbered. Text may be
 deleted; the gap in the sequence is the tombstone, and a deleted identifier goes in the table
 below so an old citation still resolves — `tools/check_ids.py` reads it.
+
+**No identifier in a prompt or a command line.** No requirement identifier, of any prefix in the
+table above, appears in a prompt block of `03-prompts.md` or in an agent command-line block of
+`02-agents.md`: the agent that receives those bytes works in a repository that does not hold this
+set, so the identifier would name a document it cannot open. A `{{NAME}}` placeholder is not an
+identifier. `tools/check_fixtures.py` blocks on one.
 
 ### Withdrawn identifiers
 

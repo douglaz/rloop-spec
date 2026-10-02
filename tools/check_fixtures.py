@@ -12,14 +12,24 @@ two identical so that neither can drift from the other.
                           one argument however many words it holds (the quotes are stripped); k
                           numbers the blocks of a requirement that has several
 
-`--write` regenerates the fixtures from the documents. Exit 0 = identical, 1 = drift or a
-fixture with no block (or a block with no fixture).
+The gate also holds the rendered text of every such block free of requirement identifiers
+(`README.md`, *Requirement conventions*): the text is read from the documents, so an identifier
+put into a block is caught whether or not the fixtures were regenerated afterwards. A bare
+identifier counts -- prompt text is not Markdown -- and a fixture's own name is not its content.
+
+Identifiers are reported first and alone: drift is not looked for until the blocks are free of
+them. `--write` regenerates the fixtures from the documents; when a block holds an identifier it
+writes nothing at all and exits 1, so the identifier never reaches the suite. Exit 0 = identical
+and identifier-free, 1 = an identifier in a block, drift, or a fixture with no block (or a block
+with no fixture).
 """
 
 import glob
 import os
 import re
 import sys
+
+from check_ids import NAMESPACES
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FIX = os.path.join(ROOT, "conformance", "fixtures")
@@ -28,6 +38,9 @@ HEAD = re.compile(r"^\*\*((?:PRM|AGT)-\d+)\*\*")
 # An argument is a `<placeholder>`, a "double-quoted" span (the quotes mark its extent and are
 # stripped: AGT-7's deny list holds spaces), or a run of non-blanks.
 ARG = re.compile(r'<[^>]+>|"[^"]*"|\S+')
+# A requirement identifier, backticked or bare, standing as a word of its own: `RUN-7`, `F12`.
+# `{{RUN_DIR}}` and `gpt-6-sol` hold none.
+ID = re.compile(r"(?<![A-Za-z0-9_])(?:%s)-?\d+[a-z]?(?![A-Za-z0-9_])" % "|".join(NAMESPACES))
 
 
 def blocks(path, fence):
@@ -74,6 +87,15 @@ def main(write):
     have = {os.path.relpath(p, FIX) for p in glob.glob(os.path.join(FIX, "*", "*.txt"))}
     failures = 0
     for rel, text in sorted(want.items()):
+        for ident in sorted(set(ID.findall(text))):
+            print(f"  {rel}: holds the requirement identifier {ident}")
+            failures += 1
+    if failures:
+        print(f"\nFAIL: {failures} requirement identifier(s) in a prompt or command-line block; the agent "
+              f"that receives those bytes cannot open this set (README.md, Requirement conventions)"
+              + ("; nothing written" if write else ""))
+        return 1
+    for rel, text in sorted(want.items()):
         path = os.path.join(FIX, rel)
         cur = open(path, "rb").read().decode() if os.path.exists(path) else None
         if cur != text:
@@ -92,7 +114,7 @@ def main(write):
               f"edit it and run with --write")
         return 1
     print(f"fixtures: {len(want)} ({sum(1 for k in want if k.startswith('prompts'))} prompts, "
-          f"{sum(1 for k in want if k.startswith('argv'))} command lines), each its document's block")
+          f"{sum(1 for k in want if k.startswith('argv'))} command lines), each its document's block and free of requirement identifiers")
     return 0
 
 

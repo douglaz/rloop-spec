@@ -122,6 +122,32 @@ jobs:
           grep -qF 'prompts/PRM-1.txt: differs from the document' "$tmp/out" \
             || { echo "::error::fixture gate red, but not on the drifted fixture"; exit 1; }
 
+      # The quoted line is the identifier diagnostic, not the `differs from the document` one a
+      # changed block also earns: a gate that lost the identifier check must leave this step red.
+      - name: Prove the fixture gate refuses a requirement identifier in a block
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"; cp -r . "$tmp/repo"; cd "$tmp/repo"
+          python3 tools/check_fixtures.py || { echo "::error::fixture gate red unmutated"; exit 1; }
+          python3 - <<'PY'
+          import re
+          s = open("03-prompts.md").read()
+          t = re.sub(r"(?m)^```prompt\n", "```prompt\nSee RUN-7 for the rule.\n", s, count=1)
+          assert t != s, "no prompt block to mutate"
+          open("03-prompts.md", "w").write(t)
+          PY
+          st=0; python3 tools/check_fixtures.py > "$tmp/out" 2>&1 || st=$?
+          cat "$tmp/out"
+          [ "$st" != 0 ] || { echo "::error::fixture gate passed an identifier in a prompt block"; exit 1; }
+          grep -qF 'prompts/PRM-1.txt: holds the requirement identifier RUN-7' "$tmp/out" \
+            || { echo "::error::fixture gate red, but not on the identifier in the prompt block"; exit 1; }
+          sed -i '0,/^claude /s//claude CNF-22 /' 02-agents.md
+          st=0; python3 tools/check_fixtures.py > "$tmp/argv" 2>&1 || st=$?
+          cat "$tmp/argv"
+          [ "$st" != 0 ] || { echo "::error::fixture gate passed an identifier in a command-line block"; exit 1; }
+          grep -qF 'argv/AGT-3-1.txt: holds the requirement identifier CNF-22' "$tmp/argv" \
+            || { echo "::error::fixture gate red, but not on the identifier in the command-line block"; exit 1; }
+
       # Two controls in one step: the mutations are in different files and answer to different
       # gates, so the regions mutation left in place decides nothing for the scenarios one.
       - name: Prove the regions and scenarios gates can fail

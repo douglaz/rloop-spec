@@ -41,7 +41,7 @@ run "citations    (owner-body quotations; explicit failures block, inferred fail
 run "line-cites   (a <path>:<line> citation's sentence still reads there; an impossible range blocks, an unanchored one advises)" python3 tools/check_line_citations.py
 run "coverage     (every requirement cited by a CNF item or excused)" python3 tools/check_coverage.py
 run "regions      (a marked region is what its declaration emits)" python3 tools/check_regions.py
-run "fixtures     (the suite's fixtures are the documents' blocks)" python3 tools/check_fixtures.py
+run "fixtures     (the suite's fixtures are the documents' blocks, and no block holds a requirement identifier)" python3 tools/check_fixtures.py
 run "scenarios    (the committed scenarios are what the model enumerates)" python3 tools/check_scenarios.py
 run "panel-trace  (the suite's comparator on hand-written traces, the fake past a script's last Round and probe shape, restrict_path's skip, its refusals and its relative-entry normalisation; the executable checks run in an Implementation's CI)" conformance/test-panel-trace
 
