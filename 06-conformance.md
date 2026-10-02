@@ -81,11 +81,14 @@ pick and exits 0; with nine scripted done, it stops after exactly eight picks an
 not exist, the executable exits 2 and spawns nothing. With `--run-dir` naming a fresh path, the
 directory exists afterwards and is the only one created. (`DIR-1`, `DIR-3`)
 
-**CNF-8** Without `--run-dir`, the Run Directory is created under `<toplevel>/.rloop/runs/`,
+**CNF-8** Without `--run-dir`, in a repository whose path the suite gives a space and a tab
+independently of `TMPDIR`, the Run Directory is created under `<toplevel>/.rloop/runs/`,
 `<toplevel>/.rloop/.gitignore` holds exactly `*` and a newline — compared byte for byte — and
-`git status --porcelain` prints nothing after a Run whose fakes changed no tracked file; and a
-pre-existing `.gitignore` of either shape a check by eye accepts, `*` followed by two newlines or
-`*` with no newline, holds those same two bytes after such a Run. (`DIR-2`, `RUN-4`)
+`git status --porcelain` prints nothing after a Run whose fakes changed no tracked file.
+Separate Runs, also without `--run-dir` and with fakes that change no tracked file, use repository
+paths chosen by `mktemp` without deliberately adding whitespace. A pre-existing `.gitignore` of
+either shape a check by eye accepts, `*` followed by two newlines or `*` with no newline, holds
+those same two bytes after its Run, and the tree is clean. (`DIR-2`, `RUN-4`, `RUN-23`)
 
 **CNF-9** After a two-Round Run the Run Directory holds exactly the names `DIR-4` lists for two
 Rounds and nothing else, `probe-pick.out`, `probe-pick.err` and `probe-pick.md` among them; each

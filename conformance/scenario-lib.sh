@@ -5,8 +5,8 @@
 # --- a fresh repository per run ----------------------------------------------------------------
 new_repo() { # new_repo [path] -> prints path; a git repo with one commit. Without an argument
              # mktemp names it; with one the caller does, which is how an item asks for a
-             # repository whose own path holds whitespace instead of taking TMPDIR's: CNF-9's
-             # whitespace arm and the CNF-11/CNF-12 block's whitespace Run, both in run itself.
+             # repository whose own path holds whitespace instead of taking TMPDIR's: CNF-8,
+             # CNF-9's whitespace arm and the CNF-11/CNF-12 block's whitespace Run, all in run.
   local r="${1:-}"
   if [ -n "$r" ]; then mkdir -p "$r" || return 1; else r="$(mktemp -d "$work/repo.XXXXXX")"; fi
   ( cd "$r" && git init -q -b master && echo hello > README && git add README \
