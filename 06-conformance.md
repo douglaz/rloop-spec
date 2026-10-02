@@ -456,12 +456,14 @@ set against the record; the record's own word that a call was or was not made wi
 - `RUN-20`: `A model that did not answer MUST NOT be called again in the same Run`, and `RUN-20`:
   `subsequent Consultations start with eligible counterparts` — Hang: once the hung call has ended,
   no adviser call seen in the rest of that Run, in any Round, is to that model, and the second
-  Consultation's first calls are to its counterpart and to the first pair's other adviser, each
-  where it is eligible then; for either of the two that is not, its own counterpart stands in,
-  where that one is eligible. Where either of the two is excluded only by a Probe record that was
-  the relevant record of no Consultation of the Run, the second included — the pick's or a
-  Round's, when the pick or that Round's judge held none — a first call to that model and one to
-  its counterpart are accepted alike; why is among what no observation reaches, below.
+  Consultation's first calls include one to its counterpart and one to the first pair's other
+  adviser, each where it is eligible then; for either of the two that is not, its own counterpart
+  stands in, where that one is eligible, and where neither is, nothing is asked on that one's
+  account. A first call there to any other eligible model is not held against the Run by this
+  row. Where either of the two is excluded only by a Probe record that was the relevant record of
+  no Consultation of the Run, the second included — the pick's or a Round's, when the pick or that
+  Round's judge held none — a first call to that model and one to its counterpart are accepted
+  alike; why is among what no observation reaches, below.
 - `RUN-20`: `The Manager MUST continue with eligible models until it has two answers or none
   remain within the Consultation's budget.` — Hang and Single-vendor: after each call seen to end
   without an answer a call to another eligible model is seen, while one remains, until two have
