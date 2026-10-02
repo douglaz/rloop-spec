@@ -513,7 +513,8 @@ if [ "$e" = 0 ] && [ $((t1 - t0)) -lt 8 ] && [ "$last_start" -lt "$first_end" ];
 # --- CNF-17: timeouts and process groups -------------------------------------------------------------
 ok=1; detail=""
 # One Reviewer sleeps and spawns a child that ignores SIGTERM; the other three answer, so the judge
-# is called. The judge's own record says which children were alive when it started (AGT-14, AGT-16).
+# is called. The judge's own record says which children and which calls' own processes were alive
+# when it started (AGT-14, AGT-16).
 repo="$(new_repo)"; rec="$work/rec-tmo"
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_SLEEP_REVIEWER=30 RLOOP_FAKE_SLEEP_ONLY=fable RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=1 run_rloop "$repo" "$rec" --run-dir "$repo/run" --reviewer-timeout 1 --kill-after 1)
 [ "$e" = 0 ] || { ok=0; detail="$detail [one reviewer timed out: exit $e]"; }
@@ -526,11 +527,27 @@ judge_env=$(ls "$rec"/*-manager-1.env 2>/dev/null | head -1)
 if [ -z "$judge_env" ] || ! grep -q '^GRANDCHILDREN_ALIVE=' "$judge_env"; then ok=0; detail="$detail [the judge's record has no GRANDCHILDREN_ALIVE line]"
 elif [ -n "$gc" ] && pid_in "$gc" "$(sed -n 's/^GRANDCHILDREN_ALIVE=//p' "$judge_env")"; then ok=0; detail="$detail [grandchild $gc alive when the judge started]"; fi
 [ -n "$gc" ] && kill -0 "$gc" 2>/dev/null && { ok=0; detail="$detail [grandchild $gc survived the Run]"; }
+# The slow Reviewer's own process, read the same two ways.
+slow=$(sed -n 's/^PID=//p' "$rec"/*-reviewer-1-fable.env 2>/dev/null)
+[ -n "$slow" ] || { ok=0; detail="$detail [the slow reviewer recorded no PID]"; }
+if [ -z "$judge_env" ] || ! grep -q '^CALLS_ALIVE=' "$judge_env"; then ok=0; detail="$detail [the judge's record has no CALLS_ALIVE line]"
+elif [ -n "$slow" ] && pid_in "$slow" "$(sed -n 's/^CALLS_ALIVE=//p' "$judge_env")"; then ok=0; detail="$detail [slow reviewer $slow alive when the judge started]"; fi
+[ -n "$slow" ] && kill -0 "$slow" 2>/dev/null && { ok=0; detail="$detail [slow reviewer $slow survived the Run]"; }
 kill_recorded "$rec"
+# An Implementer that ignores SIGTERM: only the SIGKILL ends it. Each Reviewer's own record says
+# which calls' own processes were alive when it started.
 repo="$(new_repo)"; rec="$work/rec-tmo2"; t0=$(date +%s)
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_SLEEP_IMPLEMENTER=60 RLOOP_FAKE_IGNORE_TERM=1 run_rloop "$repo" "$rec" --run-dir "$repo/run" --implementer-timeout 1 --kill-after 1)
 t1=$(date +%s)
 [ $((t1 - t0)) -lt 10 ] && ls "$rec"/*-reviewer-1-fable.argv >/dev/null 2>&1 || { ok=0; detail="$detail [SIGTERM-ignoring implementer: ${t1}-${t0}s, exit $e]"; }
+impl=$(sed -n 's/^PID=//p' "$rec"/*-implementer-1.env 2>/dev/null)
+[ -n "$impl" ] || { ok=0; detail="$detail [the implementer recorded no PID]"; }
+panel_records "SIGTERM-ignoring implementer"
+for f in "${panel[@]}"; do
+  if ! grep -q '^CALLS_ALIVE=' "$f"; then ok=0; detail="$detail [$(basename "$f") has no CALLS_ALIVE line]"
+  elif [ -n "$impl" ] && pid_in "$impl" "$(sed -n 's/^CALLS_ALIVE=//p' "$f")"; then ok=0; detail="$detail [implementer $impl alive when $(basename "$f" .env) started]"; fi
+done
+[ -n "$impl" ] && kill -0 "$impl" 2>/dev/null && { ok=0; detail="$detail [implementer $impl survived the Run]"; }
 kill_recorded "$rec"
 # A sleeping pick with the same child: AGT-15's first sentence. Both pids checked the moment the
 # executable has returned; every ancestor is gone by then, so neither can be a zombie.

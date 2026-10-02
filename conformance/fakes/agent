@@ -34,21 +34,21 @@
 #                            RLOOP_FAKE_PROBE's list (default: clear). RLOOP_FAKE_PROBE scripts the
 #                            Rounds' probes alone, so scripting the pick changes none of them
 #   RLOOP_FAKE_IGNORE_TERM   1 = trap and ignore SIGTERM
-#   RLOOP_FAKE_GRANDCHILD    1 = every fake spawns a background sleeper and records its pid as
-#                            GRANDCHILD=<pid> in its .env record
 #   RLOOP_FAKE_GRANDCHILD_IGNORE_TERM
 #                            1 = the fake that sleeps (RLOOP_FAKE_SLEEP_<ROLE>, narrowed by
 #                            RLOOP_FAKE_SLEEP_ONLY) spawns a sleeper that ignores SIGTERM and
-#                            records it the same way; no other fake of the Run spawns one, so the
-#                            child is the timed-out call's alone. RLOOP_FAKE_SLEEP_REVIEWER=30
+#                            records its pid as GRANDCHILD=<pid> in the fake's .env record; no
+#                            other fake of the Run spawns one, so the child is the timed-out
+#                            call's alone. RLOOP_FAKE_SLEEP_REVIEWER=30
 #                            RLOOP_FAKE_SLEEP_ONLY=fable RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=1 is
 #                            one slow Reviewer with such a child and three that answer. A role
 #                            name in place of 1 (manager|implementer|reviewer|probe) gives every
 #                            fake of that role such a child, sleeping or not, and no fake of
 #                            another role: a healthy call that exits 0 leaving one behind.
 #                            Every fake's .env record also carries GRANDCHILDREN_ALIVE=<pids>,
-#                            written before it sleeps, spawns or traces: the previously recorded
-#                            GRANDCHILD pids still running when this call started (empty when none)
+#                            written before it probes standard input, sleeps, spawns or traces:
+#                            the previously recorded GRANDCHILD pids still running when this
+#                            call started (empty when none)
 #   RLOOP_FAKE_WATCH         <role>:<name> = what that role's SIGTERM-ignoring child does instead of
 #                            sleeping: poll for <name> under RLOOP_RUN_DIR and, when it appears,
 #                            write <tag>.seen into RLOOP_FAKE_RECORD. It is the same child
@@ -88,8 +88,8 @@
 #   RLOOP_FAKE_RECORD        directory the fake records into (required)
 #
 # No knob turns it on: every fake of every Run also carries CALLS_ALIVE=<pids> in its .env record,
-# written before it sleeps, spawns or traces — the previously recorded PID pids other than this
-# call's own, still running when this call started (empty when none).
+# written before it probes standard input, sleeps, spawns or traces — the previously recorded PID
+# pids other than this call's own, still running when this call started (empty when none).
 set -u
 
 rec="${RLOOP_FAKE_RECORD:?}"
@@ -108,11 +108,10 @@ printf '%s\0' "$(basename "$0")" "$@" > "$rec/$tag.argv"
   echo "ROLE=$role"; echo "ROUND=$round"; echo "RUN=$run"; echo "RUN_DIR=$run_dir"
   echo "REVIEWER=${RLOOP_REVIEWER-<unset>}"; echo "CWD=$PWD"; echo "PID=$$"
 } > "$rec/$tag.env"
-# stdin: at EOF now, or open? A read that returns instantly with no data is EOF (AGT-12).
-if timeout 1 head -c1 </dev/stdin >/dev/null 2>&1; then echo "STDIN=eof" >> "$rec/$tag.env"; else echo "STDIN=open" >> "$rec/$tag.env"; fi
 # Which earlier calls' children are still running as this call starts: what CNF-17 reads from the
-# judge's record and CNF-34 from every call's. Before the sleep, before this fake's own child,
-# before the trace start line.
+# judge's record and CNF-34 from every call's. Before the stdin probe, which can take a second
+# against standard input left open, before the sleep, before this fake's own child, before the
+# trace start line; after the record above, whose PID line a concurrent sibling reads.
 alive=""
 for p in $(sed -n 's/^GRANDCHILD=//p' "$rec"/*.env 2>/dev/null); do kill -0 "$p" 2>/dev/null && alive="$alive${alive:+ }$p"; done
 echo "GRANDCHILDREN_ALIVE=$alive" >> "$rec/$tag.env"
@@ -122,6 +121,8 @@ echo "GRANDCHILDREN_ALIVE=$alive" >> "$rec/$tag.env"
 alive=""
 for p in $(sed -n 's/^PID=//p' "$rec"/*.env 2>/dev/null); do [ "$p" = "$$" ] || { kill -0 "$p" 2>/dev/null && alive="$alive${alive:+ }$p"; }; done
 echo "CALLS_ALIVE=$alive" >> "$rec/$tag.env"
+# stdin: at EOF now, or open? A read that returns instantly with no data is EOF (AGT-12).
+if timeout 1 head -c1 </dev/stdin >/dev/null 2>&1; then echo "STDIN=eof" >> "$rec/$tag.env"; else echo "STDIN=open" >> "$rec/$tag.env"; fi
 now() { date +%s%N; }
 
 # --- the scripted part ----------------------------------------------------------------------------
@@ -172,7 +173,7 @@ if { [ "$gc_ignore_term" = 1 ] && [ "$sleep_for" != 0 ]; } || [ "$gc_ignore_term
   else
     ( trap '' TERM; sleep "$gc_life" ) & echo "GRANDCHILD=$!" >> "$rec/$tag.env"
   fi
-elif [ "${RLOOP_FAKE_GRANDCHILD:-0}" = 1 ]; then sleep "$gc_life" & echo "GRANDCHILD=$!" >> "$rec/$tag.env"; fi
+fi
 
 pick="${RLOOP_FAKE_PICK:-ok:task}"
 if [ -n "${RLOOP_FAKE_RUNS:-}" ] && [ "$run" != unset ]; then

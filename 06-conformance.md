@@ -177,10 +177,12 @@ seconds, and every Reviewer's recorded start precedes every Reviewer's recorded 
 **CNF-17** With `--reviewer-timeout 1 --kill-after 1`, one Reviewer fake sleeping 30 seconds and
 spawning a child that ignores SIGTERM, and the other three answering: the Run exits 0, the slow
 Reviewer's Feedback File carries `REVIEWER FAILED`, the other three hold the fakes' answer, the
-judge is called, and the child is gone before the judge starts — the judge's own record of the
-children still running at its start does not list it — and is not running once the executable
-has returned. With `--implementer-timeout 1 --kill-after 1` and an Implementer fake that ignores
-SIGTERM, the Implementer is gone within 5 seconds and the Run proceeds to the Panel. With
+judge is called, and neither the slow Reviewer's own process nor its child is running when the
+judge starts — the judge's own record of the calls and of the children still running at its start
+lists neither — nor once the executable has returned. With `--implementer-timeout 1 --kill-after 1`
+and an Implementer fake that ignores SIGTERM, the Implementer is not running when any Reviewer
+starts — no Reviewer's own record of the calls still running at its start lists it — nor once the
+executable has returned, and the Run reaches the Panel and returns within 10 seconds. With
 `--manager-timeout 1 --kill-after 1`, a sleeping pick that spawns the same child: the Run exits 2
 and, when the executable has returned, neither the fake nor its child is running. (`AGT-14`,
 `AGT-15`, `AGT-16`, `RUN-14`) *The Manager row is the shape the astra Reviewer found on rloop-bash
