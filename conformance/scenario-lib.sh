@@ -111,12 +111,15 @@ observed_trace() { # observed_trace <record dir>
 # --- the Seats (RUN-21, RUN-22) ---------------------------------------------------------------------
 # A model RUN-21's table does not name: a Seat holding it reads `unknown` whatever the probe says,
 # so a Run can be refused, or its judge withheld, only where a script seats a model on the table.
+# For the assigned literal, see CNF-3 in 06-conformance.md; keep value changes in agreement with it.
 off_table_model=claude-sonnet-5
 # The invariant every reader of it rests on: no Seat defaults to it and no Reviewer's command line
 # fixes it, so an assertion naming it discriminates. The list is every model a Seat defaults to or
 # a Reviewer's command line fixes: `<manager model>`'s defaults (AGT-3), `<implementer model>`'s
 # (AGT-5, AGT-6), and the one each Reviewer's command line fixes (AGT-7, AGT-8, AGT-10, AGT-11).
-# It covers RUN-21's table too, whose entries are Reviewer models, and off the table
+# It covers RUN-21's table only while every table model is among the guarded default/fixed Seat
+# models. A table amendment adding a model outside that set requires reconsidering this guard's
+# coverage. Off RUN-21's table,
 # `Every other case is` `unknown`. A suite whose own fixture is wrong has nothing to report, so
 # this refuses before any item rather than letting one go red.
 case "$off_table_model" in
