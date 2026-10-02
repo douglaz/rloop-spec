@@ -322,6 +322,18 @@ nothing in the prompt read until this amendment. rloop still runs no Consultatio
 fact in the prompt, as `{{DIRTY_AT_START}}` states the caller's paths. Amended the record sentence
 of `PRM-1` and of `PRM-2` so that a skipped adviser is recorded with its Probe verdict as the reason.
 
+2026-10-02 (rloop-spec#9): re-derived `CNF-22`'s Consultation observations from `RUN-20`, obligation
+by obligation, with the mapping written into `CNF-22`: each obligation quoted beside the
+observation that witnesses it, and the ones no observation reaches listed there with their
+reasons. The observations had grown one per review finding, each against the defect it patched,
+and two gaps came of it. The single-vendor observation asked only for the marker, so a Run in
+which no adviser answered satisfied it; it now asks for the other vendor's two answers, their
+agreement and the settled choice as well. And the Probe-verdict skip of 2026-09-23 had no
+observation; it has one now, conditional like the blocked one, because a Probe record reads
+`unavailable` against the real CLIs only when a model's quota is really exhausted, which a release
+cannot produce at will. A release that lacks either conditional observation says so in a statement
+kept with the record.
+
 **Still open:** under `--manager codex` the shell-tool bound is unverified. The codex Manager's
 hanging-adviser case remains open even with a per-call bound written into the prompts: a live
 `CNF-22` observation nobody has made. It must show the Manager bounding hanging calls, using

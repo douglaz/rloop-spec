@@ -270,16 +270,6 @@
     "reason": "Owns the suite negative control; RUN-11 identifies a failure behavior tested, not the suite self-check duty."
   },
   {
-    "owner": "CNF-22",
-    "sha256": "bab2d7f7411f032b8d058d8159049d1254545346dd533839174b5d330ad49357",
-    "reason": "Owns required live observations and evidence per Implementation release; cited requirements identify the observed behaviors, not observation duties."
-  },
-  {
-    "owner": "CNF-22",
-    "sha256": "8fa4346e8dbc840b793abadc851f9412a4af1677c8d11af84bd3cb156b2b36f7",
-    "reason": "Owns required live observations and evidence per Implementation release; cited requirements identify the observed behaviors, not observation duties."
-  },
-  {
     "owner": "AGT-15",
     "sha256": "ef23873e7b610b296fb4e74cf99ee254ed74a32a5fe8a484f3da27db0ca72aca",
     "reason": "Owns reaping a call's process group after the call and the bound on that wait; AGT-18 names the included Probe and AGT-14 separately owns the timeout that reaps at the limit."
