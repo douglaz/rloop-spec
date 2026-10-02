@@ -5,7 +5,8 @@
 # received, and acts.
 #
 # Script, from the environment conformance/run sets:
-#   RLOOP_FAKE_PICK          ok:task | ok:done | ok:blocked | ok:idle | ok:other | ok:nul | ok:nothing | fail
+#   RLOOP_FAKE_PICK          ok:task | ok:done | ok:blocked | ok:idle | ok:other | ok:nul |
+#                            ok:nothing | fail
 #                            (ok:other writes STATUS: maybe; ok:nul writes STATUS: done with a NUL byte
 #                            between do and ne, which a reader that drops NUL bytes sees as done, RUN-9)
 #   RLOOP_FAKE_ROUNDS        impl=<ok|fail>;panel=<all|some|none>;judge=<...>  joined by |, one per
@@ -28,7 +29,7 @@
 #                            family at 100; both = Fable and Opus each at 100, on separate lines;
 #                            under = 99; garbage = no usage line; silent = nothing;
 #                            fail = the fable line but exit 3; loose = the words mid-line;
-#                            unlisted = families outside RUN-21's table at 100, codex-like ones too
+#                            unlisted = families outside RUN-21's table at 100, codex-like ones too;
 #                            nul = the Fable line at 100 with a NUL byte inside the percentage
 #   RLOOP_FAKE_PROBE_PICK    what the probe before the pick (RLOOP_ROUND=0) writes: one shape from
 #                            RLOOP_FAKE_PROBE's list (default: clear). RLOOP_FAKE_PROBE scripts the

@@ -550,8 +550,8 @@ read is an own-process read of the item as well — `nothing_survived` (`conform
 reads `PID` beside `GRANDCHILD` — and no mutant of either Round reddens that half either, for the
 reason its own comment gives: `Every ancestor is gone by then, so neither can be a zombie`
 (`conformance/run:53-54`). Both own-process brackets come with a green group half for one reason:
-the fake writes `GRANDCHILDREN_ALIVE` (`conformance/fakes/agent:117`) before it spawns the child
-that ignores SIGTERM (`:174`), so a call that starts while the probe is still running finds no
+the fake writes `GRANDCHILDREN_ALIVE` (`conformance/fakes/agent:118`) before it spawns the child
+that ignores SIGTERM (`:175`), so a call that starts while the probe is still running finds no
 `GRANDCHILD=` line in the probe's record and has nothing to report. The group half can be green with
 the group alive, and it is the two halves together that caught these mutants.
 
@@ -602,7 +602,7 @@ pick (`conformance/run:693-734`). `RUN-22` is what makes the read observable the
 `exit 2 without spawning any agent` on that probe's verdicts, so an executable that derives them
 from bytes the straggler's line has not reached yet calls the pick and runs on. The knob is
 `RLOOP_FAKE_WRITE_STDOUT`, which had only a role and a fixed line and now takes a first-write delay
-and the line with it (`conformance/fakes/agent:64-83`, `:137`, `:168-171`); the row asks for one
+and the line with it (`conformance/fakes/agent:65-84`, `:138`, `:169-172`); the row asks for one
 second and `--kill-after 4`, so an early read is a second short of the line and a reaping one has
 three seconds of the child's writing behind it before it reads.
 
@@ -671,3 +671,21 @@ if a later Run shows the sentence being ignored.
 says the prompts are `checked for equality, never for quality`. **Open** until a Run on an
 Implementation carrying the amended prompts shows an Implementer or a Reviewer removing its own
 scratch paths by name.
+
+
+## F20 — A force-tracked `.rloop/.gitignore` can stop the next Run (open 2026-10-02)
+
+A repository can force-track `.rloop/.gitignore` with `git add -f` while its bytes differ from
+exactly `*` and a newline. During its first Run using the default Run Directory, `DIR-2`'s
+`rewriting a file whose bytes differ` changes that tracked file. Ignore rules do not hide tracked
+files, so `git status --porcelain` reports the change.
+
+If the rewrite remains uncommitted when the next Run of a Sequence would start, `SEQ-4`'s
+`when it prints anything, exit 2 without starting the Run` stops the Sequence before that Run.
+This is the consequence of leaving the change dirty, not a claim that the Manager must leave it
+dirty. `DIR-2`'s `no tracked file changes` and `SEQ-4`'s statement that `.rloop/` `is ignored`
+and `and so never counts` do not hold for this tracked-file case.
+
+Committing the rewritten file resolves this case permanently: subsequent Runs already find the
+required bytes. The owner chose to document this boundary on 2026-10-02, changing no requirement
+for it.

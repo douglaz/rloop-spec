@@ -29,7 +29,7 @@ the accepted work. A Sequence that finds it uncommitted at the next Run stops th
 which is the check working, not a defect.*
 
 **RUN-4** rloop MUST create the Run Directory (`DIR-1`–`DIR-3`) before the pick and MUST NOT
-create any other file outside it, save the `.rloop/.gitignore` `DIR-2` names.
+create any other file outside it, save the `.rloop/.gitignore` `DIR-2` has it create or rewrite.
 
 **RUN-23** The git working tree's path, the Run Directory's path, and every path rloop renders into
 a prompt or passes on a command line, MAY hold whitespace — a space, a tab — and rloop MUST handle

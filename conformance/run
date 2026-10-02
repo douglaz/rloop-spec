@@ -161,9 +161,9 @@ if [ "$e" = 0 ] && [ -n "$rd" ] && printf '*\n' | cmp -s - "$repo/.rloop/.gitign
 else ok=0; detail="$detail [fresh: exit $e, run dir '$rd', gitignore '$(od -An -c "$repo/.rloop/.gitignore" 2>/dev/null | tr -s ' ')', status '$status_out']"; fi
 # DIR-2 states bytes: a pre-existing file a check by eye accepts — `*` and two newlines, or `*`
 # and no newline — is rewritten to exactly `*` and a newline.
-for shape in 'two newlines:*\n\n' 'no newline:*'; do
+for shape in 'two-newlines:*\n\n' 'no-newline:*'; do
   label="${shape%%:*}"; repo="$(new_repo)"; rec="$work/rec-default-$label"
-  mkdir -p "$repo/.rloop" && printf "${shape#*:}" > "$repo/.rloop/.gitignore"
+  mkdir -p "$repo/.rloop" && printf '%b' "${shape#*:}" > "$repo/.rloop/.gitignore"
   e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec")
   status_out=$(cd "$repo" && git status --porcelain)
   if [ "$e" = 0 ] && printf '*\n' | cmp -s - "$repo/.rloop/.gitignore" && [ -z "$status_out" ]; then :
