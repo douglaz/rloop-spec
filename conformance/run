@@ -2,8 +2,8 @@
 # The Conformance Suite (06-conformance.md): conformance/run <rloop executable> [--self-check]
 #
 # Runs every CNF item against the executable with fake agents first on PATH, prints one line per
-# item, exits 0 only if all passed. Needs bash, git, GNU coreutils, grep, sed, awk, cmp and find;
-# nothing else. The executable sees the fakes, the tools CNF-1 names for an Implementation, and
+# item, exits 0 only if all passed. Needs the tools CNF-1 names; nothing else.
+# The executable sees the fakes, the tools CNF-1 names for an Implementation, and
 # the git shim for the CNF-19 items — see CNF-2; restrict_path in scenario-lib.sh builds it.
 set -u
 

@@ -14,7 +14,7 @@ new_repo() { # new_repo [path] -> prints path; a git repo with one commit. Witho
   echo "$r"
 }
 
-# --- CNF-2: the executable's PATH -------------------------------------------------------------------
+# --- CNF-2: the executable's PATH --------------------------------------------------------------
 # What GNU coreutils ships, by its own program list: not what this host installs (a host may lack
 # some) and not what any Implementation happens to call.
 coreutils_programs='[ arch b2sum base32 base64 basename basenc cat chcon chgrp chmod chown chroot cksum comm
