@@ -279,7 +279,8 @@ prevent, a Probe can do too: the 25-minute stdin hang `AGT-12` records was a CLI
 ## Versions
 
 **AGT-17** The command lines as they stood on 2026-09-17/18 were verified against Claude Code
-2.1.274 and codex 0.153.4; that record does not cover the current sol command's model change.
+2.1.274 and codex 0.153.4; that record does not cover any later change to them, the sol
+command's model change included.
 The Probe (`AGT-18`) together with the `Current week (<family>): <n>% used` line `RUN-21`
 reads was verified against Claude Code 2.1.278 on 2026-09-21. On 2026-09-24, the sol command
 with `gpt-6-sol` and `xhigh` was verified on codex-cli 0.156.1 using a trivial prompt.
