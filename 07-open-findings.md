@@ -53,8 +53,9 @@ new clause and needs its digest in `tools/restatement-homes.json` refreshed, whi
 in `~~…~~` or `**…**` does not. Self-citations remain at their own home.
 
 Both checks report each finding as `BLOCKING` or `ADVISORY`. Blocking findings fail the
-individual check and the aggregate gate, even alongside advisories. Advisories remain visible
-and do not change the exit status. Identifier integrity failures still block.
+individual check and the aggregate gate, `tools/check-all.sh`, even alongside advisories.
+Advisories remain visible and do not change the exit status. Identifier integrity failures still
+block.
 
 For quoted attributions, the blocking forms are:
 

@@ -34,7 +34,7 @@ a declaration the index does not carry; a region sitting in a requirement other
 than the one its declaration is tagged with; and a region the declarations emit
 that no document renders.
 
-Reads the files `tools/check_formal.sh` writes, so `check-all.sh` runs that gate
+Reads the files `tools/check_formal.sh` writes, so `check-gates.sh` runs that gate
 first. A missing index is a red gate, not a skipped one (`AGENTS.md`).
 
 Exit 0 = every region is what its declaration emits, 1 = drift or a structural
@@ -78,7 +78,7 @@ def load_formal():
     index = read_index()
     if not os.path.exists(REGIONS):
         print(f"FAIL: {REGIONS} missing -- run tools/check_formal.sh first "
-              f"(check-all.sh orders it before this gate)")
+              f"(check-gates.sh orders it before this gate)")
         sys.exit(2)
     regions = {}
     for line in open(REGIONS):

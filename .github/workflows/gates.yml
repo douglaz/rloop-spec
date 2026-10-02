@@ -27,8 +27,27 @@ jobs:
       - name: Run all gates
         run: nix develop --command bash tools/check-all.sh
 
-      - name: Prove blocking and advisory citation tiers compose through all gates
-        run: nix develop --command python3 tools/test_citation_gates.py
+      # What this proves is that check-all.sh still reaches the controls, not that the controls
+      # detect anything: the mutation replaces the controls file whole, so the row is red on any
+      # run that executes it, and a check-all.sh that stopped passing it to the runner prints no
+      # controls row at all -- the other rows PASS and exit zero -- which is why the unmutated
+      # run is held to the PASS row and not to its exit status alone.
+      - name: Prove the aggregate gate still reaches the controls
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"; cp -r . "$tmp/repo"; cd "$tmp/repo"
+          st=0; nix develop --command bash tools/check-all.sh > "$tmp/clean" 2>&1 || st=$?
+          cat "$tmp/clean"
+          [ "$st" = 0 ] || { echo "::error::aggregate gate red unmutated"; exit 1; }
+          grep -qF 'PASS  controls' "$tmp/clean" \
+            || { echo "::error::aggregate gate green unmutated, but without a controls row"; exit 1; }
+          echo 'raise SystemExit(1)' > tools/test_citation_gates.py
+          st=0; nix develop --command bash tools/check-all.sh > "$tmp/out" 2>&1 || st=$?
+          cat "$tmp/out"
+          [ "$st" != 0 ] \
+            || { echo "::error::aggregate gate passed a controls file that exits 1"; exit 1; }
+          grep -qF 'FAIL  controls' "$tmp/out" \
+            || { echo "::error::aggregate gate red, but not on the controls row"; exit 1; }
 
       # check_ids.py prints advisory findings on a clean tree too, so this control anchors on the
       # DANGLING: line and not on exit status alone.

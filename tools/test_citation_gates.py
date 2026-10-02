@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""Positive/negative CLI controls in disposable copies, run by check-all.sh and gates.yml."""
+"""Positive/negative CLI controls in disposable copies, run by check-all.sh."""
 
 from pathlib import Path
-import os
 import re
 import shutil
 import subprocess
@@ -15,7 +14,6 @@ from spec_text import INTRODUCING_PHRASES, attributions, quotations, units
 ROOT = Path(__file__).resolve().parent.parent
 QUOTE = "The Manager MUST be one session for the whole Run"
 FALSE_QUOTE = QUOTE.replace("one", "seventeen")
-GUARD = "RLOOP_SPEC_CITATION_CONTROLS_NESTED"
 
 
 class CitationControls(unittest.TestCase):
@@ -49,49 +47,14 @@ class CitationControls(unittest.TestCase):
         self.assertEqual(text.count(needle), 1, needle)
         return text.count("\n", 0, text.index(needle)) + 1
 
-    def controls_rows(self, output):
-        """The SUMMARY rows the controls gate took in a nested check-all.sh run. Counted by
-        the callers rather than searched for with `in`: only a count catches one condition
-        taking two rows -- which is what `a948618` did to an empty value, by expanding the
-        variable separately in the two checks -- and only a count catches one row twice."""
-        return re.findall(r"^  (?:PASS|FAIL)  controls .*", output, re.M)
-
-    def nested_guard(self, value, status, row, skipped, others=0):
-        """One case of the nested-run guard's table: check-all.sh over this copy of the set
-        with the guard variable holding `value`, or filtered out of the environment when that
-        is None -- filtered, and not left to os.environ, because a shell, a CI step or a stray
-        export that carries the name would make an unset case witness a present-value row.
-        `row` is the status of the one row this gate takes, or None for the cases that take
-        none, `skipped` whether the run announced the skip, and `others` how many rows other
-        than this gate's are FAIL -- none for any case of the guard's own table, one for a
-        caller whose control.md mutation fails a gate."""
-        env = {k: v for k, v in os.environ.items() if k != GUARD}
-        if value is not None:
-            env[GUARD] = value
-        result = subprocess.run(["bash", "tools/check-all.sh"], cwd=self.root,
-                                capture_output=True, text=True, timeout=600, env=env)
+    def runner(self, status, *tail):
+        """tools/check-gates.sh over this copy of the set, with `tail` as its arguments. Returns
+        the output and the names of the SUMMARY rows that are FAIL."""
+        result = subprocess.run(["bash", "tools/check-gates.sh", *tail], cwd=self.root,
+                                capture_output=True, text=True, timeout=600)
         output = result.stdout + result.stderr
-        rows = self.controls_rows(output)
-        self.assertEqual(len(rows), 0 if row is None else 1, output)
-        if row is not None:
-            self.assertTrue(rows[0].startswith(f"  {row}  controls "), output)
-            # A FAIL row in a run that did not announce a skip is the invalid-value branch's,
-            # the one row that names the value it refused; the backstop's row is reached only
-            # through a skip and names none. Asserting the value on that row is what makes the
-            # naming a witnessed behaviour rather than a claim README.md makes for it.
-            if row == "FAIL" and not skipped:
-                self.assertIn(f"{GUARD}='{value}'", rows[0], output)
         self.assertEqual(result.returncode, status, output)
-        self.assertEqual(len([r for r in re.findall(r"^  FAIL  (.*)$", output, re.M)
-                              if not r.startswith("controls")]), others, output)
-        # The announced skip is what tells the row a present non-token value takes from the
-        # backstop's row: without it, a guard that skipped a stray value would leave the
-        # backstop to supply the one FAIL row and every assertion above would still hold.
-        if skipped:
-            self.assertIn("SKIPPED  controls", output)
-        else:
-            self.assertNotIn("SKIPPED  controls", output)
-        return output
+        return output, re.findall(r"^  FAIL  (.*)$", output, re.M)
 
     def gate(self, script, status=0, *reasons):
         result = subprocess.run([sys.executable, str(self.root / "tools" / script)],
@@ -887,38 +850,6 @@ class CitationControls(unittest.TestCase):
                                      str(self.root)], capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
         path = self.root / "control.md"
-        token = f"aggregate-control:{os.getpid()}"
-        # Every step that mutates the copy runs at this level and never inside a subTest: a
-        # failed assertion inside one is recorded and the method carries on, which would run a
-        # later witness against a script that was not mutated as intended.
-        #
-        # The controls step is stubbed before the first witness rather than after the loop
-        # below, so that no witness in this method can reach it: a run that reaches it runs
-        # this file again, which copies the set again, without bound, and subprocess's timeout
-        # bounds the direct child only. The token witnesses below skip the step while the
-        # token is honoured, so only a double fault -- a guard that stopped honouring it and a
-        # lost invalid-value branch -- takes them there, and the stub is what bounds that. The
-        # stub costs them nothing: a guard that stopped skipping a valid token still fails
-        # them, on the stub's PASS row and the missing announcement, in seconds rather than a
-        # full tmpfs.
-        #
-        # The whole line, never the bare command, which the comment above the step also
-        # carries and carries first, where replace() -- first occurrence only -- would stub
-        # the comment and leave the step running the file. Unique before it is replaced:
-        # replace() asserts presence, not uniqueness.
-        script = "tools/check-all.sh"
-        text = (self.root / script).read_text()
-        step = 'run "$controls" python3 tools/test_citation_gates.py'
-        self.assertEqual(text.count(step), 1, step)
-        # `true` keeps the step's own PASS row, through the same `run` the real step uses, so
-        # the unset case below still witnesses the backstop staying quiet where a row exists;
-        # what it stops is the recursion. The half it cannot witness -- that the file really
-        # ran -- stays with a top-level check-all.sh run.
-        self.replace(script, step, 'run "$controls" true')
-        # A stub that cannot be seen is a recursion that cannot be seen.
-        for line in (self.root / script).read_text().splitlines():
-            if "test_citation_gates.py" in line:
-                self.assertTrue(line.lstrip().startswith("#"), line)
         warning = f"`SEQ-4` says the rule is `{QUOTE}` (`RUN-16`)."
         for mutation, status, diagnostic in (
                 (warning, 0, "ADVISORY CITATION: control.md:"),
@@ -929,69 +860,23 @@ class CitationControls(unittest.TestCase):
                 self.ids(1 if "RUN-9999" in mutation else 0)
                 self.citations(status if "BLOCKING" in diagnostic else 0,
                                "CITATION: control.md:", "SEQ-4", QUOTE, tier="ADVISORY")
-                # check-all.sh runs this file as its last gate. The guard is set here, not
-                # merely inherited, so that the standalone invocation gates.yml uses -- which
-                # has no guard in its environment -- witnesses the skip too. Its value is
-                # the token that script honours for the nested run's parent, this process: a
-                # prefix written nowhere else, so no environment carries it by accident, and
-                # this id, so the token is stale for every other run. check-all.sh fails a
-                # run carrying any other value, so a value this side stopped writing is a red
-                # control here and never a recursion.
-                # Skipped, and taking no row: without those two, two of these three cases
-                # witness only the exit status of 1 their own control.md mutation produces,
-                # whatever the guard did.
-                output = self.nested_guard(token, status, None, skipped=True,
-                                           others=1 if status else 0)
+                output, failed = self.runner(status)
+                self.assertEqual(len(failed), 1 if status else 0, output)
                 self.assertIn(diagnostic, output)
                 self.assertIn("ADVISORY CITATION: control.md:", output)
                 self.assertIn("PASS  formal", output)
                 self.assertIn("PASS  scenarios", output)
                 self.assertIn("All gates passed" if status == 0 else "One or more gates FAILED", output)
 
-        # The rest of the guard's table, in the copy already made rather than a second one.
-        # The loop above leaves control.md holding a dangling identifier, which fails a gate
-        # in every run below whatever the guard did, which is why it is removed here and not
-        # beside the stub above.
+        # The runner's tail: a row name and a command, which check-all.sh uses to run this
+        # file. control.md goes first: the loop above leaves it holding a dangling identifier,
+        # which would fail a gate in both runs below whatever the tail did.
         path.unlink()
-        # `1` is the value a Nix build's PID-namespaced builder holds, and the value this
-        # mechanism honoured until `99057a7` keyed the skip on the whole token; this process id
-        # is the nested run's own parent, the one bare integer a guard keyed on an id alone
-        # would still have honoured; `aggregate-control:0` is the prefix with an id behind it
-        # that this process cannot hold, a value a guard keyed on the prefix alone would still
-        # have skipped. None of them is the token, which is both halves at once.
-        #
-        # `0`, and not the `1` that `1475d36` sampled here, because the token every
-        # witness in this method is compared against is built above from this process's own
-        # `os.getpid()` -- which nested_guard makes the nested run's `$PPID`, by spawning
-        # check-all.sh directly -- and `os.getpid()` is never `0`. So this literal cannot be
-        # the token in any process this file runs in, whereas `aggregate-control:1` is the token
-        # whenever the control is itself PID 1 -- a container entrypoint, or a builder that
-        # `exec`s this file -- and asserting a row for it reddens an unmutated tree there. The
-        # argument has to be about `os.getpid()` and not about `$PPID`: a process whose parent
-        # lives outside its PID namespace reads `getppid()` as `0`, so there is no general
-        # claim that `$PPID` is never `0` to lean on.
-        for value, row in ((None, "PASS"), ("", "FAIL"), ("1", "FAIL"), (str(os.getpid()), "FAIL"),
-                           ("aggregate-control:0", "FAIL")):
-            with self.subTest(guard=value):
-                self.nested_guard(value, 0 if row == "PASS" else 1, row, skipped=False)
-        # The guard line forced to always skip: the one mutation that reaches the backstop,
-        # and safe by construction, since a script that always skips never runs this file.
-        # Asserted unique so that it cannot also match the backstop's own comparison, and
-        # applied through replace(), so that a reworded guard line fails this control rather
-        # than leaving an unmutated script for the cases below to run.
-        always = 'if [ "$guard" = "$token" ]; then'
-        self.assertEqual((self.root / script).read_text().count(always), 1, always)
-        self.replace(script, always, "if true; then")
-        # This process id again, and `aggregate-control:0` again -- its safety is argued above,
-        # where it first appears -- because the backstop is the side a guard reading half the
-        # token leaves quiet, and each half needs a witness carrying the other: a backstop
-        # reading the parent id alone takes no row for this process id, and one reading the
-        # prefix alone takes none for a prefixed non-token value such as `aggregate-control:0`.
-        for value, row in ((None, "FAIL"), ("", "FAIL"), ("1", "FAIL"),
-                           (str(os.getpid()), "FAIL"), ("aggregate-control:0", "FAIL"),
-                           (token, None)):
-            with self.subTest(guard=value, always_skips=True):
-                self.nested_guard(value, 1 if row else 0, row, skipped=True)
+        output, failed = self.runner(0, "tail", "true")
+        self.assertEqual(failed, [], output)
+        self.assertIn("\n  PASS  tail\n", output)
+        output, failed = self.runner(1, "tail", "false")
+        self.assertEqual(failed, ["tail"], output)
 
 
 if __name__ == "__main__":

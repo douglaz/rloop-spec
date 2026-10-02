@@ -4,7 +4,7 @@
 # restrict_path, the same library's executable PATH (CNF-2), with only the Conformance Suite's
 # dependencies. Always invoked directly:
 #   spec/conformance/test-panel-trace ./result/bin/rloop    in the CI of rloop-bash
-#   conformance/test-panel-trace                            as tools/check-all.sh runs it
+#   conformance/test-panel-trace                            as tools/check-gates.sh runs it
 # Without an argument the hand-written traces, the fake's fallthrough and the restrict_path
 # groups are checked, and one NOT RUN line names the checks that need an executable: the
 # fake-agent timeout, the positive scenario replays and the mutants. The mutants are pinned to

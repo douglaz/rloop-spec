@@ -4,7 +4,7 @@
 # propext / Classical.choice / Quot.sound -- so `sorry`, a project `axiom` and
 # `native_decide` are all red -- and refuses an empty index. Then `lake exe render`
 # writes the marked regions; the citations and regions gates read what this script
-# writes, so check-all.sh runs it first. Each output is written beside itself and renamed into
+# writes, so check-gates.sh runs it first. Each output is written beside itself and renamed into
 # place: a Panel runs several check-all.sh in this tree at once, and a reader in one must never
 # see a file another has just truncated.
 #

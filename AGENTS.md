@@ -9,8 +9,8 @@ as a submodule.
 
 `nix develop --command bash tools/check-all.sh`, before you start and again every time you change
 something. Run it unpiped — a pipe reports the pipeline's status, not the gate's, which is why
-`check-all.sh` captures each exit code directly. The shell is required: the formal gate needs
-Lean, and a missing toolchain is a red gate, not a skipped one.
+its runner, `tools/check-gates.sh`, captures each exit code directly. The shell is required: the
+formal gate needs Lean, and a missing toolchain is a red gate, not a skipped one.
 
 `nix flake check -L`, also unpiped, before you report done. It builds `flake.nix`'s `checks.gates`,
 which runs that same `tools/check-all.sh` inside the Nix build sandbox, where `PATH` holds nothing
