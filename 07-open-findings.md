@@ -624,3 +624,26 @@ independently. `rl-suite-newline-paths-deferred-mzc` holds the measurements, the
 conversion would have to demonstrate. `3744925`'s commit message carries the same wrong symptom this
 finding carried as first written — that the truncation reports no record of a tag that has a
 newline — and history is not rewritten here, so this paragraph is the correction.
+
+## F19 — A Reviewer's cleanup by pattern outside the repository (open 2026-10-02)
+
+Run `20261002T032914.259585815Z-773560`, the `opus` Reviewer: it made scratch copies with
+`mktemp -d` to test a `gates.yml` step by hand, then cleaned up with
+`rm -rf /tmp/rv-B /tmp/rv-C /tmp/tmp.*`. The glob matches every `mktemp -d` directory on the
+machine, and `/tmp` ended about 0.7G below where it started: at least one directory that was not
+the Reviewer's went with its own. The prompts said nothing about the filesystem outside the
+repository and the Run Directory, which is where scratch copies go.
+
+Amended `PRM-3` and `PRM-4` with one identical sentence before the closing one, and regenerated
+`PRM-3.txt` and `PRM-4.txt` by the fixtures tool (rl-agent-cleanup-own-paths-only-aofo). `PRM-3`:
+`Outside the repository, delete only what you created, naming each path exactly and never by a
+pattern that could match something you did not create.`
+
+A per-agent `TMPDIR` was considered and not chosen: it changes how every agent process is started,
+adds a directory rloop must own and reap, and needs its own Conformance coverage. Revisit it only
+if a later Run shows the sentence being ignored.
+
+*What does not follow.* Nothing yet shows the sentence working as prompt text; `00-overview.md`
+says the prompts are `checked for equality, never for quality`. **Open** until a Run on an
+Implementation carrying the amended prompts shows an Implementer or a Reviewer removing its own
+scratch paths by name.
