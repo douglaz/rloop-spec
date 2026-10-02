@@ -432,14 +432,18 @@ set against the record; the record's own word that a call was or was not made wi
   Hang: the first two calls seen in the Run's first Consultation are to `fable` and to `astra`,
   less any adviser a Probe record excluded.
 - `RUN-20`: `The Manager MUST replace an adviser that did not answer by its counterpart in the
-  other pair`, and `RUN-20`: `not by roster order` — Hang: the first adviser call seen to start
-  after the hung call has ended is to the other model of the hung adviser's vendor. The two rules
-  name different models only for some
-  advisers: for `fable` the counterpart and the next model in the roster's order, taken as `fable`,
-  `opus`, `astra`, `sol`, are both `opus`; for `astra`, with `fable` already called, the
-  counterpart is `sol` and the first model not yet called in that order is `opus`. So under one
-  preset at least the adviser that hangs is `astra`, and the first adviser call seen to start
-  after its call has ended is to `sol`.
+  other pair`, and `RUN-20`: `not by roster order` — Hang: in that Consultation a call to the
+  other model of the hung adviser's vendor, its counterpart, is seen to start after the hung call
+  has ended, and no adviser call seen to start between the hung call's end and that call's start
+  is to any model except the counterpart of another adviser that did not answer in that
+  Consultation, or that was not called there for its Probe verdict. The two rules name different
+  models only for some advisers: for `fable` the counterpart and the next model in the roster's
+  order, taken as `fable`, `opus`, `astra`, `sol`, are both `opus`; for `astra`, with `fable`
+  already called, the counterpart is `sol` and the first model not yet called in that order is
+  `opus`. So under one preset at least the adviser that hangs is `astra`, and the call so seen
+  after its call has ended is to `sol`, no call seen to start between the two being to `opus`
+  except where `fable` did not answer in that Consultation or was not called there for its Probe
+  verdict.
 - `RUN-20`: `A model that did not answer MUST NOT be called again in the same Run`, and `RUN-20`:
   `subsequent Consultations start with eligible counterparts` — Hang: once the hung call has ended,
   no adviser call seen in the rest of that Run, in any Round, is to that model, and the second
@@ -462,12 +466,13 @@ set against the record; the record's own word that a call was or was not made wi
   Consultation is held — the pick, or that Round's judge, the earliest moment the durations can
   have been chosen — to the start of the writing of the Finished File, where the Manager is seen
   to have stopped consulting, whether or not an adviser call is seen in that Consultation. The
-  time termination takes is taken here at the most the bounding seen on the Run's adviser calls
-  allows a call past its bound, a kill grace included, or, where the bounding shows no such
-  allowance, at the longest a terminated call was seen to take. So the observation fails where a
-  model is eligible, no call to it is seen, and what is left is at least that model's recorded
-  maximum and that time together. The record's listing a model as skipped or as silent is none of
-  these.
+  time termination takes is taken here at the largest allowance past a bound, a kill grace
+  included, that either the bounding seen on any adviser call of the Run or the record's own
+  statement of the bounds shows, for any model; where neither shows one, at the longest time a
+  terminated call was seen to run past its bound; and where no call was terminated either, at
+  nothing. So the observation fails where a model is eligible, no call to it is seen, and what is
+  left is at least that model's recorded maximum and that time together. The record's listing a
+  model as skipped or as silent is none of these.
 - `RUN-20`: `It SHOULD prefer one claude answer and one codex answer` — every observation: a
   choice settled in a Consultation where no model of one vendor answered is settled only once
   each model of that vendor has been seen called there without answering, or is excluded. The
@@ -573,7 +578,11 @@ No observation reaches the following, each for the reason beside it.
   uncalled with its whole maximum left under both clocks, where the time the Manager spent in its
   own call before choosing the durations, or after the last adviser call, covers the difference:
   the leg's clock starts before either reading's and stops after the Manager's decision, and
-  cannot tell that time from time the budget was running.
+  cannot tell that time from time the budget was running. Nor does `RUN-20`: `the bound MUST cover
+  the call through completion or termination` say whether a model remains within the budget when
+  its maximum is left but not the time its termination could take: the leg steps around that with
+  the margin its row defines, the largest the Run shows, and a Manager keeping a larger margin
+  than the Run shows is judged on the one shown, the leg seeing no other.
 - `RUN-20`: `The relevant record`, and `RUN-20`: `A Round's record only adds to the models
   excluded; it never restores one.` — these words do not say whether a Probe record that was the
   relevant record of no Consultation, the pick's or a Round's when the pick or that Round's judge
