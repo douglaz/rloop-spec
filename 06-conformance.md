@@ -374,9 +374,13 @@ was not seen is a failed observation, not a missing one. `RUN-20` owns the Consu
 relevant Probe record is the one `RUN-20` names. What an item says of a call — made, not made,
 ended — is what the observer saw of the adviser processes the Manager started, set against the
 record; the record's own word that a call was or was not made witnesses nothing.
+One Run may satisfy more than one of these observations, provided each one's conditions and
+evidence are met.
 
 - **Settled.** Every adviser the relevant Probe record does not read `unavailable` is called, all
   of them together, a choice settles, and the brief holds the record.
+  Every adviser process observed ran its model's command line from `PRM-1`, including the model,
+  effort and read-only flags as stated there.
 - **Hang.** Under each `--manager` preset, one adviser hangs rather than failing fast. Its call
   is bounded and terminated, the remaining answers decide, and the record holds the chosen
   durations, the bounds and each call's elapsed time.
