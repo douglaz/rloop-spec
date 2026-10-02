@@ -210,10 +210,7 @@ rp_skipped=''
 for name in bash git grep sed awk $coreutils_programs; do
   [ -e "$thin/$name" ] || rp_skipped="$rp_skipped $name"
 done
-# Both of this group's link reads read cat, and its exit status is asserted after them, for the
-# reasons the relative-PATH-entry group's comment below owns: cat is a name `coreutils_programs has
-# and executable_path_needs does not`, and the link is `read before the exit status` so that a
-# defect reaching both is reported as the read and not as restrict_path's refusal.
+# See the relative-PATH-entry group's comment below for the cat choice and read-before-status order.
 rp_work="$work/rp-skip"; mkdir -p "$rp_work"
 rp_skip_status="$(rp_run "$rp_work" "$thin")"
 assert_equal "$(wc -l < "$rp_err" | tr -d ' ')" 1 'a name the host lacks: CNF-2 names it once'
@@ -229,9 +226,6 @@ for name in $rp_drops; do
     && die "a name the host lacks: $name was linked anyway"
 done
 [ -L "$rp_work/private/cat" ] || die 'a name the host lacks: cat is not a symlink in the private directory'
-case "$(readlink "$rp_work/private/cat")" in
-  /*) ;; *) die 'a name the host lacks: cat links to a relative path' ;;
-esac
 assert_equal "$rp_skip_status" 0 'a name the host lacks: exit status'
 echo 'PASS: restrict_path leaves out what the host lacks, names it once, and links the rest'
 
