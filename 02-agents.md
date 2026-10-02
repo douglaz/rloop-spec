@@ -179,12 +179,14 @@ since codex has no deny list, which is within `DIR-9`'s threat model. The `-c` v
 without quotes: codex parses it as TOML and, failing that,
 takes the raw string, and `xhigh` was echoed back as `reasoning effort: xhigh` on 0.153.4.*
 
-*Reviewer `sol` ran on the `gpt-5.6` model of that name until 2026-09-24, when the owner moved the
+*Reviewer `sol` ran on `gpt-5.6-sol` until 2026-09-24, when the owner moved the
 id behind the name to `gpt-6-sol`; the roster name, the effort and everything else about the
-roster stay as they were. The model is available on this account and answers through codex-cli
-0.156.1: `codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6-sol -c
-model_reasoning_effort=low "Reply with exactly: ok"` returned `ok`. The `sol` adviser line of the
-Consultation in `PRM-1` and `PRM-2` moved with it; `AGT-17`'s verified versions did not.*
+roster stayed as they were. On that date, `codex exec --dangerously-bypass-approvals-and-sandbox
+-m gpt-6-sol -c model_reasoning_effort=xhigh "Reply with exactly: ok" </dev/null`, with a
+300-second bound, reported `model: gpt-6-sol` and `reasoning effort: xhigh` on codex-cli 0.156.1,
+returned `ok` and exited 0. The Implementer and each Reviewer independently recorded successful
+calls. The `sol` adviser line of the Consultation in `PRM-1` and `PRM-2` moved with it.
+`AGT-17` states `This was a partial verification, not a recheck of the whole current roster.`*
 
 **AGT-11** The Panel MUST be exactly the four Reviewers `AGT-7`, `AGT-8` and `AGT-10` name, with
 the Feedback File names `DIR-4` gives them. There is no flag, file or variable that changes the
@@ -276,9 +278,16 @@ prevent, a Probe can do too: the 25-minute stdin hang `AGT-12` records was a CLI
 
 ## Versions
 
-**AGT-17** The command lines above were verified against Claude Code 2.1.274 and codex 0.153.4 on
-2026-09-17/18, and `AGT-18` together with the `Current week (<family>): <n>% used` line `RUN-21`
-reads against Claude Code 2.1.278 on 2026-09-21. A fake agent accepts any flag, so the Conformance
+**AGT-17** The command lines as they stood on 2026-09-17/18 were verified against Claude Code
+2.1.274 and codex 0.153.4; that record does not cover the current sol command's model change.
+The Probe (`AGT-18`) together with the `Current week (<family>): <n>% used` line `RUN-21`
+reads was verified against Claude Code 2.1.278 on 2026-09-21. On 2026-09-24, the sol command
+with `gpt-6-sol` and `xhigh` was verified on codex-cli 0.156.1 using a trivial prompt.
+This was a partial verification, not a recheck of the whole current roster. That Run's Manager
+used Claude Code 2.1.282; that observation alone establishes neither whole-roster nor deny-list
+verification on that version.
+
+A fake agent accepts any flag, so the Conformance
 Suite cannot tell a wrong flag from a right one; a flag that a newer CLI rejects is found only by a
 live Run, and `06-conformance.md` carries the item that says so. The probe's output format is the
 same class of exposure and is not a new one: between 2026-09-20 and 2026-09-21 the reset time in
