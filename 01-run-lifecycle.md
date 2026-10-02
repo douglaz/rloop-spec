@@ -276,8 +276,8 @@ human is asked first.*
 
 **RUN-20** An implementation decision the specifications leave to the implementer — a choice of
 how, not of what — that a brief must settle MUST NOT be made by the Manager alone: the prompts
-tell it to put the question and the options to two advisers, read-only, by running the command
-lines `PRM-1` states. Which two, and what the Manager records, this requirement settles below.
+tell it to put the question and the options to advisers, read-only, by running the command
+lines `PRM-1` states. Which advisers, and what the Manager records, this requirement settles below.
 
 A Consultation MUST have answers from two distinct models to settle a choice; one answer is
 not enough. An answer is a call that completes within its bound, exits zero and states a
@@ -285,49 +285,53 @@ position on the question. A timeout, non-zero exit, empty output, output consist
 error, a refusal, or output taking no position is not an answer. Whether hedged prose states a
 position is the Manager's judgment.
 
-The adviser pairs are `fable` with `astra`, then `opus` with `sol`. The Manager MUST replace an
-adviser that did not answer by its counterpart in the other pair: `fable`↔`opus`, `astra`↔`sol`,
-not by roster order. A model that did not answer MUST NOT be called again in the same Run;
-subsequent Consultations start with eligible counterparts. The Manager MUST continue with
-eligible models until it has two answers or none remain within the Consultation's budget. It
-SHOULD prefer one claude answer and one codex answer; when neither model of one vendor answers,
-two answers from the other vendor are enough, and the record below MUST say the Consultation was
-single-vendor.
+The advisers are the models `fable`, `opus`, `astra` and `sol`. A Consultation MUST call every one
+of them that its relevant Probe record does not read `unavailable`, under the Reviewer Seat of the
+same name, and only those. The relevant record is `probe-pick.md` for a Consultation at the pick,
+and Round `r`'s `probe-<r>.md`, as that Round's Feedback Files show it, for one at Round `r`'s
+judge. An adviser that record reads `unavailable` is treated as one that did not answer, without
+being called.
 
-An adviser whose model the relevant Probe record reads `unavailable`, under the Reviewer Seat of
-the same name, MUST be treated as an adviser that did not answer, without being called, and
-replaced by its counterpart as above; it counts as a model that did not answer for the rest of the
-Run. The relevant record is `probe-pick.md` for a Consultation at the pick, and Round `r`'s
-`probe-<r>.md`, as that Round's Feedback Files show it, for one at Round `r`'s judge.
+A Consultation carries nothing over from an earlier one in the same Run. A model that did not
+answer in an earlier Consultation is called again, and a model a Probe record read `unavailable`
+is called again once a later relevant record does not read it so.
 
-*This is the Consultation's parallel to `RUN-15`'s `rloop MUST write its Feedback File in its place`
-for a Reviewer that was never called. The verdicts are `RUN-21`'s; the pick prompt lists them
+*The skip is the Consultation's parallel to `RUN-15`'s `rloop MUST write its Feedback File in its
+place` for a Reviewer that was never called. The verdicts are `RUN-21`'s; the pick prompt lists them
 (`PRM-1`) and the judge prompt reads them off the Feedback Files (`PRM-2`), because a weekly limit
 resets at a fixed time and an Implementer may run for hours, so by the judge the pick's reading is
-the stale one. A Round's record only adds to the models excluded; it never restores one.*
+the stale one. Remembering nothing between Consultations matches `RUN-21`, which probes every Seat
+again before each Round's Panel.*
 
-The Manager MUST bound each adviser call through its shell tool and budget the whole
-Consultation to leave enough of its turn to write whichever file the outcome calls for — the
-Task File when the Consultation settles the choice, the Finished File when it blocks. Before
-calling advisers, it MUST choose the per-call maximum durations, the total Consultation budget
-and the time reserved for that file; it MUST record those durations, the bounds used and each
-call's elapsed time
-so a reader can check the limits. A tool returning while an adviser still runs is not a
-completed call; the bound MUST cover the call through completion or termination.
+The Manager MUST bound each adviser call through its shell tool. Before calling advisers, it MUST
+choose each call's maximum duration, leaving enough of its turn to write whichever file the
+outcome calls for — the Task File when the Consultation settles the choice, the Finished File
+when it blocks. It MUST start all the Consultation's calls together. A tool returning while an
+adviser still runs is not a completed call; the bound MUST cover the call through completion or
+termination. It MUST record the chosen durations, the bounds used and each call's elapsed time so
+a reader can check the limits.
 
-When two answering advisers agree the Manager chooses with them. When they disagree it puts
-the same question to the remaining eligible advisers, within those bounds. A choice the advisers
-leave unsettled MUST end the Run `blocked`, with the question, every answer and the Manager's
-recommendation in the Finished File. The report MUST name the models that did not answer and say
-whether those that did answer agreed. Silence is neither agreement nor disagreement: a non-answer does not
-reclassify the question or require a Clarification.
+Once every call has ended, the unique leading position held by at least two answering advisers
+settles the choice, and the Manager chooses it. Any tie, or fewer than two answers, leaves the
+choice unsettled. Two answers hold the same position when they make the same concrete choice,
+material conditions included; they need not give the same reasons. Whether two answers hold the
+same position is the Manager's judgment, beside its judgment on hedged prose. A choice the
+advisers leave unsettled MUST end the Run `blocked`, with the question, every answer and the
+Manager's recommendation in the Finished File. The report MUST name the models that did not answer
+and say whether those that did answer agreed. Silence is neither agreement nor disagreement: a
+non-answer does not reclassify the question or require a Clarification.
+
+When neither model of one vendor answers and the other vendor's two agree, the choice settles, and
+the record below MUST say the Consultation was single-vendor. When the settling position is held
+by one vendor's answers only while the other vendor answered and dissented, the choice settles,
+and the record MUST say so.
 
 The Manager MUST record every model called and what each did — answered, did not answer (with
 the reason), or refused — alongside the question and the answers: in the Task File with the
-choice it settled, or in the Finished File with its recommendation when the Consultation blocked
-before a brief was written. An adviser skipped for its Probe verdict is recorded as one that did
-not answer, with that verdict as the reason. The bounds and timing record
-belongs with that account. A choice the brief does not need to settle is the Implementer's.
+choice it settled, or in the Finished File with its recommendation when the Consultation blocked.
+An adviser skipped for its Probe verdict is recorded as one that did not answer, with that verdict
+as the reason. The bounds and timing record belongs with that account. A choice the brief does not
+need to settle is the Implementer's.
 
 *This is a Consultation, not a Panel: rloop does not run it, the Manager does, in its own
 session (`RUN-16`: `The Manager MUST be one session for the whole Run`), which is why it costs

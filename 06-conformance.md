@@ -369,262 +369,29 @@ CLIs.
 
 Each Consultation observation is named by the condition it is made under: one the observer
 arranges, or, for Blocked and Skip, one that is waited on and induced where it can be. It is made
-only when everything its item states, and everything each row of the mapping below that names it
-states, is seen; a Run in which the condition held and one of those was not seen is a failed
-observation, not a missing one. In the items and the rows the observer counts a model *excluded*,
-at a point of a Run, when a Probe record the Run holds by then reads it `unavailable` or an adviser
-call to it seen earlier in the Run ended without an answer, and *eligible* otherwise.
+only when everything its item states is seen; a Run in which the condition held and one of those
+was not seen is a failed observation, not a missing one. `RUN-20` owns the Consultation, and its
+relevant Probe record is the one `RUN-20` names. What an item says of a call — made, not made,
+ended — is what the observer saw of the adviser processes the Manager started, set against the
+record; the record's own word that a call was or was not made witnesses nothing.
 
-- **Settled.** A Run whose brief settles an open implementation choice, with the Consultation's
-  question, every model it called and what each one did, the answers and the choice recorded in
-  the brief.
-- **Hang.** Under each `--manager` preset, a Run holding **two** Consultations MUST also be
-  observed, the first of them meeting an adviser — `astra` under at least one preset, for the
-  reason the mapping's row on counterparts gives — that **hangs** rather than one that fails fast,
-  while that adviser's counterpart is eligible and not yet called in that Consultation when the
-  hung call ends: the call bounded and terminated, the chosen durations, the bounds and each
-  call's elapsed time in the record, the counterpart called in its place, and the second
-  Consultation starting from the eligible models rather than the one that did not answer. Whether
-  the counterpart is eligible then is read off what the observer has when the hung call ends —
-  the Probe records the Run holds by then, the adviser calls seen earlier in the Run — and never
-  off whether a call to it followed. The hung adviser and the hung call of this item and of the
-  rows are those that condition holds of. A Run whose hung adviser's counterpart is excluded
-  then, or already called in that Consultation, is not this observation, neither made nor failed:
-  the observer arranges another, and no statement of a missing observation stands in for the
-  one each preset owes.
-- **Single-vendor.** One observation MUST be of a Consultation in which neither model of one
-  vendor answers and both models of the other vendor answer and agree: the Manager settles the
-  choice with those two answers, the Run does not end `blocked` on that Consultation, and the
-  record in the brief says the Consultation was single-vendor.
-- **Blocked.** One, where it can be induced, of a Run in which a Consultation is left unsettled,
-  because fewer than two models answer within its budget or because those that answer still
-  disagree: the Run ending `blocked` with the report naming the silent models and saying whether
-  those that answered agreed.
-- **Skip.** One, where it can be induced, of a Run in which the Probe record a Consultation reads
-  holds `unavailable` for the model of an adviser that Consultation would otherwise call, while
-  that adviser's counterpart is eligible and not yet called in that Consultation, and which holds
-  a later Consultation as well: the adviser not called, its counterpart called in its place, the
-  adviser recorded as one that did not answer with the Probe verdict as the reason, and the
-  adviser still not called in the rest of the Run, the later Consultation starting from its
-  counterpart where that is still eligible then. A Run that is already one of the observations
-  above may be this one too.
+- **Settled.** Every adviser the relevant Probe record does not read `unavailable` is called, all
+  of them together, a choice settles, and the brief holds the record.
+- **Hang.** Under each `--manager` preset, one adviser hangs rather than failing fast. Its call
+  is bounded and terminated, the remaining answers decide, and the record holds the chosen
+  durations, the bounds and each call's elapsed time.
+- **Single-vendor.** Neither model of one vendor answers, and the other vendor's two agree. The
+  choice settles and the record says the Consultation was single-vendor.
+- **Blocked.** Where it can be induced: a tie, or fewer than two answers, ends the Run `blocked`
+  with the full record in the Finished File and the silent models named.
+- **Skip.** Where it can be induced: an adviser whose relevant Probe record reads `unavailable`
+  is not called and is recorded with that verdict. Where a later relevant record in the same Run
+  no longer reads it so, it is called again.
 
 Blocked and Skip wait on conditions a release cannot produce at will. When the Runs observed for
-a release held no unsettled Consultation, or none of them met the whole of the condition the Skip
-item states — the Probe record, the adviser the Consultation would otherwise call, the
-counterpart eligible and not yet called, and the later Consultation — a statement kept with the
-record MUST say so, for each of the two that is missing, so that a missing observation is a
-stated fact and not an omission.
-
-The mapping is from `RUN-20`, which owns the Consultation: each row quotes one of its obligations
-and names the observations that witness it and what is seen there. What a row says of a call —
-made, not made, ended — is what the observer saw of the adviser processes the Manager started,
-set against the record; the record's own word that a call was or was not made witnesses nothing.
-
-- `RUN-20`: `MUST NOT be made by the Manager alone`, and `RUN-20`: ``put the question and the
-  options to two advisers, read-only, by running the command lines `PRM-1` states`` — every
-  observation: before the file holding the choice or the recommendation is written, adviser calls
-  are seen that carry the question and the options that file records, and the command line of every
-  adviser process seen is the one `PRM-1` states for its model — the model, the effort and the
-  read-only flags as written there — with the question in the place it marks.
-- `RUN-20`: `A Consultation MUST have answers from two distinct models to settle a choice; one
-  answer is not enough.` — Settled, Hang, Single-vendor and Skip: each settled choice has two
-  answers, of two distinct models, among the calls seen; and Hang's first Consultation settles
-  nothing on one answer: a second model's answer, the counterpart's or another's, is seen before
-  the Task File holding its choice is written.
-- `RUN-20`: `An answer is a call that completes within its bound, exits zero and states a
-  position on the question.` and `RUN-20`: `A timeout, non-zero exit, empty output, output
-  consisting only of an error, a refusal, or output taking no position is not an answer.` — Hang:
-  the hung call, ended at its bound, is recorded as one that did not answer, with the timeout as
-  the reason, and is not one of the two answers. Single-vendor: the same for each call to the
-  vendor that does not answer, with its own reason. Every observation: each answer counted has a
-  recorded elapsed time within its bound and recorded words that state a position.
-- `RUN-20`: ``The adviser pairs are `fable` with `astra`, then `opus` with `sol`.`` — Settled and
-  Hang: the first two calls seen in the Run's first Consultation are to `fable` and to `astra`,
-  less any adviser a Probe record excluded.
-- `RUN-20`: `The Manager MUST replace an adviser that did not answer by its counterpart in the
-  other pair`, and `RUN-20`: `not by roster order` — Hang: in that Consultation a call to the
-  other model of the hung adviser's vendor, its counterpart, eligible and not yet called there by
-  Hang's condition, is seen to start after the hung call has ended, and no adviser call seen to
-  start between the hung call's end and that call's start is to any model except the counterpart
-  of another adviser that did not answer in that Consultation, or that was not called there for
-  its Probe verdict. The two rules name different models only for some advisers: for `fable`
-  the counterpart and the next model in the roster's order, taken as `fable`, `opus`, `astra`,
-  `sol`, are both `opus`; for `astra`, with `fable` already called, the counterpart is `sol` and
-  the first model not yet called in that order is `opus`. So under one preset at least the
-  adviser that hangs is `astra`, and the call so seen after its call has ended is to `sol`,
-  no call seen to start between the two being to `opus` except where `fable` did not answer in
-  that Consultation or was not called there for its Probe verdict.
-- `RUN-20`: `A model that did not answer MUST NOT be called again in the same Run`, and `RUN-20`:
-  `subsequent Consultations start with eligible counterparts` — Hang: once the hung call has ended,
-  no adviser call seen in the rest of that Run, in any Round, is to that model, and the second
-  Consultation's first calls include one to its counterpart and one to the first pair's other
-  adviser, each where it is eligible then; for either of the two that is not, its own counterpart
-  stands in, where that one is eligible, and where neither is, nothing is asked on that one's
-  account. A first call there to any other eligible model is not held against the Run by this
-  row. Where either of the two is excluded only by a Probe record that was the relevant record of
-  no Consultation of the Run, the second included — the pick's or a Round's, when the pick or that
-  Round's judge held none — a first call to that model and one to its counterpart are accepted
-  alike; why is among what no observation reaches, below.
-- `RUN-20`: `The Manager MUST continue with eligible models until it has two answers or none
-  remain within the Consultation's budget.` — Hang and Single-vendor: after each call seen to end
-  without an answer a call to another eligible model is seen, while one remains, until two have
-  answered. Blocked, when fewer than two answered: every model to which no adviser call is seen in
-  that Consultation is excluded on what the observer has — a Probe record of the Run reading it
-  `unavailable`, or an adviser call to it seen earlier in the Run that ended without an answer —
-  or is given no per-call maximum by the record, or else is left less of the recorded budget than
-  the per-call maximum the record gives for that model and the time termination takes, a single
-  maximum given for every call being that model's too. What is left is the recorded budget less
-  the time the observer saw pass from the start of the Manager's own call in which the
-  Consultation is held — the pick, or that Round's judge, the earliest moment the durations can
-  have been chosen — to the start of the writing of the Finished File, where the Manager is seen
-  to have stopped consulting, whether or not an adviser call is seen in that Consultation. The
-  time termination takes is taken here at the largest allowance past a bound, a kill grace
-  included, that either the bounding seen on any adviser call of the Run or the record's own
-  statement of the bounds shows, for any model; where neither shows one, at the longest time a
-  terminated call was seen to run past its bound; and where no call was terminated either, at
-  nothing. So the observation fails where a model is eligible, no call to it is seen, and what is
-  left is at least that model's recorded maximum and that time together. The record's listing a
-  model as skipped or as silent is none of these.
-- `RUN-20`: `It SHOULD prefer one claude answer and one codex answer` — every observation: a
-  choice settled in a Consultation where no model of one vendor answered is settled only once
-  each model of that vendor has been seen called there without answering, or is excluded. The
-  preference is a recommendation and no observation fails on more of it than that: where models
-  of both vendors answered, which two answers a choice is settled with, and whether it is settled,
-  is not held against the Run by this row.
-- `RUN-20`: `when neither model of one vendor answers, two answers from the other vendor are
-  enough`, and `RUN-20`: `the record below MUST say the Consultation was single-vendor` —
-  Single-vendor: the choice is settled with the two answers of the one vendor, the Run does not end
-  `blocked` on that Consultation, and the record in the Task File says, in words, that the
-  Consultation was single-vendor. A Consultation in which no model answers, or in which the Run
-  blocks, is not this observation whatever its record says.
-- `RUN-20`: `When two answering advisers agree the Manager chooses with them.` — Settled, Hang,
-  Single-vendor and Skip: wherever the first two answers seen in a Consultation agree, the choice
-  the brief records is the position those two state.
-- `RUN-20`: ``An adviser whose model the relevant Probe record reads `unavailable`, under the
-  Reviewer Seat of the same name, MUST be treated as an adviser that did not answer, without being
-  called, and replaced by its counterpart as above`` — Skip: no adviser call seen in that
-  Consultation is to the model the Probe record reads `unavailable`, and a call to its counterpart,
-  eligible by Skip's condition, is seen in its place.
-- `RUN-20`: `it counts as a model that did not answer for the rest of the Run`, and `RUN-20`: `A
-  Round's record only adds to the models excluded; it never restores one.` — Skip: no adviser call
-  seen in the rest of the Run is to that model, the later Consultation's first calls include its
-  counterpart where that is still eligible then, and both hold where a later Round's Probe record
-  no longer reads the model `unavailable`.
-- `RUN-20`: `An adviser skipped for its Probe verdict is recorded as one that did not answer, with
-  that verdict as the reason.` — Skip: the record of each Consultation whose own relevant Probe
-  record reads the model `unavailable` — the one Skip's condition names, and any later one of
-  which that holds — lists the adviser so, the Probe verdict named as the reason. Nothing is asked
-  here of the record of a Consultation whose own relevant Probe record does not read the model
-  `unavailable`: an earlier one, in which the adviser may have been called and have answered, or
-  a later one, in which the adviser is only still excluded.
-- `RUN-20`: `The Manager MUST bound each adviser call through its shell tool`, and `RUN-20`: `A
-  tool returning while an adviser still runs is not a completed call; the bound MUST cover the call
-  through completion or termination.` — Hang, under each preset: the hung adviser's process is seen
-  to end at the recorded bound and to be gone before the call to its counterpart, the one Hang's
-  condition leaves to be made, starts and before the Task File is written, whatever other adviser
-  calls run beside it; no adviser process is left running when the Manager's own call ends. The
-  bound on a call that ends before it is among what no observation reaches, below.
-- `RUN-20`: `Before calling advisers, it MUST choose the per-call maximum durations, the total
-  Consultation budget and the time reserved for that file`, and `RUN-20`: `it MUST record those
-  durations, the bounds used and each call's elapsed time` — Hang, under each preset: the record
-  holds the three durations and, for each call seen, its bound and its elapsed time; the hung
-  call's elapsed time is its bound, to within the time termination takes; no call's elapsed time
-  exceeds its own recorded bound by more than that time; and the time the observer saw the
-  Consultation take, from the start of its first adviser call to the end of its last, is within the
-  recorded budget to within that time as well — the span and not the sum of the elapsed times, so
-  that calls run at once are counted once.
-- `RUN-20`: `budget the whole Consultation to leave enough of its turn to write whichever file the
-  outcome calls for` — Hang: with one call's whole bound spent, the Manager's call still ends on
-  its own having written the Task File, the record complete. Blocked: the same of the Finished
-  File.
-- `RUN-20`: ``A choice the advisers leave unsettled MUST end the Run `blocked`, with the question,
-  every answer and the Manager's recommendation in the Finished File.`` — Blocked: the Run ends
-  `blocked` and no brief records the choice as settled; the Finished File holds the question, the
-  answer of every call seen to answer, and a recommendation.
-- `RUN-20`: `The report MUST name the models that did not answer and say whether those that did
-  answer agreed.` — Blocked: the report names every model seen not to answer and every model
-  skipped, leaving none out, and says of those that answered whether they agreed.
-- `RUN-20`: `Silence is neither agreement nor disagreement: a non-answer does not reclassify the
-  question or require a Clarification.` — Blocked, when fewer than two answered: the report gives
-  the silence as the reason, calls no passage of the specifications ambiguous and asks for no
-  Clarification on its account.
-- `RUN-20`: `The Manager MUST record every model called and what each did — answered, did not
-  answer (with the reason), or refused — alongside the question and the answers: in the Task File
-  with the choice it settled, or in the Finished File with its recommendation when the Consultation
-  blocked before a brief was written`, and `RUN-20`: `The bounds and timing record belongs with
-  that account.` — every observation: the models the record lists as called are the models of the
-  adviser calls seen, none left out and none added, each with what it did; the question, the
-  answers, the bounds and the timings stand in the same account; and that account is in the Task
-  File where the choice was settled (Settled, Hang, Single-vendor, Skip) and in the Finished File
-  where Blocked blocks at the pick.
-
-No observation reaches the following, each for the reason beside it.
-
-- `RUN-20`: `When they disagree it puts the same question to the remaining eligible advisers,
-  within those bounds.` — no observation demands a disagreement, because the positions real
-  advisers take cannot be arranged. An observed Consultation whose first two answers do disagree
-  shows calls putting the same question to each remaining eligible adviser before the choice is
-  settled or the Run blocks, and is a failed observation if it does not.
-- `RUN-20`: ``The relevant record is `probe-pick.md` for a Consultation at the pick, and Round
-  `r`'s `probe-<r>.md`, as that Round's Feedback Files show it, for one at Round `r`'s judge.`` —
-  Skip is made at whichever of the two calls its Consultation falls in, against the record this
-  sentence names for that call. The other arm goes unobserved: it needs the same exhausted quota
-  to coincide with a Consultation at the other kind of call, and demanding both would double a
-  condition a release cannot produce once at will.
-- `RUN-20`: `The Manager MUST bound each adviser call through its shell tool`, for a call that
-  ends before its bound — a bound is witnessed where it acts, on Hang's hung call. A call that
-  answers first shows the observer nothing of its bound, which may be the shell tool's own limit
-  and no part of the adviser's process; the record's bound for it is held against its recorded
-  elapsed time by the rows above and is otherwise the record's word.
-- `RUN-20`: `none remain within the Consultation's budget`, and `RUN-20`: `budget the whole
-  Consultation` — these words do not say when the budget's clock starts, at the choice of the
-  durations or at the first adviser call, nor whether a model remains within the budget when less
-  than its per-call maximum is left and a shorter bounded call would fit, nor how long after its
-  last adviser call the Manager may take before it finds that none remains. Blocked's budget leg
-  takes no side: it counts from the earliest moment the clock can have started to the moment the
-  Manager is seen to have stopped consulting, the start of the writing of the Finished File, and
-  holds a model to remain only where its whole recorded maximum and the time termination takes
-  are left then, and so fails only what every reading calls a violation. An eligible model left
-  uncalled with less than that left — by the later clock only, or with room for a shorter call —
-  goes unwitnessed, as does one for which the record gives no per-call maximum. So does one left
-  uncalled with its whole maximum left under both clocks, where the time the Manager spent in its
-  own call before choosing the durations, or after the last adviser call, covers the difference:
-  the leg's clock starts before either reading's and stops after the Manager's decision, and
-  cannot tell that time from time the budget was running. Nor does `RUN-20`: `the bound MUST cover
-  the call through completion or termination` say whether a model remains within the budget when
-  its maximum is left but not the time its termination could take: the leg steps around that with
-  the margin its row defines, the largest the Run shows, and a Manager keeping a larger margin
-  than the Run shows is judged on the one shown, the leg seeing no other.
-- `RUN-20`: `The relevant record`, and `RUN-20`: `A Round's record only adds to the models
-  excluded; it never restores one.` — these words do not say whether a Probe record that was the
-  relevant record of no Consultation, the pick's or a Round's when the pick or that Round's judge
-  held none, excludes a model from a later Consultation whose own relevant record no longer reads
-  it `unavailable`. Hang's row on the second Consultation takes neither side: of a model that
-  only such a record excludes it accepts a first call to the model or to its counterpart. Which
-  of the two the Manager owed goes unwitnessed there.
-- `RUN-20`: `The Manager MUST replace an adviser that did not answer by its counterpart in the
-  other pair`, for an adviser that hangs while its counterpart is excluded, or already called in
-  that Consultation, when the hung call ends — Hang's condition leaves that Run out, and nothing
-  is held against it under Hang. Where the counterpart was already called, or is excluded by a
-  call that ended without an answer or by a Probe record that was the relevant record of a
-  Consultation of the Run, there is no replacing call to see; where only a Probe record of the
-  kind the entry above describes excludes it, whether one was owed is what that entry leaves
-  unwitnessed.
-- `RUN-20`: `Before calling advisers`, as the time of the choice of durations — the record shows
-  the durations and the bounds on the calls seen, not the moment they were chosen.
-- `RUN-20`: `non-zero exit, empty output, output consisting only of an error, a refusal, or output
-  taking no position` — only the timeout is arranged, in Hang. Each other kind is witnessed where
-  Single-vendor's silent vendor happens to fail that way and not otherwise: making a real CLI fail
-  in one named way is not something an observer can do to order.
-- `RUN-20`: `Whether hedged prose states a position is the Manager's judgment.` — a judgment has no
-  outcome an observer can hold against it.
-- `RUN-20`: `A choice the brief does not need to settle is the Implementer's.` — whether a brief
-  needed to settle a choice is the Manager's reading of the task, and a Consultation held on a
-  choice the brief could have left alone leaves the same record as one it needed.
-- `RUN-20`: `when the Consultation blocked before a brief was written` — a Consultation that blocks
-  at a judge, after a brief was written, is not required of Blocked; where Blocked falls there,
-  the rows above that name the Finished File still hold.
+a release held no unsettled Consultation, or no Consultation whose relevant Probe record read an
+adviser `unavailable`, a statement kept with the record MUST say so, for each of the two that is
+missing, so that a missing observation is a stated fact and not an omission.
 
 The Run Directories and the commits are kept as the record. (`AGT-9`, `AGT-17`, `SEQ-8`,
 `SEQ-10`, `RUN-19`, `RUN-20`, `PRM-1`)

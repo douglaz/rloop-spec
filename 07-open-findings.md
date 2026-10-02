@@ -334,10 +334,22 @@ observation; it has one now, conditional like the blocked one, because a Probe r
 cannot produce at will. A release that lacks either conditional observation says so in a statement
 kept with the record.
 
+2026-10-02 (`rl-run20-open-points-m56t`): replaced the pair-and-counterpart policy in `RUN-20`,
+which supersedes what the paragraphs above say of it. A Consultation now calls every adviser its
+relevant Probe record does not read `unavailable`, all of them together; it carries nothing over
+from an earlier Consultation of the Run; and it settles on the unique leading position held by at
+least two answers, a tie or fewer than two answers ending the Run `blocked`. The two pairs,
+replacement by counterpart, the rule that a model that did not answer is not called again in the
+Run, the second question put to the remaining advisers on a disagreement and the total
+Consultation budget are gone; `ADR-0009` records why, and what was rejected. `PRM-1` and `PRM-2`
+carry the new policy and their fixtures were regenerated. `CNF-22`'s Consultation observations are
+five short items again: the mapping the entry above describes, and its list of what no observation
+reaches, are deleted.
+
 **Still open:** under `--manager codex` the shell-tool bound is unverified. The codex Manager's
 hanging-adviser case remains open even with a per-call bound written into the prompts: a live
-`CNF-22` observation nobody has made. It must show the Manager bounding hanging calls, using
-counterparts without retrying a non-answering model in the Run, recording all calls and any
+`CNF-22` observation nobody has made. It must show the Manager bounding hanging calls, letting
+the remaining answers decide, recording all calls and any
 single-vendor Consultation, and leaving time to write the file the outcome needs — naming the
 silent models and saying whether those that answered agreed. This amendment adds no duty to rloop.
 
