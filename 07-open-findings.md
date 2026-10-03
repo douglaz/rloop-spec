@@ -626,7 +626,99 @@ record]` and the same for `probe-1`), which is why it witnesses nothing about th
 
 Still unobserved: every other call's output read — the pick's, the Implementer's, each Reviewer's,
 the judge's and the Round's probe's. `RUN-22` gives the probe before the pick an observable no other
-call has, and `rl-cnf34-probe0-read-fast-fake-8et` holds the remaining `probe-0` gap.
+call has. The ordinary `probe-0` own-process read is a separate gap, investigated below.
+
+*The ordinary Probe's sleep candidate, declined 2026-10-03
+(`rl-cnf34-probe0-read-fast-fake-8et`).* The `02c6206` measurements above remain historical.
+At Specification `46248df0f618bcda8646f01424feb1a8fab2e5b9`, the candidate was
+`RLOOP_FAKE_SLEEP_PROBE=1` on the ordinary `rec-reap-probe` invocation alone, with the fake,
+the watching and output-writing arms, and `--kill-after 1` unchanged. The correctly reaping
+executable was a byte-identical scratch copy of
+`/nix/store/mydjhwg0771w726kcp1gpx71v485kc4s-rloop/bin/rloop`, resolved from
+`/home/master/p/rloop-bash/result/bin/rloop`, SHA-256
+`4759d2779b719e8513fba386d2879e9290807ab7ec53383e604bde85cfbcaabd`;
+the neighboring source repository was clean at `a110ec2a3e9c4eefa67ced14976e24263d83249f`.
+The scratch mutant retained that executable's wrapper, including its appended `diffutils` PATH,
+and the spawn's `</dev/null`. No Implementation repository or store file was edited.
+
+The mutation initializes `deferred_probe=''`. At both Probe call sites it replaces
+`reap "$pid"`, only when `[ "${RLOOP_FAKE_RECORD##*/}" = rec-reap-probe ]`, with
+`deferred_probe=$pid; st=0`; otherwise it retains the original reap. At the end of `spawn`, after
+`live+=("$pid")`, a nonempty `deferred_probe` is saved in `local deferred="$deferred_probe"`,
+cleared, and waited for and reaped by `reap "$deferred"`. Thus the pick is spawned before the first
+Probe's wait/reap, and `fable` before the Round's Probe's wait/reap; the latter finishes before the
+remaining Reviewers are spawned. The early verdict read uses status zero for these successful
+fakes. The activation condition does not use the candidate sleep. `mutation.log` in each ordinary
+Run records both deferrals and the subsequent spawns; no other arm recorded an activation.
+
+The full comparison, with complete ordered verdicts retained, was:
+
+| Suite | Executable | Exit | Passed / failed | Seconds |
+|---|---|---|---|---|
+| Unchanged | Correctly reaping | 0 | 33 / 0 | 118.69 |
+| Candidate | Correctly reaping | 0 | 33 / 0 | 120.73 |
+| Unchanged | Deferral-only mutant | 1 | 32 / 1 | 118.51 |
+| Candidate | Same mutant | 1 | 32 / 1 | 120.33 |
+
+Only `CNF-34` failed for the mutant. Its unchanged detail was the `probe-0` `GRANDCHILD` bracket
+against the pick and the `probe-1` `PID` bracket against `fable`; the candidate added only the
+`probe-0` `PID` bracket in that full comparison. Every other item's verdict was byte-identical
+across all four runs, and no other arm of `CNF-34` reported a bracket. This includes the watching
+and output-writing arms. These totals retain the suite's printed qualifications: `CNF-4` was not
+run with `--self-check`, and `CNF-22` is live, by hand.
+
+That apparent isolation did not survive repetition. The ordinary arm was extracted with its
+unchanged helpers and evidence guards, and run twenty times per suite against the same mutant,
+alternating which suite ran first. Counts below are failures of each individual read:
+
+| Earlier Probe / later call / read | Unchanged | Candidate |
+|---|---|---|
+| `probe-0` / pick / `PID` | 0 / 20 | 20 / 20 |
+| `probe-0` / pick / `GRANDCHILD` | 18 / 20 | 18 / 20 |
+| `probe-1` / `fable` / `PID` | 20 / 20 | 20 / 20 |
+| `probe-1` / `fable` / `GRANDCHILD` | 0 / 20 | 2 / 20 |
+
+Both reads against each of `opus`, `astra` and `sol` stayed green throughout. Candidate repetitions
+09 and 11 added `[probe-1: 004-probe-1.env GRANDCHILD … alive when 005-reviewer-1-fable.env started]`;
+their unchanged partners did not. The missing `probe-0` group brackets occurred in unchanged
+repetitions 13 and 14, but candidate repetitions 01 and 14: equal totals conceal different reads.
+For example, candidate 01's pick recorded an empty `GRANDCHILDREN_ALIVE` but the Probe's PID in
+`CALLS_ALIVE`; both Probe pids were present in its completed record. These are guarded reads,
+not missing-evidence passes. The fake's snapshots precede its child creation and sleep, so these
+observations do not establish that the sleep deterministically changes a group read; they do
+refute a claim of reliable isolation. Five targeted repetitions per suite against the correctly
+reaping executable were all green. Every measured ordinary Run exited 0, every fake recorded
+`STDIN=eof`, and neither variant reported a survivor or a missing record. The one-second sleep
+left the sixty-second Probe timeout unchanged; this was not a timeout experiment. Targeted mean
+runtime rose from 2.55 to 4.55 seconds for the mutant and from 2.57 to 4.57 for the correctly
+reaping executable, consistent with sleeping once at each Probe.
+
+Evidence is retained outside the Run Directory at
+`/tmp/rloop-cnf34-probe0-20261003-mt6i_ig6`: `provenance.json`, `mutation.diff`, `candidate.diff`,
+the executable and suite copies, `analysis.json`, and `reads.csv` (each Probe's PID and child
+against each relevant later call). `results/<label>/` holds the command, environment, direct exit
+status and timing in `measurement.json`, complete stdout/stderr and ordered `verdicts`, and
+`work.path` locates the retained fake records. Both suite copies differ from the repository only
+by replacing the final cleanup trap with retention, plus the candidate's local setting.
+To reproduce the full matrix from that evidence directory, give each invocation a fresh label:
+
+```sh
+python3 measure.py run unchanged reference rerun-u-ref
+python3 measure.py run candidate reference rerun-c-ref
+python3 measure.py run unchanged mutant rerun-u-mut
+python3 measure.py run candidate mutant rerun-c-mut
+```
+
+`measure.py` runs the named suite in the foreground with null stdin and records its actual status;
+`target` in place of `run` selects the extracted ordinary arm. `repeat.py` records the repetition
+order; `analyze.py` checks the records and produces the read counts. `trial-u` and `trial-c` are
+excluded setup failures from an unset variable in diagnostic logging, corrected before any full
+or repeated measurement; `trial2-*` are preliminary measurements, also excluded from the tables.
+The candidate is declined under the bead's isolation rule: it exposed the target in this sample,
+but other reads varied, including an added Round Probe group failure. `conformance/run`, the fake
+and `CNF-34` remain unchanged. The current suite still has no demonstrated ordinary `probe-0`
+own-process witness for the deferral alone, and the group half's intermittent silence measured
+here is an additional limit on that same boundary, not a new requirement or a redesign.
 
 ## F18 — `conformance/run` is not newline-safe (deferred 2026-09-27)
 
