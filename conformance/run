@@ -692,13 +692,13 @@ kill_recorded "$rec"
 # the witness is the straggler again: each probe's child polls for that probe's own record —
 # probe-pick.md before the pick, probe-1.md in the Round — and must never find it. One Run per call
 # site, because RLOOP_FAKE_WATCH carries one <role>:<name> pair and both probes run under the role
-# probe: in each Run the other probe's child watches a name that is not its own record, which is
-# why every read here is scoped to the watching probe's tag rather than reading *.seen at large.
+# probe. Boundary evidence uses the watching probe's tag; WATCH_NOT_READY= is arm-wide.
+# watched_nothing's comment owns the scope rationale.
 # Sound rather than racy for the Checkpoint arm's reason: a reap that blocks has SIGKILLed the child
 # before rloop writes the record, so the file exists at no instant the child is alive, while a
 # record written first leaves the SIGTERM-ignoring child the whole --kill-after second to see it.
-# The readiness marker, the fake's WATCH_NOT_READY record of a bounded wait that fell through and
-# the child's own pid after the executable returns are read for that arm's reasons too.
+# The readiness marker, each fake's WATCH_NOT_READY record of a bounded wait that fell through and
+# the watched child's own pid after the executable returns are read for that arm's reasons too.
 for site in probe-0:probe-pick.md probe-1:probe-1.md; do
   ptag="${site%%:*}"; prec="${site#*:}"
   repo="$(new_repo)"; rec="$work/rec-reap-$ptag-watch"

@@ -240,7 +240,9 @@ what makes `DIR-6` `move task.md to rejected-<r>-task.md` there, and the child's
 is what keeps its silence from passing for compliance. Each probe's record starts no call either,
 and `AGT-15`'s `A call is complete only once its process group has been reaped that way` puts it
 after the reaping, so the same straggler witnesses it; `RLOOP_FAKE_WATCH` carries one name, which is
-why the two call sites take a Run each and each Run reads the watching probe's tag alone. What that
+why the two call sites take a Run each. Each Run reads the watching probe's tag for boundary
+evidence, with an arm-wide `WATCH_NOT_READY=` guard; `watched_nothing`'s comment in `conformance/run`
+owns the scope rationale. What that
 straggler establishes is the record and not the read: `AGT-15` has `rloop MUST read the call's
 output, and do anything else that follows the call` come `only after that`, and a child that never
 finds the record witnesses the second of those and not the first. Reading the output leaves no file
