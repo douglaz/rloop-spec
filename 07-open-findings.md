@@ -489,7 +489,7 @@ the Round's accepted work stays uncommitted and the Sequence stops.
 equality, never for quality`. **Open** until a Run on an Implementation carrying the amended
 prompts shows an Implementer, a claude Reviewer and the judge running a long check to completion.
 
-## F17 — A claim about `CNF-24` withdrawn, and the arm no mutant reddens (open 2026-09-26)
+## F17 — A claim about `CNF-24` withdrawn, cleanup witnesses and their limits (open 2026-09-26)
 
 Residuals of `rl-cnf34-step-not-call-nfy`, the change that gave `CNF-34` a witness of the
 Checkpoint boundary, and the claim that change carried and this one withdraws. They had lived only
@@ -511,15 +511,16 @@ than edited out of history so that it is not argued a third time. The Checkpoint
 inside that argument — its boundary is a step and no call, and the Checkpoint-before-reap mutant
 reddens `CNF-34` alone.
 
-*The `manager-0` arm of the own-process loop has no mutant behind it.* Of the mutants built for
-this work, the one that reddens the own-process loop's `implementer-1` arm is the probe started
+*At opening, the `manager-0` arm of the own-process loop had no mutant behind it.* The investigation below
+supersedes this paragraph's own-process and Interference limitations.
+Of the mutants built for this earlier work, the one that reddens the own-process loop's `implementer-1` arm is the probe started
 before the Implementer's group is reaped; the Checkpoint run before that reap reddens the new
 Checkpoint witness alone, since it still waits for the Implementer's own process and leaves
 `CALLS_ALIVE` clean. The `manager-0` arm is the same predicate over a pid that later records do
 carry, so it is live code and not dead, and it is exercised green on every run — but nothing
 demonstrates it red, which is the standard `AGENTS.md` sets when it says *a guard without one is
-decoration*. Those demonstrations leave the arm's interference knob unexercised besides: rloop-bash
-`02c6206`'s Checkpoint compares with `cmp -s` (`bin/rloop:286`), and of `cmp` and `find` `CNF-2`
+decoration*. Those historical demonstrations left the arm's interference knob unexercised besides:
+rloop-bash `02c6206`'s Checkpoint compares with `cmp -s` (`bin/rloop:286`), and of `cmp` and `find` `CNF-2`
 says they `are the suite's own and are not on the executable's PATH`, so that executable sets
 `task.md` aside whether or not the Implementer ticked it — the arm re-run with
 `RLOOP_FAKE_INTERFERENCE` removed gave the same green and the same red, so the flip is the reap
@@ -550,20 +551,20 @@ read is an own-process read of the item as well — `nothing_survived` (`conform
 reads `PID` beside `GRANDCHILD` — and no mutant of either Round reddens that half either, for the
 reason its own comment gives: `Every ancestor is gone by then, so neither can be a zombie`
 (`conformance/run:67-68`). Both own-process brackets come with a green group half for one reason:
-the fake writes `GRANDCHILDREN_ALIVE` (`conformance/fakes/agent:118`) before it spawns the child
-that ignores SIGTERM (`:175`), so a call that starts while the probe is still running finds no
+the fake writes `GRANDCHILDREN_ALIVE` (`conformance/fakes/agent:120`) before it spawns the child
+that ignores SIGTERM (`:177`), so a call that starts while the probe is still running finds no
 `GRANDCHILD=` line in the probe's record and has nothing to report. The group half can be green with
 the group alive, and it is the two halves together that caught these mutants.
 
-*What `CNF-34` still reads at the next call alone.* The Checkpoint after the Implementer and each
-probe's availability record are the step boundaries the item now observes, and each is a boundary
+*The remaining step boundaries before the 2026-10-03 investigation below.* The Checkpoint after
+the Implementer and each probe's availability record are the step boundaries the item now observes, and each is a boundary
 whose files a straggler races (`DIR-6`, `RUN-21`). The boundaries observed only at the call that
 follows are the pick's, where the next step is `RUN-6`'s `copy the Task File to` `task-1.md`; the
 Panel's, where `RUN-7` has `the Checkpoint again` and the judge's record is what the Reviewer row
 reads in its place; and the judge's, where `RUN-7` has `the decision` — and in a Run of one Round no
 later call exists at all, so the judge's own snapshot is read only to keep an unwritten one from
-passing. The same watching straggler would witness each boundary the list names; none is witnessed
-today. That list is of *steps*. `AGT-15`'s clause has another half — the read of the call's own
+passing. A watching straggler was a candidate for each boundary the list names; none was witnessed
+then. That list is of *steps*. `AGT-15`'s clause has another half — the read of the call's own
 output — and the paragraph below settles it at one call site and leaves it unobserved at every
 other.
 
@@ -581,7 +582,7 @@ both of `RUN-21`'s call sites, and `CNF-34` gained a watching straggler at each.
 and the mutant is red. Rebuilt against rloop-bash `18c8807`, gated on `RLOOP_FAKE_WATCH`'s value
 beginning `probe:` — what confines it to the two new Runs, where a gate on the variable merely being
 set would mutate the Checkpoint arm too, whose value is `implementer:rejected-1-task.md`
-(`conformance/run:771`) — and with the wait loop of that executable's `reap` inlined rather than
+(`conformance/run:774`) — and with the wait loop of that executable's `reap` inlined rather than
 reordered so the verdicts still see the status the reaping sets, it gives `[probe-0 watch: the
 probe's child saw probe-pick.md, so its group outlived the call and ran through the record]` and the
 same bracket for `probe-1` and `probe-1.md` as the item's whole detail, with every other verdict
@@ -598,11 +599,11 @@ reading a call's output leaves it no file to find, so a read taken before the re
 after look the same to it. The witness for the read is a straggler that *writes* into the capture
 `DIR-4` has the probe's standard output reach `entire and unmodified` — a line the reader acts on,
 since an inert one changes no verdict — and `CNF-34` gained one Run of it, at the probe before the
-pick (`conformance/run:711-752`). `RUN-22` is what makes the read observable there: it has rloop
+pick (`conformance/run:714-755`). `RUN-22` is what makes the read observable there: it has rloop
 `exit 2 without spawning any agent` on that probe's verdicts, so an executable that derives them
 from bytes the straggler's line has not reached yet calls the pick and runs on. The knob is
 `RLOOP_FAKE_WRITE_STDOUT`, which had only a role and a fixed line and now takes a first-write delay
-and the line with it (`conformance/fakes/agent:65-84`, `:138`, `:169-172`); the row asks for one
+and the line with it (`conformance/fakes/agent:67-86`, `:140`, `:171-174`); the row asks for one
 second and `--kill-after 4`, so an early read is a second short of the line and a reaping one has
 three seconds of the child's writing behind it before it reads.
 
@@ -719,6 +720,177 @@ but other reads varied, including an added Round Probe group failure. `conforman
 and `CNF-34` remain unchanged. The current suite still has no demonstrated ordinary `probe-0`
 own-process witness for the deferral alone, and the group half's intermittent silence measured
 here is an additional limit on that same boundary, not a new requirement or a redesign.
+
+*Remaining boundaries investigated 2026-10-03 (`rl-cnf34-remaining-boundaries-4lq`).*
+This amends `CNF-34` with the watching Runs it lists and a delay in its ordinary Manager Run;
+it leaves the ordinary Probe sleep candidate above declined. The starting Specification was
+`1370638210061870b37a0c07ab86a1abb149d6f2`. The reference resolved from
+`/home/master/p/rloop-bash/result/bin/rloop` to
+`/nix/store/mydjhwg0771w726kcp1gpx71v485kc4s-rloop/bin/rloop`, SHA-256
+`4759d2779b719e8513fba386d2879e9290807ab7ec53383e604bde85cfbcaabd`.
+The neighboring repository was clean at `a110ec2a3e9c4eefa67ced14976e24263d83249f`;
+the packaged body differs from its `bin/rloop` only by a trailing blank line
+(`source-provenance.diff`).
+Every executable below is a scratch copy of that packaged executable, retaining its Bash
+interpreter and wrapper PATH additions for git, coreutils, diffutils and util-linux, including
+`cmp`. Nothing in the Implementation repository or Nix store was edited.
+
+The retained witnesses and scratch mutations are:
+
+- **Pick snapshot (`pick-snapshot.diff`).** Wait for the pick's process and preserve its status,
+  but copy its Task File to `task-1.md` before group cleanup; suppress that copy at its former
+  location. The remaining decision and output read stay after cleanup, and cleanup completes
+  before the Implementer starts. This is ungated and activates in both suite versions. The new
+  Manager watcher reads only `manager-0`; a later Manager's child finding the already existing
+  snapshot is legitimate evidence outside that tag.
+- **Panel Checkpoint (`panel-step.diff`).** Keep each Reviewer's wait and asynchronous group
+  sweep, but move the second Checkpoint immediately before the final group-cleanup barrier,
+  suppressing its original call. Activation requires the Reviewer-child knob, no Reviewer
+  sleep and `--kill-after 1`, conditions met by the ordinary Reviewer arm in both suites and
+  by the new Panel arm. Only `fable` edits the Task File, at `afterPanel`: the first Checkpoint
+  has no Interference to reject. Every Reviewer's watcher is checked against that second
+  Checkpoint's file, which must contain the Reviewer's edit. No sibling's live PID is treated
+  as failure; the later-call check still reads only the judge's record.
+- **Judge decision (`judge.diff`).** Wait for the judge's process, preserving its status, then
+  execute the decision before group cleanup. On *next Round*, cleanup follows the snapshot;
+  on a terminal path it precedes report output and return. Activation is ungated. The new
+  two-Round Run has its first judge rewrite the Task File; only `manager-1` watches `task-2.md`,
+  and the next Implementer's record must exist with both Manager pids absent. It witnesses the
+  decision's next-Round snapshot effect, not the judge's own writing of a Finished File.
+- **Pick's own process (`own.diff`).** In `rec-reap-manager` only, defer the pick's wait and
+  cleanup until immediately after spawning the Implementer. Poll for the real Task File at
+  0.01-second intervals, bounded by 1000 attempts, to avoid advancing on a file the fake has
+  not yet written; use status zero for this successful fake until the real wait. Log the
+  deferral and subsequent spawn in both suite versions. Standard input remains `/dev/null`.
+  The unchanged fake exits too quickly to expose its own PID reliably. The retained
+  `RLOOP_FAKE_PICK_EXIT_DELAY=1`, confined to the ordinary Manager arm, sleeps after writing
+  the pick's files and output, before its exit. It changes no descendant or stdin behavior.
+  The existing own-process assertion then fails beside the child assertion; it is not a
+  child-only failure being counted as evidence about the pick's PID.
+
+The early trials also tried moving the pick's whole decision (`pick.diff`) and withholding the
+Panel's per-Reviewer sweeps (`panel.diff`). Their targeted repetitions were red, but they move
+more work than the retained isolated mutations above, so neither is the basis of the full
+comparison. The ordinary pick deferral without the exit delay was tried first, then compared
+against the delayed fake in alternating order.
+
+Targeted measurements extracted the relevant arms with their actual helpers and evidence guards.
+In the repeated step, own-process and Checkpoint controls every executable Run exited 0;
+a red result below is the assertion, not a failed fake. Each new watching arm was green
+against the reference in 10/10 repetitions. The isolated pick
+snapshot, Panel Checkpoint and judge mutations were red in 10/10 each. Whole-arm mean seconds
+were 1.514 / 0.500 for reference / pick mutant, 1.437 / 0.494 for reference / Panel mutant and
+2.780 / 1.769 for reference / judge mutant. A watcher exits when it sees the forbidden file,
+which explains the shorter failing Runs. The ordinary Manager arm, over 20 alternating
+repetitions per suite with the same deferral mutant, gave:
+
+| Read | Unchanged fake | Delayed fake |
+|---|---|---|
+| Pick's child alive at a later call | 20 / 20 | 20 / 20 |
+| `manager-0` own PID alive at a later call | 0 / 20 | 20 / 20 |
+| Missing evidence or survivor after return | 0 / 20 | 0 / 20 |
+
+Mean runtime was 2.513 seconds unchanged and 3.506 with the delay. The delayed reference was green
+in 5/5 repetitions, mean 3.525 seconds. These observations demonstrate the own-process guard for
+an isolated deferred wait with null stdin, alongside descendant evidence; they do not demonstrate
+an own-process-only failure or change the separate ordinary Probe limitation above.
+
+With the current wrapper, the existing Implementer Checkpoint arm was green in 5/5 repetitions.
+Replacing only `RLOOP_FAKE_INTERFERENCE=1:afterImplementer:editTask` with `-` made it red in 5/5:
+`[checkpoint: no rejected-1-task.md, so the Checkpoint had nothing to witness]`.
+A separate control first required the rejected file after the normal Run, then removed just that
+file before `watched_nothing`; it produced the same sole bracket in 5/5. Whole-arm means were
+1.436, 1.429 and 1.437 seconds respectively. Thus the old missing-`cmp` limitation is historical:
+the edit now causes rejection, and the missing-file guard is demonstrated. This verifies existing
+coverage and adds no suite arm.
+
+The intended new step diagnostics are
+`[pick watch: the Manager's child saw task-1.md, so its group outlived the call and ran through the snapshot]`,
+`[panel fable watch: the Reviewer's child saw rejected-1-task.md, so its group outlived the call and ran through the second Checkpoint]`
+(and the same bracket for `opus`, `astra` and `sol`), and
+`[judge watch: the Manager's child saw task-2.md, so its group outlived the call and ran through the snapshot]`.
+Every Panel bracket names that Reviewer's own watcher; none is a concurrency finding against a
+sibling. The own-process diagnostics contain the recorded PIDs; the full comparison below records
+the actual lines and their distinct meanings.
+
+The full-suite comparisons were:
+
+| Suite | Executable | Exit | Passed / failed | Seconds |
+|---|---|---|---|---|
+| Unchanged | `reference` | 0 | 33 / 0 | 116.61 |
+| Candidate | `reference` | 0 | 33 / 0 | 123.02 |
+| Unchanged | `pick-snapshot` | 0 | 33 / 0 | 116.92 |
+| Candidate | `pick-snapshot` | 1 | 32 / 1 | 122.34 |
+| Unchanged | `panel-step` | 0 | 33 / 0 | 118.57 |
+| Candidate | `panel-step` | 1 | 32 / 1 | 122.88 |
+| Unchanged | `judge` | 0 | 33 / 0 | 117.06 |
+| Candidate | `judge` | 1 | 32 / 1 | 122.66 |
+| Unchanged | `own` | 1 | 32 / 1 | 117.10 |
+| Candidate | `own` | 1 | 32 / 1 | 123.77 |
+
+Every other item's complete ordered verdict was byte-identical across the matrix. These totals
+retain the suite's printed qualifications: `CNF-4` was not run with `--self-check`, and `CNF-22`
+is live, by hand. Mutation logs prove activation in both versions, including the ordinary
+Reviewer arm for `panel-step` and `rec-reap-manager` for `own`; no pre-change pass depended on an
+inert condition. The snapshot, Panel and judge defects were green in the unchanged suite and red
+only at their new watchers in the amended one. The own-process mutant was already red unchanged:
+`[manager: child 1544636 alive when a later call started]`. Amended, its entire detail was
+`[manager: child 1694367 alive when a later call started] [manager: manager-0 1694351 alive when a later call started]`.
+The first bracket remains descendant evidence; only the added second bracket demonstrates the
+existing own-process assertion. No missing evidence, survivor or unrelated bracket appeared.
+The records audited for these arms all carry `STDIN=eof`. In the Panel arm each standard-error
+trace records exactly one rejection, between the Panel and judge, with none at the first
+Checkpoint; the retained rejected file carries the Reviewer's edit.
+
+The reference full pair's observed increase was 6.41 seconds; the targeted means above separate
+the new arms and the pick delay. A direct run of the shipped suite with a `TMPDIR` containing a
+space, tab and newline also reported 33 passed, 0 failed, exit 0, in 125.25 seconds;
+`final-newline/measurement.json` records its command and exact path. This checks the new path
+reads under the same qualifications; it does not amend `RUN-23`.
+
+A further candidate, `judge-late-effect.diff`, moves the group cleanup immediately *before* the
+snapshot inside the early decision instead of after it. The next-Round predicates are still
+evaluated early, but their observable effect is delayed. The new judge arm remains green in
+10/10 repetitions, mean 2.779 seconds. That is a measured residual, not exhaustive decision
+coverage: a snapshot watcher cannot see pure computation, and terminal decisions are not witnessed
+by this arm. Detecting an early internal read whose effects wait would need a timed change to
+decision inputs or an Implementation hook; neither is established by these experiments. The
+next-Round effect is retained without adding such machinery. Polling likewise establishes the
+measured reorderings, which leave a grace interval for observation, not detection of every
+arbitrarily brief inversion. The other output-read limitations already recorded above remain.
+
+Evidence lives outside the Run Directory in
+`/tmp/rloop-cnf34-boundaries-20261003-lw2y_vro`. `provenance.json` identifies the reference;
+`*.diff` records the mutations; the executable copies preserve their wrappers. `unchanged/`
+and `candidate/` hold suite copies whose only harness change replaces the cleanup trap with a
+record of the retained work path. `results/<label>/` contains the command, exit and elapsed time
+in `measurement.json`, complete stdout/stderr, complete ordered `verdicts`, and `work.path`
+pointing to the retained fake records, readiness and observation files and mutation activation logs.
+The original work paths are also recorded in `original-work.path`; the evidence directory keeps
+a copy of each work tree so the records are available together.
+`analysis.json` and `reads.tsv` summarize the individual reads; `manifest.json` hashes the inputs.
+The `trial-*` Runs are preliminary; `rep-*` and `refined-*` are the repetitions above. No trial was
+silently counted as a repeat. `repeat.py`, `repeat-refined.py` and `full.py` record invocation order.
+From that directory, use a fresh result label for each rerun:
+
+```sh
+python3 measure.py unchanged reference rerun-u-ref
+python3 measure.py candidate reference rerun-c-ref
+python3 measure.py unchanged pick-snapshot rerun-u-pick
+python3 measure.py candidate pick-snapshot rerun-c-pick
+python3 measure.py candidate panel-step rerun-c-panel
+python3 measure.py candidate judge rerun-c-judge
+python3 measure.py candidate own rerun-c-own
+python3 measure.py candidate own rerun-own-arm own
+python3 measure.py no-interference reference rerun-without-edit checkpoint
+python3 measure.py missing-rejected reference rerun-missing-file checkpoint
+```
+
+Omitting the final arm name runs the full suite; `pick`, `panel`, `judge`, `own` and `checkpoint`
+select extracted arms. All invocations run in the foreground with null stdin. To reconstruct
+without the scratch files, start from the Specification revision and packaged hash above, apply
+this amendment for the candidate, and use the mutation recipes above; the controls differ only
+by removing the Interference setting or deleting the asserted rejected file before its read.
 
 ## F18 — Newline-containing scratch paths (deferred 2026-09-27; resolved 2026-10-03)
 

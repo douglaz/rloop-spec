@@ -18,6 +18,8 @@
 #   RLOOP_FAKE_RUNS          for a Sequence: pick outcomes per Run, comma-separated (done,done,idle);
 #                            each Run's Rounds are then RLOOP_FAKE_ROUNDS. Any word after ok: in
 #                            RLOOP_FAKE_PICK is valid here (task, other, ...), and fail is fail.
+#   RLOOP_FAKE_PICK_EXIT_DELAY  seconds to wait after the pick has written its files (default 0);
+#                            keeps its own process observable separately from a surviving child
 #   RLOOP_FAKE_SLEEP_<ROLE>  seconds to sleep before acting (ROLE = MANAGER|IMPLEMENTER|REVIEWER|PROBE)
 #   RLOOP_FAKE_SLEEP_ONLY    a Reviewer name: RLOOP_FAKE_SLEEP_REVIEWER is honoured by that Reviewer
 #                            alone, the other three act at once (unset: every Reviewer sleeps)
@@ -314,6 +316,9 @@ case "$role" in
   *)
     echo "fake agent: no RLOOP_ROLE" >&2; status=99; outcome=unknown ;;
 esac
+if [ "$role" = manager ] && [ "$round" = 0 ] && [ "${RLOOP_FAKE_PICK_EXIT_DELAY:-0}" != 0 ]; then
+  sleep "$RLOOP_FAKE_PICK_EXIT_DELAY"
+fi
 echo "fake stderr from $tag" >&2
 [ "$role" = probe ] || echo "$role:$round${reviewer:+:$reviewer}:end:$(now):$outcome" >> "$rec/trace"
 exit "$status"

@@ -196,9 +196,11 @@ a Task File, the Implementer and all four Reviewers succeed and the judge writes
 each Manager fake exiting 0 having spawned a child that ignores SIGTERM: the Run exits 0; no call of
 the Run records any of those children among the children alive when it started, nor the pick's or
 the Implementer's own process among the calls alive when it started; and once the executable has
-returned, neither a fake that spawned one nor any of the children is running. The same Run with the
-Implementer fake spawning that child instead of the Manager's. The same Run with every Reviewer fake
-spawning it: the judge's record — the first call to start once every Reviewer has exited — carries
+returned, neither a fake that spawned one nor any of the children is running. Only in this ordinary
+Manager-spawner Run does the pick wait one second after writing its files before exiting; every
+other Run described in this item omits that delay. The same Run with the
+Implementer fake spawning that child instead of the Manager's. The same
+Run with every Reviewer fake spawning it: the judge's record — the first call to start once every Reviewer has exited — carries
 no Reviewer's child among the children alive when it started and no Reviewer's own process among the
 calls alive when it started. The same Run with both of the Run's probes spawning it: the pick's
 record carries neither the child nor the own process of the probe before the pick, and each of the
@@ -226,6 +228,28 @@ Implementer's and `fable` unavailable and the other three unknown, and the child
 and not running once the executable has returned — so rloop read that probe's output after reaping
 its group and not before. Nor does that Run pass on absent evidence: a line that never reached the
 capture leaves the read nothing to witness and is red.
+
+Further watching Runs establish these step boundaries, each with `--kill-after 1`:
+
+- The pick's child watches `task-1.md` in a one-Round Run.
+- Every Reviewer's child watches `rejected-1-task.md` in a one-Round Run with only the `fable`
+  Reviewer appending to the Task File. The rejected file contains the Reviewer's edit: the
+  Implementer leaves the Task File unchanged, so the first Checkpoint has no edit to reject.
+- The first judge's child watches `task-2.md` in a Run where that judge rewrites the Task File,
+  the next Round runs and its judge finishes done.
+
+Each Run exits 0, the watched file exists, every relevant child recorded readiness before its fake
+exited and none recorded seeing the file. The pick and first judge each have their own record and
+the next Round's Implementer record; neither their own process nor their child appears alive in
+that later record. The Panel has every Reviewer's record and the judge's, which carries neither
+process nor child of any Reviewer. The Run has no `WATCH_NOT_READY=` record, and neither a fake
+that spawned a child nor its child survives. Missing evidence is red, including the recorded pid
+and expected later call. Only the relevant tag's observation counts: a later Manager's child may
+find a snapshot that already exists. These witnesses establish the pick's snapshot, the second
+Checkpoint and the first judge's *next Round* decision through its snapshot effect. They do not
+establish every decision path or detect a decision computed early with all effects deferred until
+after reaping. `F17` records that measured limitation.
+
 *A call that exits 0 is what `AGT-14`'s `At the limit` never reaches, and leaving a check running is
 a habit `07-open-findings.md`'s `F16` records: the child of a healthy Implementer writes into the
 working tree through the whole Panel and the Manager's commit. `CNF-17` reads the same record for
@@ -254,9 +278,13 @@ spawning any agent` — which makes a verdict derived from the wrong bytes a Run
 and goes on. Its window has margin at both ends: the child's first write is a second after its own
 fake exits, which a read before the reaping is well inside, and `--kill-after 4` keeps that child
 alive three seconds past that write, which a read after the reaping falls past, the line having
-reached the capture three seconds before that read. `F17` names the boundaries this item still reads
-at the next call alone.*
-(`AGT-15`, `AGT-16`, `DIR-4`, `DIR-6`, `RUN-21`, `RUN-22`)
+reached the capture three seconds before that read. The pick's exit delay makes its own process
+observable after its Task File exists, without opening standard input or changing its child; `F17`
+records the separate own-process and child measurements. The watching Runs use `RUN-6`'s
+`copy the Task File to` `task-1.md`, `RUN-7`'s `the Checkpoint again`, and `DIR-5`'s `After the pick
+and after every judge call whose verdict is *next Round*` as observable steps. `F17` owns the
+remaining limitations.*
+(`AGT-15`, `AGT-16`, `DIR-4`, `DIR-5`, `DIR-6`, `RUN-6`, `RUN-7`, `RUN-8`, `RUN-11`, `RUN-21`, `RUN-22`)
 
 **CNF-35** With one Round, `--kill-after 1`, the `fable` Reviewer fake sleeping 10 seconds while the
 other three answer at once, and every Reviewer fake spawning a child that ignores SIGTERM: the child

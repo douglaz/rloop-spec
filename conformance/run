@@ -580,8 +580,8 @@ kill_recorded "$rec"
 if [ "$ok" = 1 ]; then verdict CNF-17 ok "timeouts kill the group, the child that ignores SIGTERM included, and the Run goes on or ends as the role says"; else verdict CNF-17 fail "$detail"; fi
 
 # --- CNF-34: a call that exits 0 leaves nothing in its group ------------------------------------
-# Nothing sleeps and nothing times out here: every fake of one role exits 0 having spawned a child
-# that ignores SIGTERM, so only reaping after the call itself can end it (AGT-15). What was alive
+# Every fake of one role exits 0 having spawned a child that ignores SIGTERM,
+# without reaching a timeout, so only reaping after the call itself can end it (AGT-15). What was alive
 # at each call's start is the record's own (GRANDCHILDREN_ALIVE, CALLS_ALIVE), so "gone before the
 # step that follows" is read from the calls that came after, not measured by the suite.
 ok=1; detail=""
@@ -629,8 +629,11 @@ watched_nothing() {
   { [ -n "$gc" ] && ! kill -0 "$gc" 2>/dev/null; } || { ok=0; detail="$detail [$label: $child ${gc:-(unrecorded)} is alive once the executable has returned]"; }
 }
 for spawner in manager implementer; do
+  # The pick writes its Task File before this delay. A missing wait can then start the
+  # Implementer while the pick's own process still lives, with null stdin preserved.
+  pick_exit_delay=0; [ "$spawner" != manager ] || pick_exit_delay=1
   repo="$(new_repo)"; rec="$work/rec-reap-$spawner"
-  e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_GRANDCHILD_IGNORE_TERM="$spawner" run_rloop "$repo" "$rec" --run-dir "$repo/run" --kill-after 1)
+  e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_GRANDCHILD_IGNORE_TERM="$spawner" RLOOP_FAKE_PICK_EXIT_DELAY="$pick_exit_delay" run_rloop "$repo" "$rec" --run-dir "$repo/run" --kill-after 1)
   [ "$e" = 0 ] || { ok=0; detail="$detail [$spawner: exit $e]"; }
   gcs=$(sed -n 's/^GRANDCHILD=//p' "$rec"/*.env 2>/dev/null)
   [ -n "$gcs" ] || { ok=0; detail="$detail [$spawner: no fake recorded a grandchild]"; }
@@ -772,7 +775,53 @@ e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLO
   run_rloop "$repo" "$rec" --run-dir "$repo/run" --kill-after 1)
 watched_nothing checkpoint implementer-1 rejected-1-task.md "the Checkpoint" "the Implementer's child" "the Implementer's fake"
 kill_recorded "$rec"
-if [ "$ok" = 1 ]; then verdict CNF-34 ok "a call that exits 0 leaves neither its own process nor anything in its group, for a Manager call, for the Implementer, for every Reviewer of the Panel read from the judge's record and for both probes read from the call that follows each, and the group is gone before the step that is no call: the Implementer's before the Checkpoint that follows it, and each probe's before rloop writes that probe's availability record — and before rloop reads that probe's output, a straggler's usage line reaching the verdicts and refusing the Run"; else verdict CNF-34 fail "$detail"; fi
+# --- remaining steps: the pick's first snapshot, the Panel's Checkpoint and a judge's
+# next-Round decision, witnessed through its snapshot. This does not observe a decision
+# computed early whose effects all wait until after reaping, or a terminal decision.
+# Only the relevant tag's observation counts: a later Manager may
+# legitimately find a snapshot that already exists when its child starts watching.
+for boundary in pick judge; do
+  if [ "$boundary" = pick ]; then
+    tag=manager-0; name=task-1.md
+    rounds="impl=ok;panel=all;judge=done"
+  else
+    tag=manager-1; name=task-2.md
+    rounds="impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=done"
+  fi
+  repo="$(new_repo)"; rec="$work/rec-reap-$boundary-watch"
+  e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="$rounds" \
+    RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=manager RLOOP_FAKE_WATCH="manager:$name" \
+    run_rloop "$repo" "$rec" --run-dir "$repo/run" --kill-after 1)
+  watched_nothing "$boundary watch" "$tag" "$name" "the snapshot" "the Manager's child" "a Manager fake"
+  record_of "$boundary watch" "$tag"; manager_env="$found"
+  next_round=1; [ "$boundary" = pick ] || next_round=2
+  record_of "$boundary watch" "implementer-$next_round"
+  gone_by "$boundary watch" "$found" "$manager_env"
+  nothing_survived "$boundary watch"
+  kill_recorded "$rec"
+done
+# Only the fable Reviewer edits task.md; the first Checkpoint has no Interference to reject.
+# Every Reviewer's child watches for the second Checkpoint, independently of live siblings.
+# The file must contain the Reviewer's edit; its existence alone could be a rejection
+# from the first Checkpoint. Readiness, occurrence and cleanup use the same guarded
+# watcher as the Implementer and Probe arms. No group is judged from a sibling's record.
+repo="$(new_repo)"; rec="$work/rec-reap-panel-watch"
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" \
+  RLOOP_FAKE_INTERFERENCE=1:afterPanel:editTask \
+  RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=reviewer RLOOP_FAKE_WATCH=reviewer:rejected-1-task.md \
+  run_rloop "$repo" "$rec" --run-dir "$repo/run" --kill-after 1)
+panel_records "panel watch"
+record_of "panel watch" manager-1; judge_env="$found"
+grep -qxF -- '- [x] ticked by the reviewer' "$repo/run/rejected-1-task.md" 2>/dev/null \
+  || { ok=0; detail="$detail [panel watch: rejected-1-task.md has no Reviewer's edit]"; }
+for rv in fable opus astra sol; do
+  watched_nothing "panel $rv watch" "reviewer-1-$rv" rejected-1-task.md "the second Checkpoint" "the Reviewer's child" "a Reviewer fake"
+  record_of "panel $rv watch" "reviewer-1-$rv"
+  gone_by "panel $rv watch" "$judge_env" "$found"
+done
+nothing_survived "panel watch"
+kill_recorded "$rec"
+if [ "$ok" = 1 ]; then verdict CNF-34 ok "a call that exits 0 leaves neither its own process nor anything in its group, for a Manager call, for the Implementer, for every Reviewer of the Panel read from the judge's record and for both probes read from the call that follows each, and the group is gone before the step that is no call: the Implementer's before the Checkpoint that follows it, and each probe's before rloop writes that probe's availability record — and before rloop reads that probe's output, a straggler's usage line reaching the verdicts and refusing the Run; the pick's group before task-1.md, every Reviewer's before the second Checkpoint, and the first judge's before a next-Round decision produces task-2.md"; else verdict CNF-34 fail "$detail"; fi
 
 # --- CNF-35: each Reviewer's group is reaped as that Reviewer exits, on a grace of its own -------
 # Both rows are about when a group goes, not about what had gone by the next call, so neither reads a
