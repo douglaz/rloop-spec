@@ -29,7 +29,21 @@ export -n RLOOP_FAKE_PICK RLOOP_FAKE_ROUNDS RLOOP_FAKE_INTERFERENCE RLOOP_FAKE_R
 
 source "$here/scenario-lib.sh"
 restrict_path
-spawn_count() { ls "$1"/*.argv 2>/dev/null | wc -l | tr -d ' '; }
+# Expand quoted globs at the call site; keep each matching path as one array element.
+# Do not enable nullglob globally: other checks use an unmatched pattern to fail a required read.
+# Bash's glob order preserves the record-prefix and Sequence ordering formerly read from ls.
+matching_paths() { # matching_paths <expanded paths...>: fills paths, ignoring unmatched globs
+  local path
+  paths=()
+  for path in "$@"; do [ -e "$path" ] && paths+=("$path"); done
+  return 0
+}
+path_count() {
+  local paths=()
+  matching_paths "$@"
+  echo "${#paths[@]}"
+}
+spawn_count() { path_count "$1"/*.argv; }
 # A recorded argument list is NUL-separated, and one argument can hold newlines, so it is read
 # argument by argument — the idiom check_call reads a prompt argument with — and never flattened:
 # a string equal to a line inside an argument is not an argument of that record.
@@ -123,11 +137,11 @@ done
 # --max-runs 08 is eight: one pick when the first goes idle, eight when every pick ends done.
 rec="$work/rec-usage"; rm -rf "$rec"
 e=$(RLOOP_FAKE_RUNS=idle run_rloop "$repo" "$rec" --auto --max-runs 08)
-picks=$(ls "$rec"/*-manager-0.argv 2>/dev/null | wc -l | tr -d ' ')
+picks=$(path_count "$rec"/*-manager-0.argv)
 [ "$e" = 0 ] && [ "$picks" = 1 ] || { ok=0; detail="$detail [--auto --max-runs 08, idle -> exit $e, $picks picks]"; }
 rec="$work/rec-usage"; rm -rf "$rec"
 e=$(RLOOP_FAKE_RUNS="done,done,done,done,done,done,done,done,done" run_rloop "$repo" "$rec" --auto --max-runs 08)
-picks=$(ls "$rec"/*-manager-0.argv 2>/dev/null | wc -l | tr -d ' ')
+picks=$(path_count "$rec"/*-manager-0.argv)
 [ "$e" = 2 ] && [ "$picks" = 8 ] || { ok=0; detail="$detail [--auto --max-runs 08, nine done -> exit $e, $picks picks]"; }
 if [ "$ok" = 1 ]; then verdict CNF-5 ok "usage errors exit 2 and spawn nothing; --version/--help exit 0; --max-runs 08 is eight"; else verdict CNF-5 fail "$detail"; fi
 
@@ -145,10 +159,10 @@ for d in "$repo/existing" "$repo/nonempty" "$repo/no/such/parent/run"; do
   if [ "$e" != 2 ] || [ "$(spawn_count "$rec")" != 0 ]; then ok=0; detail="$detail [$d -> exit $e]"; fi
 done
 rec="$work/rec-dir"; rm -rf "$rec"
-before=$(find "$repo" -mindepth 1 -type d -not -path '*/.git*' | sort)
+find "$repo" -mindepth 1 -type d -not -path '*/.git*' -print0 | sort -z > "$work/before-dirs"
 e=$(RLOOP_FAKE_PICK=ok:done run_rloop "$repo" "$rec" --run-dir "$repo/fresh")
-after=$(find "$repo" -mindepth 1 -type d -not -path '*/.git*' -not -path "$repo/fresh*" | sort)
-if [ ! -d "$repo/fresh" ] || [ "$before" != "$after" ]; then ok=0; detail="$detail [fresh: exit $e, dir $([ -d "$repo/fresh" ] && echo present || echo missing)]"; fi
+find "$repo" -mindepth 1 -type d -not -path '*/.git*' -not -path "$repo/fresh*" -print0 | sort -z > "$work/after-dirs"
+if [ ! -d "$repo/fresh" ] || ! cmp -s "$work/before-dirs" "$work/after-dirs"; then ok=0; detail="$detail [fresh: exit $e, dir $([ -d "$repo/fresh" ] && echo present || echo missing)]"; fi
 if [ "$ok" = 1 ]; then verdict CNF-7 ok "existing or parentless run dir refused; fresh one created"; else verdict CNF-7 fail "$detail"; fi
 
 # --- CNF-8: the default Run Directory under a path holding a space and a tab (RUN-23) ----------------
@@ -200,8 +214,11 @@ if [ "$ok" = 1 ]; then verdict CNF-9 ok "exactly DIR-4's names; outputs captured
 
 # --- CNF-10: the environment contract ---------------------------------------------------------------
 ok=1; detail=""
-check_env() { # check_env <env file> <ROLE> <ROUND> <REVIEWER or <unset>>
-  local f="$1"
+check_env() { # check_env <record tag> <ROLE> <ROUND> <REVIEWER or <unset>>
+  local paths=() f
+  matching_paths "$rec"/*-"$1".env
+  [ "${#paths[@]}" = 1 ] || { ok=0; detail="$detail [$1: ${#paths[@]} env records, not one]"; return; }
+  f="${paths[0]}"
   grep -Fqx "ROLE=$2" "$f" || { ok=0; detail="$detail [$(basename "$f"): ROLE]"; }
   grep -Fqx "ROUND=$3" "$f" || { ok=0; detail="$detail [$(basename "$f"): ROUND]"; }
   grep -Fqx "RUN=1" "$f" || { ok=0; detail="$detail [$(basename "$f"): RUN]"; }
@@ -210,10 +227,10 @@ check_env() { # check_env <env file> <ROLE> <ROUND> <REVIEWER or <unset>>
   grep -Fqx "CWD=$repo" "$f" || { ok=0; detail="$detail [$(basename "$f"): CWD]"; }
   grep -Fqx "STDIN=eof" "$f" || { ok=0; detail="$detail [$(basename "$f"): STDIN]"; }
 }
-check_env "$(ls "$rec"/*-manager-0.env)" manager 0 "<unset>"
-check_env "$(ls "$rec"/*-implementer-1.env)" implementer 1 "<unset>"
-check_env "$(ls "$rec"/*-manager-1.env)" manager 1 "<unset>"
-for r in fable opus astra sol; do check_env "$(ls "$rec"/*-reviewer-2-$r.env)" reviewer 2 "$r"; done
+check_env "manager-0" manager 0 "<unset>"
+check_env "implementer-1" implementer 1 "<unset>"
+check_env "manager-1" manager 1 "<unset>"
+for r in fable opus astra sol; do check_env "reviewer-2-$r" reviewer 2 "$r"; done
 if [ "$ok" = 1 ]; then verdict CNF-10 ok "RLOOP_* variables, cwd and closed stdin for every role"; else verdict CNF-10 fail "$detail"; fi
 
 # --- CNF-11 / CNF-12: argv and prompts ---------------------------------------------------------------
@@ -523,7 +540,7 @@ for r in opus astra sol; do [ "$(cat "$repo/run/feedback-1-$r.md" 2>/dev/null)" 
 grep -q '^manager:1:start:' "$rec/trace" 2>/dev/null || { ok=0; detail="$detail [no judge after reviewer timeout]"; }
 gc=$(sed -n 's/^GRANDCHILD=//p' "$rec"/*-reviewer-1-fable.env 2>/dev/null)
 [ -n "$gc" ] || { ok=0; detail="$detail [the slow reviewer recorded no grandchild]"; }
-judge_env=$(ls "$rec"/*-manager-1.env 2>/dev/null | head -1)
+matching_paths "$rec"/*-manager-1.env; judge_env="${paths[0]-}"
 if [ -z "$judge_env" ] || ! grep -q '^GRANDCHILDREN_ALIVE=' "$judge_env"; then ok=0; detail="$detail [the judge's record has no GRANDCHILDREN_ALIVE line]"
 elif [ -n "$gc" ] && pid_in "$gc" "$(sed -n 's/^GRANDCHILDREN_ALIVE=//p' "$judge_env")"; then ok=0; detail="$detail [grandchild $gc alive when the judge started]"; fi
 [ -n "$gc" ] && kill -0 "$gc" 2>/dev/null && { ok=0; detail="$detail [grandchild $gc survived the Run]"; }
@@ -571,7 +588,8 @@ ok=1; detail=""
 # record_of <label> <tag>: sets `found` to the one .env record of that tag, and leaves it empty
 # and the item red when there is none — every read below needs its record.
 record_of() {
-  found=$(ls "$rec"/*-"$2".env 2>/dev/null | head -1)
+  local paths=()
+  matching_paths "$rec"/*-"$2".env; found="${paths[0]-}"
   [ -n "$found" ] || { ok=0; detail="$detail [$1: no record of $2]"; }
 }
 # gone_by <label> <later record> <earlier record>: neither the earlier call's own process nor its
@@ -626,7 +644,7 @@ for spawner in manager implementer; do
   # owns the reason. The judge's line is read too: an unwritten snapshot is a red item, not a
   # vacuous pass.
   calls=$(sed -n 's/^CALLS_ALIVE=//p' "$rec"/*.env 2>/dev/null | tr '\n' ' ')
-  judge_env=$(ls "$rec"/*-manager-1.env 2>/dev/null | head -1)
+  matching_paths "$rec"/*-manager-1.env; judge_env="${paths[0]-}"
   [ -n "$judge_env" ] && grep -q '^CALLS_ALIVE=' "$judge_env" || { ok=0; detail="$detail [$spawner: the judge's record has no CALLS_ALIVE line]"; }
   for own_tag in manager-0 implementer-1; do
     p=$(sed -n 's/^PID=//p' "$rec"/*-$own_tag.env 2>/dev/null)
@@ -967,10 +985,10 @@ if [ "$ok" = 1 ]; then verdict CNF-19 ok "only read-only git subcommands; HEAD a
 ok=1; detail=""
 repo="$(new_repo)"; rec="$work/rec-seq1"
 e=$(RLOOP_FAKE_RUNS="done,done,idle" run_rloop "$repo" "$rec" --auto "drain it")
-dirs=$(ls -d "$repo"/.rloop/runs/*/ 2>/dev/null | wc -l)
+matching_paths "$repo"/.rloop/runs/*/; dirs="${#paths[@]}"
 [ "$e" = 0 ] && [ "$dirs" = 3 ] || { ok=0; detail="$detail [done,done,idle: exit $e, $dirs dirs]"; }
 expected_out=""
-i=0; for d in "$repo"/.rloop/runs/*/; do [ -d "$d" ] || continue; i=$((i + 1)); expected_out="$expected_out== run $i ==
+i=0; for d in ${paths[@]+"${paths[@]}"}; do i=$((i + 1)); expected_out="$expected_out== run $i ==
 $(cat "$d/finished.md")
 "; done
 [ "$(cat "$rec/stdout")" = "$(printf '%s' "$expected_out")" ] || { ok=0; detail="$detail [stdout format]"; }
@@ -979,10 +997,10 @@ sids=$(for f in "$rec"/*-manager-0.argv; do tr '\0' '\n' < "$f" | grep -A1 -x --
 for f in "$rec"/*-manager-0.argv; do tr '\0' '\n' < "$f" | grep -q 'drain it' || { ok=0; detail="$detail [instruction missing in a pick]"; }; done
 repo="$(new_repo)"; rec="$work/rec-seq2"
 e=$(RLOOP_FAKE_RUNS="done,blocked,idle" run_rloop "$repo" "$rec" --auto)
-[ "$e" = 1 ] && [ "$(ls "$rec"/*-manager-0.argv | wc -l)" = 2 ] || { ok=0; detail="$detail [done,blocked: exit $e, $(ls "$rec"/*-manager-0.argv | wc -l) picks]"; }
+[ "$e" = 1 ] && [ "$(path_count "$rec"/*-manager-0.argv)" = 2 ] || { ok=0; detail="$detail [done,blocked: exit $e, $(path_count "$rec"/*-manager-0.argv) picks]"; }
 repo="$(new_repo)"; rec="$work/rec-seq3"
 e=$(RLOOP_FAKE_RUNS="done,done,done,done,done" run_rloop "$repo" "$rec" --auto --max-runs 3)
-[ "$e" = 2 ] && [ "$(ls "$rec"/*-manager-0.argv | wc -l)" = 3 ] || { ok=0; detail="$detail [max-runs 3: exit $e, $(ls "$rec"/*-manager-0.argv | wc -l) picks]"; }
+[ "$e" = 2 ] && [ "$(path_count "$rec"/*-manager-0.argv)" = 3 ] || { ok=0; detail="$detail [max-runs 3: exit $e, $(path_count "$rec"/*-manager-0.argv) picks]"; }
 repo="$(new_repo)"; rec="$work/rec-seq4"
 e=$(RLOOP_FAKE_RUNS="done,done,fail" run_rloop "$repo" "$rec" --auto)
 [ "$e" = 2 ] && [ "$(grep -c '^== run' "$rec/stdout")" = 2 ] || { ok=0; detail="$detail [done,done,fail: exit $e, $(grep -c '^== run' "$rec/stdout") run headers on stdout]"; }
@@ -993,9 +1011,9 @@ for shape in "done,other:" "done,task:impl=ok;panel=all;judge=idle"; do
   runs="${shape%%:*}"; rounds="${shape#*:}"
   repo="$(new_repo)"; rec="$work/rec-seq-2-${runs#done,}"
   e=$(RLOOP_FAKE_RUNS="$runs" RLOOP_FAKE_ROUNDS="$rounds" run_rloop "$repo" "$rec" --auto)
-  dirs=$(ls -d "$repo"/.rloop/runs/*/ 2>/dev/null | sort)
-  run1="$(echo "$dirs" | sed -n 1p)"; run2="$(echo "$dirs" | sed -n 2p)"
-  [ "$e" = 2 ] && [ "$(echo "$dirs" | wc -l)" = 2 ] && [ -f "$run2/finished.md" ] || { ok=0; detail="$detail [$runs: exit $e, $(echo "$dirs" | wc -l) dirs, Run 2 finished.md $([ -f "$run2/finished.md" ] && echo present || echo absent)]"; }
+  matching_paths "$repo"/.rloop/runs/*/; dirs="${#paths[@]}"
+  run1="${paths[0]-}"; run2="${paths[1]-}"
+  [ "$e" = 2 ] && [ "$dirs" = 2 ] && [ -f "$run2/finished.md" ] || { ok=0; detail="$detail [$runs: exit $e, $dirs dirs, Run 2 finished.md $([ -f "$run2/finished.md" ] && echo present || echo absent)]"; }
   { echo "== run 1 =="; cat "$run1/finished.md"; } > "$rec/expected-stdout"
   cmp -s "$rec/stdout" "$rec/expected-stdout" && [ -s "$rec/stderr" ] || { ok=0; detail="$detail [$runs: stdout is not Run 1's block alone, or stderr empty]"; }
 done
@@ -1005,7 +1023,7 @@ if [ "$ok" = 1 ]; then verdict CNF-20 ok "Sequence: idle ends 0, blocked ends 1,
 ok=1; detail=""
 repo="$(new_repo)"; rec="$work/rec-clean"
 e=$(RLOOP_FAKE_RUNS="done,done,idle" RLOOP_FAKE_DIRTY_AT_DONE=1 run_rloop "$repo" "$rec" --auto)
-[ "$e" = 2 ] && [ "$(ls "$rec"/*-manager-0.argv | wc -l)" = 1 ] || { ok=0; detail="$detail [dirty between runs: exit $e, $(ls "$rec"/*-manager-0.argv | wc -l) picks]"; }
+[ "$e" = 2 ] && [ "$(path_count "$rec"/*-manager-0.argv)" = 1 ] || { ok=0; detail="$detail [dirty between runs: exit $e, $(path_count "$rec"/*-manager-0.argv) picks]"; }
 repo="$(new_repo)"; rec="$work/rec-clean2"
 e=$(RLOOP_FAKE_PICK=ok:done RLOOP_FAKE_DIRTY_AT_DONE=1 run_rloop "$repo" "$rec" --run-dir "$repo/run")
 [ "$e" = 0 ] && [ -s "$rec/stderr" ] || { ok=0; detail="$detail [lone dirty done: exit $e]"; }
@@ -1019,11 +1037,17 @@ e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=rewrite|i
 # The probe is trace-invisible by design (AGT-18), so order is read from the record's NNN- prefix.
 # Prints -1 when nothing matched; every caller must reject that explicitly, because -1 satisfies
 # `-1 -lt <anything>` and a missing spawn would otherwise pass an ordering test.
-seq_of() { local f; f=$(ls "$rec"/*-"$1".argv 2>/dev/null | head -1); if [ -z "$f" ]; then echo -1; return; fi; f=$(basename "$f"); echo "${f%%-*}"; }
+seq_of() {
+  local paths=() f
+  matching_paths "$rec"/*-"$1".argv; f="${paths[0]-}"
+  if [ -z "$f" ]; then echo -1; return; fi
+  f="${f##*/}"; echo "${f%%-*}"
+}
 present() { [ "$2" != -1 ] || { ok=0; detail="$detail [$1 never spawned]"; return 1; }; }
 # AGT-12 and AGT-13, which CNF-24 cites: the probe's environment, working directory and closed stdin.
 check_probe_env() { # check_probe_env <record tag> <RLOOP_ROUND> <label>
-  local ef; ef=$(ls "$rec"/*-"$1".env 2>/dev/null | head -1)
+  local paths=() ef
+  matching_paths "$rec"/*-"$1".env; ef="${paths[0]-}"
   if [ -z "$ef" ]; then ok=0; detail="$detail [$3: no probe env recorded]"; return; fi
   grep -Fqx "ROLE=probe" "$ef"   || { ok=0; detail="$detail [$3: probe ROLE]"; }
   grep -Fqx "ROUND=$2" "$ef"     || { ok=0; detail="$detail [$3: probe ROUND]"; }
@@ -1032,7 +1056,7 @@ check_probe_env() { # check_probe_env <record tag> <RLOOP_ROUND> <label>
 }
 # byte for byte, not merely present: the fake's `clear` shape writes exactly this line
 clear_bytes() { printf 'Current week (all models): 67%% used · resets Sep 24, 3pm (UTC)\n'; }
-n=$(ls "$rec"/*-probe-0.argv 2>/dev/null | wc -l)
+n=$(path_count "$rec"/*-probe-0.argv)
 if [ "$n" = 1 ]; then
   p=$(seq_of probe-0); m=$(seq_of manager-0)
   present "the pick" "$m" && { [ "$p" -lt "$m" ] || { ok=0; detail="$detail [the pick's probe not before the pick]"; }; }
@@ -1041,7 +1065,7 @@ else ok=0; detail="$detail [the pick: $n probe calls]"; fi
 [ -f "$repo/run/probe-pick.err" ] || { ok=0; detail="$detail [the pick: probe-pick.err missing]"; }
 clear_bytes | cmp -s - "$repo/run/probe-pick.out" || { ok=0; detail="$detail [the pick: probe-pick.out is not the probe's bytes]"; }
 for r in 1 2; do
-  n=$(ls "$rec"/*-probe-"$r".argv 2>/dev/null | wc -l)
+  n=$(path_count "$rec"/*-probe-"$r".argv)
   [ "$n" = 1 ] || { ok=0; detail="$detail [round $r: $n probe calls]"; continue; }
   p=$(seq_of "probe-$r"); i=$(seq_of "implementer-$r")
   present "round $r implementer" "$i" && present "round $r probe" "$p" &&
@@ -1057,7 +1081,7 @@ for r in 1 2; do
 done
 ls "$repo/run"/probe-0.* >/dev/null 2>&1 && { ok=0; detail="$detail [a probe-0.* file: the pick's record is probe-pick.*]"; }
 for tag in probe-0 probe-1 probe-2; do
-  f=$(ls "$rec"/*-$tag.argv 2>/dev/null | head -1)
+  matching_paths "$rec"/*-"$tag".argv; f="${paths[0]-}"
   [ -n "$f" ] || { ok=0; detail="$detail [$tag never spawned]"; continue; }
   tr '\0' '\n' < "$f" | cmp -s - "$here/fixtures/argv/AGT-18.txt" || { ok=0; detail="$detail [$tag argv is not AGT-18's fixture]"; }
 done
@@ -1136,7 +1160,7 @@ for shape in fable both; do
   [ -f "$repo/run/finished.md" ] || { ok=0; detail="$detail [$shape: no Finished File]"; }
   opus_verdict=unknown; [ "$shape" = both ] && opus_verdict=unavailable
   record_is "$repo/run/probe-1.md" "$shape" unknown unknown unavailable "$opus_verdict" unknown unknown
-  jf=$(ls "$rec"/*-manager-1.argv 2>/dev/null | head -1)
+  matching_paths "$rec"/*-manager-1.argv; jf="${paths[0]-}"
   [ -n "$jf" ] || { ok=0; detail="$detail [$shape: judge not called]"; }
   for rv in fable opus astra sol; do
     if [ "$rv" = fable ] || { [ "$shape" = both ] && [ "$rv" = opus ]; }; then
@@ -1171,7 +1195,7 @@ refused() { # refused <label>: the Run in $repo, recorded in $rec, was refused a
   local n
   [ "$e" = 2 ] || { ok=0; detail="$detail [$1: exit $e]"; }
   n=$(agents_spawned); [ "$n" = 0 ] || { ok=0; detail="$detail [$1: $n agent calls recorded]"; }
-  [ "$(ls "$rec"/*-probe-0.argv 2>/dev/null | wc -l)" = 1 ] || { ok=0; detail="$detail [$1: the probe before the pick did not run once]"; }
+  [ "$(path_count "$rec"/*-probe-0.argv)" = 1 ] || { ok=0; detail="$detail [$1: the probe before the pick did not run once]"; }
   [ -s "$rec/stdout" ] && { ok=0; detail="$detail [$1: standard output is not empty]"; }
   [ "$(ls "$repo/run" 2>/dev/null | LC_ALL=C sort | tr '\n' ' ')" = "probe-pick.err probe-pick.md probe-pick.out " ] \
     || { ok=0; detail="$detail [$1: the Run Directory holds $(ls "$repo/run" 2>/dev/null | tr '\n' ' ')]"; }

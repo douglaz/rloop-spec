@@ -19,7 +19,7 @@ in its sentence and is checked like any other.
 
 Both sides pass through `spec_text.norm`, and each cited line first loses its indentation
 and one leading comment marker, so a comment sentence that wraps across two `# ` lines --
-`conformance/run:53-54` is the case -- still reads as one phrase.
+`conformance/run:67-68` is the case -- still reads as one phrase.
 
 Tiers (`ADR-0007`). An unanchored citation is *advisory*: it is evidence the number
 drifted, never proof, since prose may describe lines rather than quote them, and a gate

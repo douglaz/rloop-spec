@@ -12,8 +12,7 @@ executable and exit 0 only if every one passed, printing each item's identifier 
 needs `bash`, `git`, GNU coreutils, `grep`, `sed`, `awk`, `cmp` (diffutils) and `find` (findutils)
 on `PATH` and nothing else — no Lean, no Python, no network — so that an Implementation repository
 in any language runs it from the submodule. `TMPDIR` is where it makes its scratch tree, and the
-suite MUST expand every path it reads without splitting it on a space or a tab. A newline in it is
-not supported; `07-open-findings.md` records why.
+suite MUST expand every path it reads without splitting it on whitespace.
 (`00-overview.md`)
 
 **CNF-2** The suite puts fake `claude` and `codex` executables first on `PATH`. A fake reads

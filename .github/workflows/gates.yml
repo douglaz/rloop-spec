@@ -75,10 +75,10 @@ jobs:
           python3 tools/check_line_citations.py > "$tmp/clean" \
             || { echo "::error::line-citation gate red unmutated"; exit 1; }
           cat "$tmp/clean"
-          grep -qF 'conformance/run:32  by `spawn_count`' "$tmp/clean" \
-            || { echo "::error::line-citation gate did not anchor conformance/run:32 unmutated"; exit 1; }
+          grep -qF 'conformance/run:46  by `spawn_count`' "$tmp/clean" \
+            || { echo "::error::line-citation gate did not anchor conformance/run:46 unmutated"; exit 1; }
           # A line past the end of conformance/run: the cited line does not exist, so this blocks.
-          sed -i 's|`conformance/run:32`|`conformance/run:99999`|' 07-open-findings.md
+          sed -i 's|`conformance/run:46`|`conformance/run:99999`|' 07-open-findings.md
           st=0; python3 tools/check_line_citations.py > "$tmp/out" 2>&1 || st=$?
           cat "$tmp/out"
           [ "$st" != 0 ] || { echo "::error::line-citation gate passed a range that cannot exist"; exit 1; }

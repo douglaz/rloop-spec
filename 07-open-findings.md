@@ -546,10 +546,10 @@ probe before the pick, with that one probe call's standard input left open — a
 `[probe-0: 001-probe-0.env PID … alive when 002-manager-0.env started]` beside a green group half,
 as the item's whole detail and with no other item's verdict moved. `manager-0`, the arm above, is
 then the only own-process read at a call boundary that no mutant reddens. The `survived the Run`
-read is an own-process read of the item as well — `nothing_survived` (`conformance/run:52-64`)
+read is an own-process read of the item as well — `nothing_survived` (`conformance/run:66-78`)
 reads `PID` beside `GRANDCHILD` — and no mutant of either Round reddens that half either, for the
 reason its own comment gives: `Every ancestor is gone by then, so neither can be a zombie`
-(`conformance/run:53-54`). Both own-process brackets come with a green group half for one reason:
+(`conformance/run:67-68`). Both own-process brackets come with a green group half for one reason:
 the fake writes `GRANDCHILDREN_ALIVE` (`conformance/fakes/agent:118`) before it spawns the child
 that ignores SIGTERM (`:175`), so a call that starts while the probe is still running finds no
 `GRANDCHILD=` line in the probe's record and has nothing to report. The group half can be green with
@@ -581,7 +581,7 @@ both of `RUN-21`'s call sites, and `CNF-34` gained a watching straggler at each.
 and the mutant is red. Rebuilt against rloop-bash `18c8807`, gated on `RLOOP_FAKE_WATCH`'s value
 beginning `probe:` — what confines it to the two new Runs, where a gate on the variable merely being
 set would mutate the Checkpoint arm too, whose value is `implementer:rejected-1-task.md`
-(`conformance/run:753`) — and with the wait loop of that executable's `reap` inlined rather than
+(`conformance/run:771`) — and with the wait loop of that executable's `reap` inlined rather than
 reordered so the verdicts still see the status the reaping sets, it gives `[probe-0 watch: the
 probe's child saw probe-pick.md, so its group outlived the call and ran through the record]` and the
 same bracket for `probe-1` and `probe-1.md` as the item's whole detail, with every other verdict
@@ -598,7 +598,7 @@ reading a call's output leaves it no file to find, so a read taken before the re
 after look the same to it. The witness for the read is a straggler that *writes* into the capture
 `DIR-4` has the probe's standard output reach `entire and unmodified` — a line the reader acts on,
 since an inert one changes no verdict — and `CNF-34` gained one Run of it, at the probe before the
-pick (`conformance/run:693-734`). `RUN-22` is what makes the read observable there: it has rloop
+pick (`conformance/run:711-752`). `RUN-22` is what makes the read observable there: it has rloop
 `exit 2 without spawning any agent` on that probe's verdicts, so an executable that derives them
 from bytes the straggler's line has not reached yet calls the pick and runs on. The knob is
 `RLOOP_FAKE_WRITE_STDOUT`, which had only a role and a fixed line and now takes a first-write delay
@@ -720,26 +720,128 @@ and `CNF-34` remain unchanged. The current suite still has no demonstrated ordin
 own-process witness for the deferral alone, and the group half's intermittent silence measured
 here is an additional limit on that same boundary, not a new requirement or a redesign.
 
-## F18 — `conformance/run` is not newline-safe (deferred 2026-09-27)
+## F18 — Newline-containing scratch paths (deferred 2026-09-27; resolved 2026-10-03)
 
-A newline is whitespace, and two of the suite's line-delimited path reads do not survive one.
-`record_of` (`conformance/run:571-576`) selects a record with `ls` into `head -1`, which truncates
-the path at the newline. The prefix that survives is non-empty, so `record_of`'s own guard never
-fires and no run of the suite prints that it has no record of the tag; the truncated path travels on
-to the reads that open it, and they report the records they cannot find as unwritten. Measured under
-`TMPDIR=$'/tmp/rv-nl\ndir'`, `CNF-34`'s detail reads `[probe-0: rv-nl recorded no PID]` and three
-further brackets, each naming the truncated prefix in place of a record. `spawn_count`
-(`conformance/run:32`) counts `.argv` files with `ls` into `wc -l` and counted one file as two. A
-space and a tab are safe in both, because neither terminates a line. The choice was to put `CNF-1`'s
-whitespace obligation on how the suite reads a path — the suite `MUST expand every path it reads
-without splitting it on a space or a tab` (`06-conformance.md`) — and to exclude a newline there
-rather than convert the suite: the rest of that class is about 25 reads inside the artifact every
-Implementation is judged by, each one a chance to turn a red row green or a green row red, for a
-`TMPDIR` shape no user is known to want. Settled by Consultation, two advisers agreeing
-independently. `rl-suite-newline-paths-deferred-mzc` holds the measurements, the sites and what a
-conversion would have to demonstrate. `3744925`'s commit message carries the same wrong symptom this
-finding carried as first written — that the truncation reports no record of a tag that has a
-newline — and history is not rewritten here, so this paragraph is the correction.
+The original defect was in line-delimited path reads. At `3744925`, selecting an environment
+record with `ls` into `head -1` truncated its path at the newline. The surviving prefix was
+non-empty, so the missing-record guard did not fire: the downstream reads reported unwritten
+records instead. Under `TMPDIR=$'/tmp/rv-nl\ndir'`, one such detail was
+`[probe-0: rv-nl recorded no PID]`. Counting `ls` output with `wc -l` counted one file as two.
+That measurement ended at `14 passed, 18 failed`, versus `19 passed, 13 failed` under normal,
+space and tab paths. Its newly red items were `CNF-21`, `CNF-24`, `CNF-27`, `CNF-28`, `CNF-29`.
+The deferral avoided risking a red item turning green, or a green item turning red, for a scratch
+path shape no user was known to need. The conversion was left for demonstration in its own bead, `rl-suite-newline-paths-deferred-mzc`; two advisers agreed in that Consultation.
+`3744925`'s commit message described the symptom incorrectly as a missing-record diagnostic;
+the non-empty truncated prefix explains why that diagnostic was never printed.
+
+The picked conversion amends `CNF-1`: the suite `MUST expand every path it reads without splitting
+it on whitespace`.
+
+`RUN-23` still says `A newline is out of scope`; demonstrating the suite with
+one executable that handles newlines does not extend that obligation to other Implementations.
+The suite now collects quoted globs into arrays, filters unmatched patterns, counts files, and
+selects whole paths in glob order. `spawn_count` (`conformance/run:46`) uses that count;
+`record_of` (`conformance/run:588-594`) retains its missing-record guard. Environment checks also
+reject both absent and duplicate records. Sequence directory selection uses the same arrays;
+the fresh-directory comparison keeps full paths as NUL-separated records. PID and timestamp
+reads, fixed-filename listings and existence-only checks are not full-path selections.
+
+Before editing, the suite at `dff4bafabfea61d308a385a0268582f853f650ef` measured `33 passed, 0 failed`
+under a normal path (exit 0) and `24 passed, 9 failed` under a newline path (exit 1). Its failed
+items, in suite order, were `CNF-5`, `CNF-17`, `CNF-34`, `CNF-20`, `CNF-21`, `CNF-24`, `CNF-27`,
+`CNF-28`, `CNF-29`. This reproduces the historical targets against today's executable; the old
+failing baseline is not the current acceptance total.
+
+The changed suite measured `33 passed, 0 failed`, exit 0, under each of normal, space, tab and
+newline paths. All ordered identifier/verdict pairs matched the unchanged normal-path run,
+including the historically affected items listed above. The newline run no longer produced the
+truncated-record diagnostics in `CNF-34`, or the doubled counts in usage, Sequence and Probe
+checks. One example from the unchanged newline stdout was:
+
+```text
+[probe-0: before-newline recorded no PID]
+```
+
+No assertion was relaxed to obtain those totals. These were default invocations, without
+`--self-check`; the suite's live item and optional self-check retain their printed qualifications.
+
+The read-only executable for every comparison was
+`/nix/store/mydjhwg0771w726kcp1gpx71v485kc4s-rloop/bin/rloop`, resolved from
+`/home/master/p/rloop-bash/result/bin/rloop`, SHA-256
+`4759d2779b719e8513fba386d2879e9290807ab7ec53383e604bde85cfbcaabd`.
+The sibling checkout was clean at `a110ec2a3e9c4eefa67ced14976e24263d83249f`, with Specification
+pin `a34df16df464d7f2fe813debe0f9c4067457ae16`. Its `bin/rloop` matches the executable after removing
+the six Nix wrapper lines and one appended newline; the retained derivation is
+`/nix/store/d08zk6x3dlb0p0gd5wgvgmv1w8z41p90-rloop.drv`. The changed suite's SHA-256 is
+`47fc43712168d5a0f26f9b09ef23cea90005f0723b474c94be7c2f29fbf8456c`.
+The host used Bash 5.3.15 and `LC_ALL=C.UTF-8`.
+
+Evidence remains under `/tmp/rloop-newline-20261003-3550034-evidence` (call it `E` below).
+Each label has `.stdout`, `.stderr`, `.json` (argv, actual TMPDIR, executable hash, direct status,
+elapsed time), and `.verdicts` (ordered identifier/verdict pairs). `comparison.json` records their
+comparison. Actual scratch paths, expressed with Bash escaping, were:
+
+| Label | TMPDIR below E | Exit | Passed / failed |
+|---|---|---|---|
+| before-normal | `before-normal-tmp` | 0 | 33 / 0 |
+| before-newline | `$'before-newline\ndir'` | 1 | 24 / 9 |
+| after-normal | `after-normal-tmp` | 0 | 33 / 0 |
+| after-space | `after-space space dir` | 0 | 33 / 0 |
+| after-tab | `$'after-tab\ttab dir'` | 0 | 33 / 0 |
+| after-newline | `$'after-newline\ndir'` | 0 | 33 / 0 |
+
+To reconstruct the comparisons after those scratch files disappear, create a fresh evidence
+directory, extract the unchanged Specification with
+`git archive dff4bafabfea61d308a385a0268582f853f650ef -o "$E/before.tar"`, and unpack it into
+`$E/before`. Set `exe` to the store executable above and verify it with `sha256sum "$exe"`.
+For each table row set `label` and the actual `scratch` path (use `$'\n'` or `$'\t'`, never a
+command substitution that strips a trailing newline). Use `$E/before/conformance/run` for the
+before rows and the changed `conformance/run` for the after rows:
+
+```bash
+mkdir -p "$scratch"
+printf '%q\n' "$scratch" > "$E/$label.path"
+status=0
+TMPDIR="$scratch" bash "$suite" "$exe" </dev/null \
+  > "$E/$label.stdout" 2> "$E/$label.stderr" || status=$?
+printf '%s\n' "$status" > "$E/$label.exit"
+awk '/^  (PASS|FAIL)  CNF-/ { print $1, $2 }' "$E/$label.stdout" > "$E/$label.verdicts"
+```
+
+Compare each after `.verdicts` file to `before-normal.verdicts` with `cmp`, and compare the direct
+statuses. Record sequence numbers and the incidental order of diagnostic brackets are not verdicts.
+The retained `measure.py` performs those invocations in the foreground; `before.tar`,
+`after-conformance/`, `provenance.json`, `derivation.json` and `executable-source.diff` identify the
+inputs independently of either checkout's later state.
+
+Focused disposable controls extracted the actual `matching_paths`, `path_count`, `spawn_count`,
+`record_of`, `seq_of`, `present`, `check_env` and `check_probe_env` definitions into `functions.sh`
+and sourced them under `set -u`. Their parent directories contain a literal newline. With no
+matches, the array, loop and count are empty/zero; `record_of` clears a stale selection and sets
+`ok=0` with its missing-record detail, `seq_of` returns -1 and `present` rejects it, and both
+environment readers set `ok=0`. With `010-probe-0.argv` alone the count is 1; after adding
+`002-probe-0.argv` it is 2 and the selected prefix is 002. The corresponding environment paths
+compare byte for byte, one valid environment passes, and duplicate Manager environments fail.
+Directories named `010/` and `002/` likewise count as two and select `002/` before `010/`,
+with a missing second directory yielding an empty selection. `controls.py` and `checks.sh` retain
+the recipe and each control's stdout, stderr and direct status.
+
+The clean controls exited 0. Restoring the old `ls`/`wc -l` count exited 1 at `one-count`
+(expected 1, got 2); restoring `record_of`'s `ls`/`head -1` exited 1 at `whole-path` (the prefix
+alone survived). Removing the unmatched-pattern filter exited 1 at `empty-array` (expected 0,
+got 1); removing the missing-record guard exited 1 at `missing-record-ok` (expected 0, got 1).
+`site-controls.py` also extracts the actual judge-timeout, judge-snapshot, Probe argv, judge argv,
+Sequence count and refusal count selections with their guards: absent evidence sets `ok=0` at
+each site, and replacing each selection/guard block with a no-op makes its control exit 1.
+These controls check that missing evidence stays red, which the full green runs alone cannot show.
+
+The workflow's line-citation control now uses the current `spawn_count` anchor above; its
+impossible-range and unanchored stages still target lines 99999 and 31. Exercised from the actual
+workflow block in a disposable tracked-file copy, it exited 0, with gate statuses 0 / 1 / 0:
+anchored clean, `BLOCKING LINE CITATION` for the impossible range, `ADVISORY LINE CITATION` for
+the unanchored line. `workflow-control.py`, `workflow-control.sh`, `workflow.stdout`,
+`workflow.stderr` and `workflow.statuses` retain that execution. The workflow inspection found
+no other affected message or source-literal controls.
 
 ## F19 — A Reviewer's cleanup by pattern outside the repository (open 2026-10-02)
 

@@ -34,8 +34,10 @@ create any other file outside it, save the `.rloop/.gitignore` `DIR-2` has it cr
 **RUN-23** The git working tree's path, the Run Directory's path, and every path rloop renders into
 a prompt or passes on a command line, MAY hold whitespace — a space, a tab — and rloop MUST handle
 one that does: every file it reads or writes, and every argument it passes, names the path it was
-given, byte for byte. A newline is out of scope: the suite cannot drive a path holding one, and
-`07-open-findings.md` records why.
+given, byte for byte. A newline is out of scope.
+
+*The suite can now drive a path holding one; `F18` records the conversion and its measurements,
+without extending this Implementation obligation.*
 
 *Added 2026-09-29 (`rl-impl-whitespace-path-obligation-73y`): the Conformance Suite makes the
 repository and the Run Directory it hands the executable under `TMPDIR`, so without this clause an
