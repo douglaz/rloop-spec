@@ -27,7 +27,8 @@ A Consultation calls every available adviser at once. `RUN-20` owns the rule; it
 
 - **Every available adviser, together.** The Manager calls each of `fable`, `opus`, `astra` and
   `sol` that the Consultation's relevant Probe record does not read `unavailable`, and starts all
-  the calls together, each bounded through completion or termination.
+  the calls together, each bounded through completion or termination. The 2026-10-03 amendment
+  to `RUN-20` owns the bound's floor: `Each call's chosen maximum duration MUST be at least 600 seconds`.
 - **No memory within the Run.** A model that did not answer in an earlier Consultation is called
   again, and a model a Probe read `unavailable` is called again once a later relevant record no
   longer reads it so. This is what `RUN-21` already does for the Panel, probing every Seat again

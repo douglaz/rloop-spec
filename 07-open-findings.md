@@ -353,6 +353,37 @@ the remaining answers decide, recording all calls and any
 single-vendor Consultation, and leaving time to write the file the outcome needs — naming the
 silent models and saying whether those that answered agreed. This amendment adds no duty to rloop.
 
+2026-10-03 (`rl-adviser-floor-vjqt`): the owner supplied these observations. In Run
+`20261003T041125.632310657Z-3550034`, the pick for `rl-lineciteg-no-antecedent-and-control-8k2`,
+the codex Manager chose 240 seconds for every adviser. `opus` (`claude-opus-5`, effort `xhigh`)
+exited 124 with empty stdout and stderr after 240.5 seconds; fable, astra and sol answered in
+55–128 seconds. An xhigh Reviewer of the same model routinely takes 15–25 minutes here, so an
+arbitrarily short chosen bound can remove it from a Consultation.
+
+The owner also verified on 2026-10-03 that Claude Code's Bash ceiling is controlled by
+`BASH_MAX_TIMEOUT_MS`, default 600000 ms, including under `claude -p`. With both
+`BASH_DEFAULT_TIMEOUT_MS=5000` and `BASH_MAX_TIMEOUT_MS=5000`, a request to run
+`sleep 15; echo FINISHED` returned `Exit code 143 / Command timed out after 5s` after about
+10 seconds wall time. The timeout killed the command. A 600-second adviser bound plus
+termination grace therefore does not fit under that default ceiling. These are supplied
+observations, not experiments repeated in this Round.
+
+Amended `RUN-20`: `Each call's chosen maximum duration MUST be at least 600 seconds`;
+`This is a floor on the bound: a call that answers sooner ends sooner`. Amended the duration
+sentences in `PRM-1` and `PRM-2` and regenerated their fixtures.
+
+Amended `AGT-13`: ``For every Manager call (pick and every judge) under
+`--manager claude`, rloop MUST set this to `--manager-timeout` in milliseconds (seconds multiplied
+by 1000), overriding any inherited value, regardless of the selected model``.
+
+Amended `CNF-10` and its executable checks for the recorded ceiling, and `CNF-22`'s Settled
+observation for the recorded duration floor; `ADR-0009` points to the bound's owner. Fake environment recordings do
+not establish live shell survival.
+
+**Still open:** whether `codex exec`'s shell tool keeps a foreground command alive past
+610 seconds. The cited Run establishes only 240.5 seconds. The first live Consultation under
+the floor settles this question; this amendment does not claim it has already done so.
+
 ## F13 — The model cannot yet express a partial Panel (closed 2026-09-22)
 
 `RUN-15` has three arms — a Reviewer that failed, one that was never called, and the
@@ -551,8 +582,8 @@ read is an own-process read of the item as well — `nothing_survived` (`conform
 reads `PID` beside `GRANDCHILD` — and no mutant of either Round reddens that half either, for the
 reason its own comment gives: `Every ancestor is gone by then, so neither can be a zombie`
 (`conformance/run:67-68`). Both own-process brackets come with a green group half for one reason:
-the fake writes `GRANDCHILDREN_ALIVE` (`conformance/fakes/agent:120`) before it spawns the child
-that ignores SIGTERM (`:177`), so a call that starts while the probe is still running finds no
+the fake writes `GRANDCHILDREN_ALIVE` (`conformance/fakes/agent:121`) before it spawns the child
+that ignores SIGTERM (`:178`), so a call that starts while the probe is still running finds no
 `GRANDCHILD=` line in the probe's record and has nothing to report. The group half can be green with
 the group alive, and it is the two halves together that caught these mutants.
 
@@ -582,7 +613,7 @@ both of `RUN-21`'s call sites, and `CNF-34` gained a watching straggler at each.
 and the mutant is red. Rebuilt against rloop-bash `18c8807`, gated on `RLOOP_FAKE_WATCH`'s value
 beginning `probe:` — what confines it to the two new Runs, where a gate on the variable merely being
 set would mutate the Checkpoint arm too, whose value is `implementer:rejected-1-task.md`
-(`conformance/run:774`) — and with the wait loop of that executable's `reap` inlined rather than
+(`conformance/run:798`) — and with the wait loop of that executable's `reap` inlined rather than
 reordered so the verdicts still see the status the reaping sets, it gives `[probe-0 watch: the
 probe's child saw probe-pick.md, so its group outlived the call and ran through the record]` and the
 same bracket for `probe-1` and `probe-1.md` as the item's whole detail, with every other verdict
@@ -599,11 +630,11 @@ reading a call's output leaves it no file to find, so a read taken before the re
 after look the same to it. The witness for the read is a straggler that *writes* into the capture
 `DIR-4` has the probe's standard output reach `entire and unmodified` — a line the reader acts on,
 since an inert one changes no verdict — and `CNF-34` gained one Run of it, at the probe before the
-pick (`conformance/run:714-755`). `RUN-22` is what makes the read observable there: it has rloop
+pick (`conformance/run:738-779`). `RUN-22` is what makes the read observable there: it has rloop
 `exit 2 without spawning any agent` on that probe's verdicts, so an executable that derives them
 from bytes the straggler's line has not reached yet calls the pick and runs on. The knob is
 `RLOOP_FAKE_WRITE_STDOUT`, which had only a role and a fixed line and now takes a first-write delay
-and the line with it (`conformance/fakes/agent:67-86`, `:140`, `:171-174`); the row asks for one
+and the line with it (`conformance/fakes/agent:67-86`, `:141`, `:172-175`); the row asks for one
 second and `--kill-after 4`, so an early read is a second short of the line and a reaping one has
 three seconds of the child's writing behind it before it reads.
 
@@ -913,7 +944,7 @@ it on whitespace`.
 one executable that handles newlines does not extend that obligation to other Implementations.
 The suite now collects quoted globs into arrays, filters unmatched patterns, counts files, and
 selects whole paths in glob order. `spawn_count` (`conformance/run:46`) uses that count;
-`record_of` (`conformance/run:588-594`) retains its missing-record guard. Environment checks also
+`record_of` (`conformance/run:612-618`) retains its missing-record guard. Environment checks also
 reject both absent and duplicate records. Sequence directory selection uses the same arrays;
 the fresh-directory comparison keeps full paths as NUL-separated records. PID and timestamp
 reads, fixed-filename listings and existence-only checks are not full-path selections.

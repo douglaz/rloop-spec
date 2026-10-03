@@ -110,6 +110,7 @@ printf '%s\0' "$(basename "$0")" "$@" > "$rec/$tag.argv"
 {
   echo "ROLE=$role"; echo "ROUND=$round"; echo "RUN=$run"; echo "RUN_DIR=$run_dir"
   echo "REVIEWER=${RLOOP_REVIEWER-<unset>}"; echo "CWD=$PWD"; echo "PID=$$"
+  printf 'BASH_MAX_TIMEOUT_MS=%s\n' "${BASH_MAX_TIMEOUT_MS-<unset>}"
 } > "$rec/$tag.env"
 # Which earlier calls' children are still running as this call starts: what CNF-17 reads from the
 # judge's record and CNF-34 from every call's. Before the stdin probe, which can take a second

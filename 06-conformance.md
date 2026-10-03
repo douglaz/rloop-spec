@@ -102,9 +102,15 @@ what the Run Directory holds afterwards; what the agents were handed is `CNF-11`
 
 ## What agents receive
 
-**CNF-10** Every fake records the five variables with the values `AGT-13` gives its role and
-Round, `RLOOP_REVIEWER` unset except for Reviewers, its working directory equal to the git
-toplevel, and standard input at end of file on first read. (`AGT-12`, `AGT-13`)
+**CNF-10** Every fake records the variables in `AGT-13`'s environment table with the values
+applicable to its role and Round, `RLOOP_REVIEWER` unset except for Reviewers, its working
+directory equal to the git toplevel, and standard input at end of file on first read. Under the
+default Manager preset, pick and every judge record `BASH_MAX_TIMEOUT_MS` equal to the Manager
+timeout in milliseconds, at both the default timeout and a non-default `--manager-timeout`,
+overriding a different inherited value in each Run. The non-default-timeout Run also selects a
+different Manager model. Missing required records or values and wrong values fail the item.
+The suite makes no assertion about `BASH_MAX_TIMEOUT_MS` for codex Managers, Implementers,
+Reviewers or Probes. (`AGT-12`, `AGT-13`)
 
 **CNF-11** For each role the recorded argument list equals the fixture in
 `conformance/fixtures/argv/` with the placeholders filled in: the pick's `<session id>` is the
@@ -410,7 +416,8 @@ One Run may satisfy more than one of these observations, provided each one's con
 evidence are met.
 
 - **Settled.** Every adviser the relevant Probe record does not read `unavailable` is called, all
-  of them together, a choice settles, and the brief holds the record.
+  of them together, a choice settles, and the brief holds the record, with each recorded maximum
+  duration at least 600 seconds.
   Every adviser process observed ran its model's command line from `PRM-1`, including the model,
   effort and read-only flags as stated there.
 - **Hang.** Under each `--manager` preset, one adviser hangs rather than failing fast. Its call

@@ -201,7 +201,8 @@ minutes, during this Specification's own review.*
 
 **AGT-13** Every agent process, and the **Probe** (`AGT-18`), MUST be started with the git toplevel as its working directory,
 its standard output to the file `DIR-4` names for it and its standard error to the matching
-`.err` file, and the environment rloop itself received plus exactly these variables:
+`.err` file, and the environment rloop itself received plus exactly the variables set below, subject to
+the table's conditions:
 
 | variable | value |
 |---|---|
@@ -210,10 +211,12 @@ its standard output to the file `DIR-4` names for it and its standard error to t
 | `RLOOP_RUN` | the Run's number within its Sequence; `1` for a lone Run |
 | `RLOOP_RUN_DIR` | the Run Directory's absolute path |
 | `RLOOP_REVIEWER` | `fable`, `opus`, `astra` or `sol`; set for Reviewers only |
+| `BASH_MAX_TIMEOUT_MS` | For every Manager call (pick and every judge) under `--manager claude`, rloop MUST set this to `--manager-timeout` in milliseconds (seconds multiplied by 1000), overriding any inherited value, regardless of the selected model. Every other call receives whatever rloop inherited unchanged. |
 
-*Real agents ignore these — the prompt tells a model where things are. The Conformance Suite's
-fakes read them to find their scripted part, which is what makes the suite independent of prompt
-wording and CLI flags (`06-conformance.md`).*
+*Real agents ignore the `RLOOP_*` variables — the prompt tells a model where things are. The
+Conformance Suite's fakes read those to find their scripted part, which is what makes the suite
+independent of prompt wording and CLI flags (`06-conformance.md`). Claude Code uses
+`BASH_MAX_TIMEOUT_MS` as its Bash tool's timeout ceiling.*
 
 **AGT-14** Every agent call MUST be bounded by its role's timeout, and the **Probe**'s (`AGT-18`)
 by `--probe-timeout` (`AGT-1`). At the limit rloop

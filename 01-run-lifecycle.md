@@ -308,8 +308,9 @@ again before each Round's Panel.*
 The Manager MUST bound each adviser call through its shell tool. Before calling advisers, it MUST
 choose each call's maximum duration, leaving enough of its turn to write whichever file the
 outcome calls for — the Task File when the Consultation settles the choice, the Finished File
-when it blocks. It MUST start all the Consultation's calls together. A tool returning while an
-adviser still runs is not a completed call; the bound MUST cover the call through completion or
+when it blocks. Each call's chosen maximum duration MUST be at least 600 seconds. This is a floor
+on the bound: a call that answers sooner ends sooner. It MUST start all the Consultation's calls
+together. A tool returning while an adviser still runs is not a completed call; the bound MUST cover the call through completion or
 termination. It MUST record the chosen durations, the bounds used and each call's elapsed time so
 a reader can check the limits.
 

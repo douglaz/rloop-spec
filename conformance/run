@@ -231,7 +231,31 @@ check_env "manager-0" manager 0 "<unset>"
 check_env "implementer-1" implementer 1 "<unset>"
 check_env "manager-1" manager 1 "<unset>"
 for r in fable opus astra sol; do check_env "reviewer-2-$r" reviewer 2 "$r"; done
-if [ "$ok" = 1 ]; then verdict CNF-10 ok "RLOOP_* variables, cwd and closed stdin for every role"; else verdict CNF-10 fail "$detail"; fi
+# This assertion is only used for the default (claude) Manager preset. Read exactly one
+# record and one value: an absent pick/judge or missing value cannot make the check vacuous.
+check_claude_manager_timeout() { # <record tag> <expected milliseconds>
+  local paths=() f value
+  matching_paths "$rec"/*-"$1".env
+  [ "${#paths[@]}" = 1 ] || { ok=0; detail="$detail [$1: ${#paths[@]} env records, not one]"; return; }
+  f="${paths[0]}"
+  value=$(sed -n 's/^BASH_MAX_TIMEOUT_MS=//p' "$f")
+  [ "$value" = "$2" ] || { ok=0; detail="$detail [$(basename "$f"): BASH_MAX_TIMEOUT_MS expected $2, got '$value']"; }
+}
+# Both Runs inherit a conflicting ceiling. The second changes model as well as timeout, so
+# applying the override by model name instead of Manager preset cannot satisfy it.
+for timeout_case in default custom; do
+  repo="$(new_repo)"; rec="$work/rec-manager-timeout-$timeout_case"
+  timeout_args=(); expected_ms=3600000
+  if [ "$timeout_case" = custom ]; then
+    timeout_args=(--manager-timeout 937 --manager-model gpt-6-astra); expected_ms=937000
+  fi
+  e=$(BASH_MAX_TIMEOUT_MS=5000 RLOOP_FAKE_PICK=ok:task \
+    RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=done" \
+    run_rloop "$repo" "$rec" --run-dir "$repo/run" ${timeout_args[@]+"${timeout_args[@]}"})
+  [ "$e" = 0 ] || { ok=0; detail="$detail [$timeout_case Manager timeout: exit $e]"; }
+  for round in 0 1 2; do check_claude_manager_timeout "manager-$round" "$expected_ms"; done
+done
+if [ "$ok" = 1 ]; then verdict CNF-10 ok "RLOOP_* variables, cwd and closed stdin for every role; claude Manager shell ceiling at default and custom timeouts"; else verdict CNF-10 fail "$detail"; fi
 
 # --- CNF-11 / CNF-12: argv and prompts ---------------------------------------------------------------
 render() { # render <template file> ; placeholders from variables P_*, one pass by PRM-6
