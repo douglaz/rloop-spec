@@ -67,8 +67,12 @@ jobs:
       # are the same citation, each restored by the next, so neither decides anything for the
       # other. The gate prints an advisory on a clean tree too, so a tier line alone proves
       # nothing: each control first cuts out the finding for its own citation, then reads the
-      # tier off that line.
-      - name: Prove the line-citation gate can fail on both tiers
+      # tier off that line. The last stage leaves that copy at exit 0 and adds a target file and
+      # citing sentences of its own, one token per case, so nothing it asserts depends on what
+      # the documents cite: a bare continuation with no antecedent in its sentence advises under
+      # its own message, one with an antecedent inherits its path, a path this repository does
+      # not have is reported unchecked, and an unanchored citation advises.
+      - name: Prove the line-citation gate can fail on both tiers and tells its findings apart
         run: |
           set -euo pipefail
           tmp="$(mktemp -d)"; cp -r . "$tmp/repo"; cd "$tmp/repo"
@@ -97,6 +101,54 @@ jobs:
             || { echo "::error::line-citation gate green, but silent about the unanchored citation"; exit 1; }
           grep -qF 'ADVISORY LINE CITATION:' "$tmp/finding" \
             || { echo "::error::the unanchored citation was reported, but not in the advisory tier"; exit 1; }
+          # Synthetic citations: the copy's own target and its own sentences, all exit 0.
+          printf '%s\n' alpha_anchor beta_anchor gamma_anchor delta_anchor five six seven eight nine \
+            > synthetic-target.txt
+          cat > zz-synthetic.md <<'EOF'
+          Here `:6` opens its sentence beside `alpha_anchor`.
+
+          First `synthetic-target.txt:1` holds `alpha_anchor`. Then `:7` follows in the next sentence.
+
+          Here `:8` comes before `synthetic-target.txt:2` and `beta_anchor`.
+
+          Here `synthetic-target.txt:3` holds `gamma_anchor` and `:4` holds `delta_anchor`.
+
+          Here `no-such-synthetic.txt:9` is cited beside `alpha_anchor`.
+
+          Here `synthetic-target.txt:5` is cited beside `omega_literal`.
+          EOF
+          python3 tools/check_line_citations.py > "$tmp/out" 2>&1 \
+            || { echo "::error::line-citation gate blocked on the synthetic citations"; exit 1; }
+          cat "$tmp/out"
+          # $1 the line of zz-synthetic.md citing $2, a bare continuation no explicit citation
+          # precedes in its sentence, $3 its case. The finding is cut out by citing location and
+          # token together, so the same token cited from any other document is not this one.
+          no_antecedent() {
+            grep -F " zz-synthetic.md:$1 cites \`$2\`" "$tmp/out" > "$tmp/finding" \
+              || { echo "::error::line-citation gate did not report bare continuation $2 at zz-synthetic.md:$1: $3"; exit 1; }
+            [ "$(wc -l < "$tmp/finding")" = 1 ] \
+              || { echo "::error::bare continuation $2 earned more than one diagnostic: $3"; exit 1; }
+            grep -F 'ADVISORY LINE CITATION:' "$tmp/finding" \
+              | grep -qF 'a bare continuation that no explicit citation precedes in its sentence' \
+              || { echo "::error::bare continuation $2 was reported, but not as an advisory for a missing antecedent: $3"; exit 1; }
+            ! grep -qe 'UNCHECKED' -e 'BLOCKING' -e 'target unavailable' "$tmp/finding" \
+              || { echo "::error::bare continuation $2 has no antecedent, but was reported as unchecked or blocking: $3"; exit 1; }
+          }
+          no_antecedent 1 :6 "first in its sentence"
+          no_antecedent 3 :7 "the explicit citation is in the sentence before"
+          no_antecedent 5 :8 "the explicit citation comes later in its sentence"
+          grep -qF 'synthetic-target.txt:4  by `delta_anchor`' "$tmp/out" \
+            || { echo "::error::a bare continuation did not inherit the path cited before it in its sentence"; exit 1; }
+          grep -F 'cites `no-such-synthetic.txt:9`' "$tmp/out" > "$tmp/finding" \
+            || { echo "::error::line-citation gate silent about a path this repository does not have"; exit 1; }
+          grep -F 'UNCHECKED LINE CITATION:' "$tmp/finding" \
+            | grep -qF 'target unavailable in this repository, not checked.' \
+            || { echo "::error::the missing path was reported, but not as an unchecked unavailable target"; exit 1; }
+          grep -F 'cites synthetic-target.txt:5, where no other literal from its sentence appears:' "$tmp/out" \
+            > "$tmp/finding" \
+            || { echo "::error::line-citation gate silent about the synthetic unanchored citation"; exit 1; }
+          grep -qF 'ADVISORY LINE CITATION:' "$tmp/finding" \
+            || { echo "::error::the synthetic unanchored citation was reported, but not in the advisory tier"; exit 1; }
 
       - name: Prove the coverage gate can fail
         run: |

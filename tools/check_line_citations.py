@@ -15,7 +15,8 @@ The citing sentence is the scope, not the enclosing block (`spec_text.clauses` o
 identifier the cited line happens to carry. For the same reason an anchor shorter than
 four characters, or shaped like a requirement identifier (`check_ids.CITE_RE`), is
 dropped. A bare continuation inherits the path of the nearest preceding explicit citation
-in its sentence and is checked like any other.
+in its sentence and is checked like any other; one that no explicit citation precedes in
+its sentence has no path to inherit, cites no target at all, and is reported as that.
 
 Both sides pass through `spec_text.norm`, and each cited line first loses its indentation
 and one leading comment marker, so a comment sentence that wraps across two `# ` lines --
@@ -25,6 +26,10 @@ Tiers (`ADR-0007`). An unanchored citation is *advisory*: it is evidence the num
 drifted, never proof, since prose may describe lines rather than quote them, and a gate
 that objects to correct prose is the thing that is wrong. A range that cannot exist --
 `n < 1`, `m < n`, or `m` past the file's last line -- *blocks*, because that is decidable.
+A bare continuation with no antecedent is *advisory* too, under its own message: no target
+lines were read, so it is counted unchecked and advisory both, and the `unchecked` count is
+then no longer the number of `UNCHECKED` lines printed. `UNCHECKED` stays reserved for a
+path, explicit or inherited, that is not a file inside this repository.
 Exit 0 = no blocking finding; advisories may be present.
 
 Known limits, each of which lives here and nowhere else:
@@ -45,6 +50,8 @@ Known limits, each of which lives here and nowhere else:
     than skipped. `Path.is_file()` cannot tell a foreign path from a typo, so a silent
     skip would turn a mistyped in-repo path into a permanent blind spot. Containment is
     tested after resolution, so a symlink out of the tree is not a local target.
+  * A backticked colon-and-digits that is not a citation (a port, say) reads as a bare
+    continuation, which is why one with no antecedent advises rather than blocks.
 """
 
 from pathlib import Path
@@ -97,6 +104,13 @@ def main():
     checked = unchecked = blocking = advisory = 0
     for document, line, token, path, first, last, anchors in citations(docs):
         where = f"{document}:{line}"
+        if not path:
+            print(f"ADVISORY LINE CITATION: {where} cites `{token}`: a bare continuation "
+                  f"that no explicit citation precedes in its sentence, so it has no path "
+                  f"to inherit, not checked.")
+            unchecked += 1
+            advisory += 1
+            continue
         target = resolve(path)
         if target is None:
             print(f"UNCHECKED LINE CITATION: {where} cites `{token}`: "
