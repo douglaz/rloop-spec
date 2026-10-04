@@ -14,7 +14,7 @@ exe="$(cd "$(dirname "$exe")" && pwd)/$(basename "$exe")"
 [ -x "$exe" ] || { echo "not executable: $exe" >&2; exit 2; }
 self_check=0; [ "${2:-}" = "--self-check" ] && self_check=1
 
-work="$(mktemp -d "${TMPDIR:-/tmp}/rloop-conformance.XXXXXX")"
+work="$(mktemp -d "${TMPDIR:-/tmp}/rloop conformance"$'\t'"tab.XXXXXX")"
 trap 'rm -rf "$work"' EXIT
 fakes="$work/fakes"; mkdir -p "$fakes"
 cp "$here/fakes/agent" "$fakes/claude"; cp "$here/fakes/agent" "$fakes/codex"; chmod +x "$fakes/claude" "$fakes/codex"
@@ -202,10 +202,10 @@ sid=$(cat "$repo/run/session"); [[ "$sid" =~ ^[0-9a-fA-F-]{36}$ ]] || { ok=0; de
 repo2="$(new_repo)"; rec2="$work/rec-layout2"
 e2=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=none;judge=done" run_rloop "$repo2" "$rec2" --run-dir "$repo2/run")
 [ "$e2" = 2 ] && [ -f "$repo2/run/task-1.md" ] || { ok=0; detail="$detail (exit-2 run dir: exit $e2)"; }
-# The same two-Round Run with whitespace in every path the executable is handed: the repository's
-# own path holds a space and a tab, the Run Directory's holds a space (RUN-23). The suite makes
-# that path itself rather than reading it out of TMPDIR, so the item's verdict cannot move with
-# TMPDIR; an executable that word-splits one of them writes somewhere else and the listing says so.
+# The same two-Round Run with whitespace in the paths' own names too: the repository's holds a
+# space and a tab, the Run Directory's a space (RUN-23), below $work, whose name gives every path
+# in this file both. The suite makes all of it itself rather than reading it out of TMPDIR, so no
+# verdict moves with TMPDIR; an executable that word-splits one writes elsewhere, the listing says.
 repo3="$(new_repo "$work/ws repo"$'\t'"tab")"; rec3="$work/rec-layout-ws"
 e3=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=done" run_rloop "$repo3" "$rec3" --run-dir "$repo3/run dir")
 got3=$(ls "$repo3/run dir" 2>/dev/null | sort | tr '\n' ' ' | sed 's/ $//')
@@ -382,14 +382,14 @@ check_call "$rec_h" manager-0 "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$s
 check_call "$rec_h" implementer-1 "$fx/argv/AGT-5.txt" "$fx/prompts/PRM-3.txt" "$sid_h" claude-fable-5-1 "implementer (cyclic run dir)"
 check_call "$rec_h" manager-1 "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid_h" claude-fable-5-1 "judge (cyclic run dir)"
 argv_hostile_ok=$ok; argv_hostile_detail="$detail"
-# a whitespace Run: the repository's own path holds a space and a tab, and so does the Run
-# Directory's (RUN-23). The suite builds both paths itself rather than reading either out of
-# TMPDIR, so this witness cannot move with what the caller exported. Every role of the Run is read
-# here — the pick, the Implementer, the four Reviewers and the judge — so every path rloop renders
-# into a prompt or passes on a command line is compared against the fixture rendered with those
-# same paths, byte for byte, and a path word-split on its way into any one of them is red under any
-# TMPDIR. What the Run Directory holds afterwards is CNF-9's whitespace arm; this one reads what
-# the agents were handed.
+# a whitespace Run: the repository's own name holds a space and a tab, and so does the Run
+# Directory's (RUN-23), below $work, whose name gives every other Run's paths both as well. The
+# suite builds all of it rather than reading any out of TMPDIR, so this witness, like the rest,
+# cannot move with what the caller exported. Every role of the Run is read here — the pick, the
+# Implementer, the four Reviewers and the judge — so every path rloop renders into a prompt or
+# passes on a command line is compared against the fixture rendered with those same paths, byte
+# for byte, and a path word-split on its way into any one of them is red under any TMPDIR. What
+# the Run Directory holds afterwards is CNF-9's whitespace arm; this one reads what agents got.
 repo="$(new_repo "$work/ws argv"$'\t'"tab")"; rec_ws="$work/rec-argv-ws"  # its own rec and sid
 base_hash=$(cd "$repo" && git rev-parse HEAD)
 P_RUN_DIR="$repo/run dir"$'\t'"tab"

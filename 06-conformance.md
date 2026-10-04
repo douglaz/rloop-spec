@@ -12,7 +12,9 @@ executable and exit 0 only if every one passed, printing each item's identifier 
 needs `bash`, `git`, GNU coreutils, `grep`, `sed`, `awk`, `cmp` (diffutils) and `find` (findutils)
 on `PATH` and nothing else — no Lean, no Python, no network — so that an Implementation repository
 in any language runs it from the submodule. `TMPDIR` is where it makes its scratch tree, and the
-suite MUST expand every path it reads without splitting it on whitespace.
+suite MUST expand every path it reads without splitting it on whitespace. The tree's root is a
+directory whose name the suite gives a space and a tab, so every path the suite hands the
+executable holds whitespace whatever the caller exported.
 (`00-overview.md`)
 
 **CNF-2** The suite puts fake `claude` and `codex` executables first on `PATH`. A fake reads
@@ -26,9 +28,11 @@ resolves the tools `CNF-1` names for an Implementation to absolute paths and bui
 directory of symlinks under those exact names; a name the host lacks is left out and named once
 on standard error. The executable, and so every fake it spawns, runs with `PATH` set to the fakes
 directory, then that private directory, and nothing else; for the `CNF-19` items the `git` shim's
-directory sits between the two. `cmp` and `find` are the suite's own and are not on the
-executable's `PATH`. An executable that relies on anything more brings it itself; a wrapper that
-puts its own inputs on `PATH`, as a nix `writeShellApplication` does, satisfies this. *Why the
+directory sits between the two. The fakes directory and the private directory are under the
+scratch root `CNF-1` describes, so both entries of that `PATH` hold a space and a tab. `cmp` and
+`find` are the suite's own and are not on the executable's `PATH`. An executable that relies on
+anything more brings it itself; a wrapper that puts its own inputs on `PATH`, as a nix
+`writeShellApplication` does, satisfies this. *Why the
 host's `PATH` is withheld: rloop-bash `02c6206` compared `task.md` against `task-<r>.md` with
 `cmp`, which its flake did not wrap, and read a missing `cmp` as "differs". The Run `RUN-12`
 describes — `rloop MUST exit 2 rather than start another Round` — then burns every remaining
@@ -84,8 +88,9 @@ directory exists afterwards and is the only one created. (`DIR-1`, `DIR-3`)
 independently of `TMPDIR`, the Run Directory is created under `<toplevel>/.rloop/runs/`,
 `<toplevel>/.rloop/.gitignore` holds exactly `*` and a newline — compared byte for byte — and
 `git status --porcelain` prints nothing after a Run whose fakes changed no tracked file.
-Separate Runs, also without `--run-dir` and with fakes that change no tracked file, use repository
-paths chosen by `mktemp` without deliberately adding whitespace. A pre-existing `.gitignore` of
+Separate Runs, also without `--run-dir` and with fakes that change no tracked file, use
+repositories that are `mktemp`-named directories under the suite's scratch root, whose name the
+suite gives a space and a tab (`CNF-1`). A pre-existing `.gitignore` of
 either shape a check by eye accepts, `*` followed by two newlines or `*` with no newline, holds
 those same two bytes after its Run, and the tree is clean. (`DIR-2`, `RUN-4`, `RUN-23`)
 

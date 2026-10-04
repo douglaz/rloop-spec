@@ -1128,3 +1128,69 @@ and `and so never counts` do not hold for this tracked-file case.
 Committing the rewritten file resolves this case permanently: subsequent Runs already find the
 required bytes. The owner chose to document this boundary on 2026-10-02, changing no requirement
 for it.
+
+## F21 — The suite's verdicts moved with `TMPDIR`'s whitespace (resolved 2026-10-04)
+
+Bead `rl-suite-verdict-count-tmpdir-mc5`. Every repository, record directory, Run Directory, the
+fakes directory and the private directory of `CNF-2` live under the suite's scratch root, which
+`mktemp` named `rloop-conformance.XXXXXX` under `TMPDIR`. Only the dedicated whitespace arms of
+`CNF-8`, `CNF-9`, `CNF-11` and `CNF-12` used a path the suite itself gave whitespace, so every
+other arm's path held whitespace only when the caller's `TMPDIR` did, which `CNF-9` already calls
+a defect: `an item that sees whitespace only when the caller exports it gives a verdict that moves
+with` `TMPDIR`. Resolved by giving the scratch root's own name a space and a tab, in
+`conformance/run` and in `conformance/test-panel-trace`; `CNF-1`, `CNF-2` and `CNF-8` say so. No
+arm was converted and no dedicated whitespace arm was removed: those arms are still the ones that
+put whitespace in the repository's and the Run Directory's own names. Four advisers were consulted
+on the shape and all chose this one over converting each arm.
+
+A newline in `TMPDIR` can still move an arbitrary Implementation's verdicts. `RUN-23` says
+`A newline is out of scope`, so an executable that mishandles one is not held to anything by it,
+and the suite adds no newline to the root's name.
+
+Measured on 2026-10-04 with the suite before the change at `6beea3d` and after it
+(`conformance/run` SHA-256 `8b579e60e75d75fc6ef63ac942417d8e5a718c60a9c33d57f079fcc44725b2fe`),
+Bash 5.3.15. The reference executable is
+`/nix/store/sib4qscsjgyzanwrq512rr1j3c2wpgl0-rloop/bin/rloop`, SHA-256
+`d5c3284d443d7620c2708b009cc3b489decdfdb6ba55991bd7d1c06759d6989e`, built from rloop-bash
+`297238b4610b171f978bf403b8c24ff3c3516c64`, whose Specification pin is `5246aed`. The mutant is a
+copy of that file, SHA-256 `4fe46371a2c716ad45d69294104a3266585ac6e23d46623b057877a5e8393ed2`, with
+its line 293 (`bin/rloop` line 287 behind the six wrapper lines) changed from
+`TASK_FILE) out+="$run_dir/task.md" ;;` to `TASK_FILE) out+="$(printf "%s" $run_dir/task.md)" ;;`,
+so it word-splits the Task File's path into its prompts. `TMPDIR` shapes are directories below one
+scratch directory `S`, itself free of whitespace.
+
+| Label | `TMPDIR` | Exit | Passed / failed | Red items |
+|---|---|---|---|---|
+| ref-before-plain | `$S/t-plain` | 0 | 33 / 0 | |
+| ref-before-space | `$S/t sp` | 0 | 33 / 0 | |
+| ref-before-tab | `$S/t`, a tab, `tab` | 0 | 33 / 0 | |
+| mut-before-plain | `$S/t-plain` | 1 | 31 / 2 | `CNF-11`, `CNF-12` |
+| mut-before-space | `$S/t sp` | 1 | 30 / 3 | `CNF-11`, `CNF-12`, `CNF-32` |
+| mut-before-tab | `$S/t`, a tab, `tab` | 1 | 30 / 3 | `CNF-11`, `CNF-12`, `CNF-32` |
+| ref-after-plain | `$S/t-plain` | 0 | 33 / 0 | |
+| ref-after-space | `$S/t sp` | 0 | 33 / 0 | |
+| ref-after-tab | `$S/t`, a tab, `tab` | 0 | 33 / 0 | |
+| ref-after-newline | `$S/t`, a newline, `nl` | 0 | 33 / 0 | |
+| mut-after-plain | `$S/t-plain` | 1 | 30 / 3 | `CNF-11`, `CNF-12`, `CNF-32` |
+| mut-after-space | `$S/t sp` | 1 | 30 / 3 | `CNF-11`, `CNF-12`, `CNF-32` |
+| mut-after-tab | `$S/t`, a tab, `tab` | 1 | 30 / 3 | `CNF-11`, `CNF-12`, `CNF-32` |
+
+Before, the mutant under the plain `TMPDIR` was red only in the whitespace Run's arms of `CNF-11`
+and `CNF-12`; under a space or a tab every arm of both went red and `CNF-32` joined. After, the
+ordered identifier/verdict pairs are byte-identical across the three shapes for the mutant, and
+equal mutant-before's under the space `TMPDIR`; for the reference they are byte-identical across
+the four shapes and equal reference-before's. The pin lag reddened nothing on either side.
+`conformance/test-panel-trace`, with no argument and with the reference, exited 0 before and after
+under the plain and the space `TMPDIR`, with the same count of `PASS` lines.
+
+To reconstruct, for each row set `label`, `exe` and `scratch` (use `$'\t'` or `$'\n'`, never a
+command substitution), verify `exe` with `sha256sum`, and run from the Specification checkout at
+the commit before this finding for the before rows and at it for the after rows:
+
+```bash
+mkdir -p "$scratch"
+status=0; TMPDIR="$scratch" bash conformance/run "$exe" </dev/null >"$E/$label.stdout" 2>"$E/$label.stderr" || status=$?
+awk '/^  (PASS|FAIL)  CNF-/ { print $1, $2 }' "$E/$label.stdout" > "$E/$label.verdicts"
+```
+
+Compare `.verdicts` files with `cmp` and the statuses directly.

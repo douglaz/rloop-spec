@@ -21,7 +21,7 @@ if [ "$#" -ge 1 ]; then
 fi
 # No die() yet, it is defined below; a TMPDIR that vanished mid-run left work empty and the
 # failure was named by a later cp.
-work="$(mktemp -d "${TMPDIR:-/tmp}/rloop-panel-trace.XXXXXX")" \
+work="$(mktemp -d "${TMPDIR:-/tmp}/rloop panel-trace"$'\t'"tab.XXXXXX")" \
   || { echo "FAIL: mktemp -d under ${TMPDIR:-/tmp} made no scratch directory" >&2; exit 1; }
 trap 'rm -rf "$work"' EXIT
 source "$here/scenario-lib.sh"
