@@ -208,7 +208,9 @@ other Run described in this item omits that delay. The same Run with the
 Implementer fake spawning that child instead of the Manager's. The same
 Run with every Reviewer fake spawning it: the judge's record — the first call to start once every Reviewer has exited — carries
 no Reviewer's child among the children alive when it started and no Reviewer's own process among the
-calls alive when it started. The same Run with both of the Run's probes spawning it: the pick's
+calls alive when it started. The same Run with both of the Run's probes spawning it, each probe
+waiting one second after spawning its child before exiting — a sleep every other Run described in
+this item omits: the pick's
 record carries neither the child nor the own process of the probe before the pick, and each of the
 Panel's four records carries neither the child nor the own process of the Round's probe. Neither of
 those two Runs can pass on absent evidence: a missing record, a missing snapshot line, a missing
@@ -285,7 +287,9 @@ and goes on. Its window has margin at both ends: the child's first write is a se
 fake exits, which a read before the reaping is well inside, and `--kill-after 4` keeps that child
 alive three seconds past that write, which a read after the reaping falls past, the line having
 reached the capture three seconds before that read. The pick's exit delay makes its own process
-observable after its Task File exists, without opening standard input or changing its child; `F17`
+observable after its Task File exists, without opening standard input or changing its child; each
+probe's sleep in the probes' ordinary Run does the same for the probe's own process at the call
+that follows it. `F17`
 records the separate own-process and child measurements. The watching Runs use `RUN-6`'s
 `copy the Task File to` `task-1.md`, `RUN-7`'s `the Checkpoint again`, and `DIR-5`'s `After the pick
 and after every judge call whose verdict is *next Round*` as observable steps. `F17` owns the

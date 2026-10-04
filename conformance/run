@@ -700,9 +700,9 @@ kill_recorded "$rec"
 # before the pick` and `once immediately before each Round's Panel`, and RUN-7 has the Round's probe
 # `waited for before the Panel starts` — so the call that follows each is a tighter boundary than
 # the judge, and one Run gives both probes a child: the pick's record for the probe before the pick,
-# and every Reviewer's for the Round's.
+# and every Reviewer's for the Round's. Each probe sleeps a second, so one left unwaited is seen.
 repo="$(new_repo)"; rec="$work/rec-reap-probe"
-e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=probe run_rloop "$repo" "$rec" --run-dir "$repo/run" --kill-after 1)
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=probe RLOOP_FAKE_SLEEP_PROBE=1 run_rloop "$repo" "$rec" --run-dir "$repo/run" --kill-after 1)
 [ "$e" = 0 ] || { ok=0; detail="$detail [probe: exit $e]"; }
 record_of probe-0 probe-0; probe0_env="$found"
 record_of probe-0 manager-0; pick_env="$found"

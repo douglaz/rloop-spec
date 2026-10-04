@@ -570,7 +570,8 @@ others: `[probe-0: 001-probe-0.env GRANDCHILD … alive when 002-manager-0.env s
 half of the read at the pick's boundary, and `[probe-1: 004-probe-1.env PID … alive when
 004-reviewer-1-fable.env started]`, the own-process half against one of the Panel's four records.
 `probe-0`'s own-process half stays green under it — the probe's own process is gone before rloop
-reaches the pick, which is the row's own gap and is filed as `rl-cnf34-probe0-read-fast-fake-8et` —
+reaches the pick, which was the row's own gap as the suite then stood, filed as
+`rl-cnf34-probe0-read-fast-fake-8et` and ended by the probe sleep landed below —
 so at that boundary it is the group half that catches the deferral. What the `probe-0` own-process
 read needs is one further defect, and it then reddens that read alone: the deferral narrowed to the
 probe before the pick, with that one probe call's standard input left open — against `AGT-12`'s
@@ -658,10 +659,12 @@ record]` and the same for `probe-1`), which is why it witnesses nothing about th
 
 Still unobserved: every other call's output read — the pick's, the Implementer's, each Reviewer's,
 the judge's and the Round's probe's. `RUN-22` gives the probe before the pick an observable no other
-call has. The ordinary `probe-0` own-process read is a separate gap, investigated below.
+call has. The ordinary `probe-0` own-process read was a separate gap, investigated below and ended
+by the probe sleep that investigation's candidate became.
 
 *The ordinary Probe's sleep candidate, declined 2026-10-03
-(`rl-cnf34-probe0-read-fast-fake-8et`).* The `02c6206` measurements above remain historical.
+(`rl-cnf34-probe0-read-fast-fake-8et`) and landed by owner decision the same day
+(`rl-cnf34-probe-sleep-land-cuvo`).* The `02c6206` measurements above remain historical.
 At Specification `46248df0f618bcda8646f01424feb1a8fab2e5b9`, the candidate was
 `RLOOP_FAKE_SLEEP_PROBE=1` on the ordinary `rec-reap-probe` invocation alone, with the fake,
 the watching and output-writing arms, and `--kill-after 1` unchanged. The correctly reaping
@@ -699,7 +702,7 @@ across all four runs, and no other arm of `CNF-34` reported a bracket. This incl
 and output-writing arms. These totals retain the suite's printed qualifications: `CNF-4` was not
 run with `--self-check`, and `CNF-22` is live, by hand.
 
-That apparent isolation did not survive repetition. The ordinary arm was extracted with its
+That apparent isolation was judged on 2026-10-03 not to survive repetition. The ordinary arm was extracted with its
 unchanged helpers and evidence guards, and run twenty times per suite against the same mutant,
 alternating which suite ran first. Counts below are failures of each individual read:
 
@@ -725,8 +728,9 @@ left the sixty-second Probe timeout unchanged; this was not a timeout experiment
 runtime rose from 2.55 to 4.55 seconds for the mutant and from 2.57 to 4.57 for the correctly
 reaping executable, consistent with sleeping once at each Probe.
 
-Evidence is retained outside the Run Directory at
-`/tmp/rloop-cnf34-probe0-20261003-mt6i_ig6`: `provenance.json`, `mutation.diff`, `candidate.diff`,
+Evidence was retained outside the Run Directory at
+`/tmp/rloop-cnf34-probe0-20261003-mt6i_ig6`, a tmpfs path that records where it was and is not one
+a reader can rely on: `provenance.json`, `mutation.diff`, `candidate.diff`,
 the executable and suite copies, `analysis.json`, and `reads.csv` (each Probe's PID and child
 against each relevant later call). `results/<label>/` holds the command, environment, direct exit
 status and timing in `measurement.json`, complete stdout/stderr and ordered `verdicts`, and
@@ -746,15 +750,52 @@ python3 measure.py run candidate mutant rerun-c-mut
 order; `analyze.py` checks the records and produces the read counts. `trial-u` and `trial-c` are
 excluded setup failures from an unset variable in diagnostic logging, corrected before any full
 or repeated measurement; `trial2-*` are preliminary measurements, also excluded from the tables.
-The candidate is declined under the bead's isolation rule: it exposed the target in this sample,
-but other reads varied, including an added Round Probe group failure. `conformance/run`, the fake
-and `CNF-34` remain unchanged. The current suite still has no demonstrated ordinary `probe-0`
-own-process witness for the deferral alone, and the group half's intermittent silence measured
-here is an additional limit on that same boundary, not a new requirement or a redesign.
+The candidate was declined on 2026-10-03 under the bead's isolation rule: it exposed the target in
+this sample, but other reads varied, including an added Round Probe group failure — `probe-1` /
+`fable` / `GRANDCHILD`, 0 / 20 unchanged against 2 / 20 candidate. `conformance/run`, the fake and
+`CNF-34` were left unchanged by that decision, and the suite was left with no demonstrated ordinary
+`probe-0` own-process witness for the deferral alone.
+
+*The decline reversed and the sleep landed, by owner decision 2026-10-03
+(`rl-cnf34-probe-sleep-land-cuvo`).* The ground of the decline did not hold. The `opus` Reviewer of
+Run `20261002T235249.000350681Z-3550034` re-ran the same target against the same mutant 90 more
+times; its evidence was at `/tmp/reviewer-cnf34-probe1-check`, a tmpfs path that records where it
+was and is not one a reader can rely on. Counts are failures of each read, the twenty repetitions
+per suite above pooled with the Reviewer's:
+
+| Earlier Probe / later call / read | Unchanged | Candidate |
+|---|---|---|
+| `probe-0` / pick / `PID` (the target) | 0 / 80 | 50 / 50 |
+| `probe-1` / `fable` / `GRANDCHILD` (the read called added) | 2 / 80 | 4 / 50 |
+
+On the read called added, Fisher's exact test, two-sided, gives p = 0.20 pooled and p = 0.60 on the
+Reviewer's runs alone, and the bracket appears without the sleep, in the Reviewer's unchanged runs
+`u07` and `u34`. The mechanism agrees with the counts: the fake writes `GRANDCHILD=` when it spawns
+the child and sleeps only afterwards (`conformance/fakes/agent`), so the sleep comes after both
+that write and the next call's read of it, and has no way to add the bracket. `CNF-34` was red in
+every one of the 130 mutant runs. The technique is the one `rl-cnf34-remaining-boundaries-4lq`
+accepted for the pick, below: a one-second delay that took the own-process read from 0 / 20 to
+20 / 20.
+
+What landed is the measured candidate and nothing else: `conformance/run` sets
+`RLOOP_FAKE_SLEEP_PROBE=1` on the ordinary `rec-reap-probe` Run and on no other, the fake is
+unchanged, and `CNF-34` states the sleep. The ordinary `probe-0` own-process read now has its
+witness for the deferral alone: `[probe-0: 001-probe-0.env PID … alive when 002-manager-0.env
+started]`. Against the landed suite, the same mutation rebuilt on the executable of rloop-bash
+`297238b` (SHA-256 `d5c3284d443d7620c2708b009cc3b489decdfdb6ba55991bd7d1c06759d6989e`, wrapper
+retained) fails `CNF-34` and no other item, 32 passed and 1 failed, its whole detail that bracket,
+the `probe-0` `GRANDCHILD` bracket against the same record and the `probe-1` `PID` bracket against
+`005-reviewer-1-fable.env`; the unmutated executable gives 33 passed, 0 failed.
+
+The group half remains a limit at that boundary and is recorded, not redesigned: the `probe-0` /
+pick / `GRANDCHILD` read is intermittent in both variants — 18 / 20 in each suite above and
+57 / 60 in the Reviewer's unchanged runs — as is `probe-1` / `fable` / `GRANDCHILD` in the table
+above. That intermittent silence never turned the item green on the mutant.
 
 *Remaining boundaries investigated 2026-10-03 (`rl-cnf34-remaining-boundaries-4lq`).*
 This amends `CNF-34` with the watching Runs it lists and a delay in its ordinary Manager Run;
-it leaves the ordinary Probe sleep candidate above declined. The starting Specification was
+it left the ordinary Probe sleep candidate above declined, as it stood when this investigation
+closed; the candidate landed afterwards, as that paragraph records. The starting Specification was
 `1370638210061870b37a0c07ab86a1abb149d6f2`. The reference resolved from
 `/home/master/p/rloop-bash/result/bin/rloop` to
 `/nix/store/mydjhwg0771w726kcp1gpx71v485kc4s-rloop/bin/rloop`, SHA-256
@@ -824,7 +865,8 @@ repetitions per suite with the same deferral mutant, gave:
 Mean runtime was 2.513 seconds unchanged and 3.506 with the delay. The delayed reference was green
 in 5/5 repetitions, mean 3.525 seconds. These observations demonstrate the own-process guard for
 an isolated deferred wait with null stdin, alongside descendant evidence; they do not demonstrate
-an own-process-only failure or change the separate ordinary Probe limitation above.
+an own-process-only failure, and they did not change the separate ordinary Probe limitation above,
+which the probe sleep landed afterwards ended.
 
 With the current wrapper, the existing Implementer Checkpoint arm was green in 5/5 repetitions.
 Replacing only `RLOOP_FAKE_INTERFERENCE=1:afterImplementer:editTask` with `-` made it red in 5/5:
