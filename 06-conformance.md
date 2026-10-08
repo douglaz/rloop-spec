@@ -44,23 +44,24 @@ goes where `DIR-6`'s `move task.md to rejected-<r>-task.md` sends it; on a host 
 
 **CNF-3** For every line of `conformance/scenarios.tsv` the suite MUST run the executable in a
 fresh git repository with the line's script loaded into the fakes, `--max-rounds` set to the
-line's cap, and `--manager-model` and `--implementer-model` set from the line's `seats` column,
+line's cap, and each Seat's preset and model set from the line's `seats` column,
 and assert the exit status equals the line's and the recorded spawns equal the line's
 trace — a Panel compared as the set of the Reviewers rloop called, the rest in order, and a Run
 refused at the pick as no spawn at all. The file is
-what `tools/formal/` enumerates (`ADR-0002`, `tools/check_scenarios.py`). A line whose `seats` is
-`-` — every line the enumeration held before `RUN-22` — is replayed with both Seats on a model
-`RUN-21`'s table does not name, `claude-sonnet-5`, and with a probe before the pick reporting
-nothing exhausted; any other line names the Seats on the table's models and what that probe
-prints. *Those older lines were written for Runs no Seat's verdict could stop, and a replay on the
-default models would now refuse or cut short the ones whose probe reports `Opus` exhausted; the column is
-where the file says so, rather than a replay that assumes it.* This item is the executable form
+what `tools/formal/` enumerates (`ADR-0002`, `tools/check_scenarios.py`). In `seats`, `fable` and
+`opus` select claude with that Reviewer's model; `claude` selects claude with the off-table
+model `claude-sonnet-5`; `codex-fable` and `codex-opus` select codex with the corresponding table
+model; an unnamed Seat selects codex with that same off-table model literal.
+`pick=<shape>` scripts the Probe before the pick; `-` selects codex for both Seats and a clear
+pick Probe. *The preset is independent of model spelling. An off-table claude model still reads
+the session cap, while the codex replay keeps the older family-only scenarios independent of
+Manager and Implementer exhaustion.* This item is the executable form
 of the decision table and the Round: (`RUN-5`, `RUN-6`, `RUN-7`, `RUN-9`,
 `RUN-10`, `RUN-11`, `RUN-12`, `RUN-13`, `RUN-14`, `RUN-15`, `RUN-21`, `RUN-22`, `DIR-5`, `DIR-6`,
 `DIR-7`, `OVR-1`)
 
-*Amended 2026-10-08: the rationale names the default Seats' Opus family; the replay's explicit
-model choices and off-table setup are unchanged.*
+*Amended 2026-10-08 (`rl-8ee8`): the replay encodes preset identity separately from family
+membership and includes session readings.*
 
 **CNF-4** The suite MUST be able to fail: run with `--self-check` it flips one expected exit in
 a copy of the scenario file, replays it, and requires a red result. The scenario file is shown
@@ -500,8 +501,12 @@ nothing; when it writes output carrying no `Current week` line; when it reports 
 `100% used` is split by a NUL byte; when it reports a family at `100% used` but **exits non-zero**;
 and when it does not finish within its bound, however complete the output it would have written. In
 each case the Run reaches its judge and ends exactly as the same Run does with a probe reporting
-nothing exhausted. *These are the fail-open paths, and they are the reason `RUN-21` reads one shape
-and calls everything else `unknown`. The NUL-split line does not begin with `RUN-21`'s prefix,
+nothing exhausted. The same assertions apply to session readings at 89, 90, 99 and 101;
+session text off the start of the line; a nonnumeric or NUL-split session percentage; a session
+100 report with a non-zero exit; and a Probe scripted to print session 100 after exceeding its
+one-second bound. Both Seats still use claude with off-table models, so their Round verdicts are
+exercised too. *These are the fail-open paths and the Round boundary checks for `RUN-21`. The
+NUL-split line does not begin with `RUN-21`'s prefix,
 however it reads once a byte is dropped. An item that only ever saw a well-formed probe would be a
 green check over a rule nobody tested. `CNF-31` drives these shapes again at
 `the probe before the pick`, and says how the two sets differ.* (`RUN-21`)
@@ -520,7 +525,11 @@ newline and no extra content, and its `.err` file exists and is empty. In both c
 is called with every Panel Feedback File path, including those of the omitted Reviewers; with
 the called Reviewers succeeding and the judge scripted to finish done, the Run produces its
 Finished File and exits 0. With `fable` omitted and every called Reviewer failing, the Run
-instead exits 2, calls no judge and produces no Finished File.
+instead exits 2, calls no judge and produces no Finished File. With both Seats using the codex
+preset and off-table models, a Round reporting session 100 has the same exact record, omitted
+Reviewer files, surviving Reviewers, judge arguments and successful completion as the both-family
+arm. The preset recommendations are not asserted: `RUN-22` states the message
+`SHOULD instead name the relevant preset flag`.
 `CNF-15` owns the other literal. *An Implementation that reused one literal for both would pass
 every other item, and the Manager reads the two as different things (`PRM-2`).* (`RUN-7`, `RUN-8`, `RUN-15`,
 `RUN-21`, `PRM-2`, `DIR-4`)
@@ -537,16 +546,30 @@ claude-fable-5-1`, the Implementer's model off the table and `Current week (Fabl
 instead, the Run is refused the same way and standard error names `claude-fable-5-1`. The pick is
 scripted to fail. Here and in `CNF-29` and `CNF-30`, standard error names a Seat when the Seat's
 word stands whole in what is left of standard error once every `manager-model` and
-`implementer-model` is deleted together with any dashes before it. *The spawn record is the
+`implementer-model` is deleted together with any dashes before it, then `--manager` and
+`--implementer` are removed.
+*The spawn record is the
 assertion: a Run that spawned a Manager which then failed also exits 2, so the status alone passes
 an Implementation that ignores the refusal. The second Run is there because one row cannot tell a
 Seat read from its own model from a rule that hardcodes `opus`. The flag names go first because
-`RUN-22`'s message `SHOULD name the flag that chooses another model` and each flag's name carries a
+`RUN-22`'s message `SHOULD name the flag that chooses another model` for family refusals and
+recommends preset flags for session refusals, and each flag's name carries a
 Seat's word, so a message naming the flag and no Seat would otherwise pass.* (`RUN-22`, `RUN-21`,
 `DIR-4`, `RUN-10`)
 
 *Amended 2026-10-08 (`rl-4i7t`): the default-model refusal now exercises Opus and the Manager override exercises
 Fable, preserving both family rows.*
+
+With session 90 before the pick and both default Seats, the same refusal assertions hold, now
+with both claude Reviewers `unavailable` too and the session line quoted verbatim, reset included.
+With a codex Implementer, independently refuse only the claude Manager, both on its default model
+and on `claude-sonnet-5` and `gpt-6-astra`, under session 90, 090 and 101. Each exact record has
+only `manager`,
+`fable` and `opus` unavailable. This exposes base-ten reading, the pick's inclusive threshold,
+and off-table session exhaustion. Under `--auto`, session 90 exits 2 with empty standard output,
+no agent spawned and exactly one Probe before the pick: the Sequence stops there (`SEQ-6`).
+The recommended flags are not pass/fail assertions: `RUN-22` states
+`SHOULD instead name the relevant preset flag`.
 
 **CNF-29** With the Manager's model off `RUN-21`'s table, the Implementer's at its default and the
 probe before the pick reporting `Current week (Opus): 100% used`, the executable exits 2 with no
@@ -567,6 +590,12 @@ where it is observable, in `probe-pick.md` above.* (`RUN-22`, `RUN-21`, `DIR-4`,
 
 *Amended 2026-10-08 (`rl-4i7t`): the default Implementer refusal now exercises Opus and its override exercises
 Fable, preserving both family rows.*
+
+With a codex Manager and session 90 before the pick, independently refuse the claude Implementer
+on its default model and on `claude-sonnet-5` and `gpt-6-sol`. Each Run satisfies the same refusal
+assertions,
+including the model, Seat and verbatim session line with reset on standard error, and an exact
+record with `implementer`, `fable` and `opus` unavailable and the other Seats unknown.
 
 **CNF-30** With the Manager's model at its default and the Implementer's off `RUN-21`'s table, the
 probes before the pick and in Round 1 reporting nothing exhausted, Round 2's reporting
@@ -589,6 +618,17 @@ get one Seat's row right and another's wrong.* (`RUN-22`, `RUN-21`, `RUN-7`, `RU
 *Amended 2026-10-08 (`rl-4i7t`): the default Manager now exercises Opus in both Rounds; the Fable pair uses an
 explicit Manager override.*
 
+With both claude Seats on off-table models, repeat a Round 1 refusal for session 100 and 0100.
+The exact Probe record makes both Seats and both claude Reviewers unavailable, leaving astra and
+sol unknown. The pick and Implementer each ran once; both codex Reviewers ran once; neither
+claude Reviewer nor the judge ran. Each omitted Reviewer has the exact not-run Feedback File and
+an existing empty `.err`; no judge output or Finished File exists, standard output is empty, exit
+is 2 and standard error names the Manager, its model and the session line verbatim with its reset.
+For each reading, separate Runs inject Task File and Finished File Interference after the
+Implementer and after the Panel (using the surviving astra Reviewer). Each leaves the Task File
+equal to its snapshot and both rejected files present, demonstrating both Checkpoints despite the
+withheld judge (`DIR-6`).
+
 **CNF-31** With both Seats' models off `RUN-21`'s table and the probe before the pick reporting
 `Current week (Fable): 100% used`, or `Fable` and `Opus` both at 100%, the Run starts — the pick
 is called — and ends 0, and `probe-pick.md` reads `manager:unknown`, `implementer:unknown` and
@@ -609,6 +649,19 @@ nothing exhausted`, which is that item's control rather than a fail-open shape.*
 
 *Amended 2026-10-08 (`rl-4i7t`): the malformed, failed and timed-out reports keep both Seats on explicit Fable
 overrides so an incorrectly accepted report would still refuse the Run.*
+
+The pick's fail-open arms also include session 89, non-anchored, nonnumeric and NUL-split session
+text, a failed session-100 Probe and a Probe scripted to print session 100 after its one-second
+bound. Both claude Seats are explicitly on Fable; every Seat is unknown in the exact pick record,
+the pick runs and the Run finishes. With codex Manager and Implementer presets and the same
+claude-looking off-table model literal, session 100 at both call sites leaves those Seats unknown,
+both claude Reviewers unavailable and both codex Reviewers unknown. Assert both exact records
+and the full spawn trace: pick, Implementer, astra and sol, judge. With a codex Manager and an
+off-table claude Implementer, a Round's session 100 instead records the Implementer unavailable
+but leaves that same spawn trace and successful completion. Finally, session 89 beside an
+exhausted Fable family at both sites leaves both off-table claude Seats unknown, omits only fable
+and still finishes, with both exact records and the complete spawn trace asserted: a low session
+reading cannot erase family exhaustion.
 
 **CNF-32** The pick's prompt argument equals `PRM-1`'s fixture rendered as in `CNF-12`, with
 `{{UNAVAILABLE}}` as the Probe before the pick leaves it, compared byte for byte in four Runs of

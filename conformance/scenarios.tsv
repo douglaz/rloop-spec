@@ -245,13 +245,52 @@ S243	2	ok:task	impl=ok;panel=some;judge=rewrite|impl=ok;panel=all;judge=done	-	f
 S244	2	ok:task	impl=ok;panel=some;judge=rewrite|impl=ok;panel=some;judge=rewrite	-	fable|clear	-	2	pick,impl1:ok,panel1:some:astra+opus+sol,judge1,impl2:ok,panel2:some:astra+fable+opus+sol,judge2
 S245	2	ok:task	impl=ok;panel=some;judge=rewrite|impl=ok;panel=some;judge=done	-	fable|clear	-	0	pick,impl1:ok,panel1:some:astra+opus+sol,judge1,impl2:ok,panel2:some:astra+fable+opus+sol,judge2
 S246	2	ok:task	impl=ok;panel=some;judge=rewrite|impl=ok;panel=none;judge=rewrite	-	fable|clear	-	2	pick,impl1:ok,panel1:some:astra+opus+sol,judge1,impl2:ok,panel2:none:astra+fable+opus+sol
-S247	1	ok:done	-	-	-	manager=fable;pick=fable	2	
-S248	1	ok:done	-	-	-	implementer=fable;pick=fable	2	
-S249	1	ok:done	-	-	-	manager=opus;pick=opus	2	
-S250	1	ok:done	-	-	-	manager=opus;pick=fable	0	pick
-S251	1	ok:task	impl=ok;panel=all;judge=done	-	fable	manager=fable;pick=clear	2	pick,impl1:ok,panel1:all:astra+opus+sol
-S252	2	ok:task	impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=done	-	clear|fable	manager=fable;pick=clear	2	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1,impl2:ok,panel2:all:astra+opus+sol
-S253	2	ok:task	impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=done	-	fable|fable	implementer=fable;pick=clear	0	pick,impl1:ok,panel1:all:astra+opus+sol,judge1,impl2:ok,panel2:all:astra+opus+sol,judge2
-S254	1	ok:task	impl=ok;panel=all;judge=done	-	fail	manager=fable;implementer=fable;pick=fail	0	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1
-S255	1	ok:task	impl=ok;panel=all;judge=done	-	loose	manager=fable;implementer=fable;pick=loose	0	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1
-S256	1	ok:task	impl=ok;panel=all;judge=done	-	-	manager=fable;implementer=fable;pick=clear	0	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1
+S247	1	ok:task	impl=ok;panel=all;judge=rewrite	-	session100	-	2	pick,impl1:ok,panel1:all:astra+sol,judge1
+S248	1	ok:task	impl=ok;panel=all;judge=done	-	session100	-	0	pick,impl1:ok,panel1:all:astra+sol,judge1
+S249	1	ok:task	impl=ok;panel=some;judge=rewrite	-	session100	-	2	pick,impl1:ok,panel1:some:astra+sol,judge1
+S250	1	ok:task	impl=ok;panel=some;judge=done	-	session100	-	0	pick,impl1:ok,panel1:some:astra+sol,judge1
+S251	1	ok:task	impl=ok;panel=none;judge=rewrite	-	session100	-	2	pick,impl1:ok,panel1:none:astra+sol
+S252	1	ok:task	impl=ok;panel=all;judge=rewrite	-	session99	-	2	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1
+S253	1	ok:task	impl=ok;panel=all;judge=done	-	session99	-	0	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1
+S254	1	ok:task	impl=ok;panel=some;judge=rewrite	-	session99	-	2	pick,impl1:ok,panel1:some:astra+fable+opus+sol,judge1
+S255	1	ok:task	impl=ok;panel=some;judge=done	-	session99	-	0	pick,impl1:ok,panel1:some:astra+fable+opus+sol,judge1
+S256	1	ok:task	impl=ok;panel=none;judge=rewrite	-	session99	-	2	pick,impl1:ok,panel1:none:astra+fable+opus+sol
+S257	1	ok:task	impl=ok;panel=all;judge=rewrite	-	session101	-	2	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1
+S258	1	ok:task	impl=ok;panel=all;judge=done	-	session101	-	0	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1
+S259	1	ok:task	impl=ok;panel=some;judge=rewrite	-	session101	-	2	pick,impl1:ok,panel1:some:astra+fable+opus+sol,judge1
+S260	1	ok:task	impl=ok;panel=some;judge=done	-	session101	-	0	pick,impl1:ok,panel1:some:astra+fable+opus+sol,judge1
+S261	1	ok:task	impl=ok;panel=none;judge=rewrite	-	session101	-	2	pick,impl1:ok,panel1:none:astra+fable+opus+sol
+S262	1	ok:task	impl=ok;panel=all;judge=rewrite	-	session-fail	-	2	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1
+S263	1	ok:task	impl=ok;panel=all;judge=done	-	session-fail	-	0	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1
+S264	1	ok:task	impl=ok;panel=some;judge=rewrite	-	session-fail	-	2	pick,impl1:ok,panel1:some:astra+fable+opus+sol,judge1
+S265	1	ok:task	impl=ok;panel=some;judge=done	-	session-fail	-	0	pick,impl1:ok,panel1:some:astra+fable+opus+sol,judge1
+S266	1	ok:task	impl=ok;panel=none;judge=rewrite	-	session-fail	-	2	pick,impl1:ok,panel1:none:astra+fable+opus+sol
+S267	1	ok:task	impl=ok;panel=all;judge=rewrite	-	session-loose	-	2	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1
+S268	1	ok:task	impl=ok;panel=all;judge=done	-	session-loose	-	0	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1
+S269	1	ok:task	impl=ok;panel=some;judge=rewrite	-	session-loose	-	2	pick,impl1:ok,panel1:some:astra+fable+opus+sol,judge1
+S270	1	ok:task	impl=ok;panel=some;judge=done	-	session-loose	-	0	pick,impl1:ok,panel1:some:astra+fable+opus+sol,judge1
+S271	1	ok:task	impl=ok;panel=none;judge=rewrite	-	session-loose	-	2	pick,impl1:ok,panel1:none:astra+fable+opus+sol
+S272	1	ok:done	-	-	-	manager=fable;pick=fable	2	
+S273	1	ok:done	-	-	-	implementer=fable;pick=fable	2	
+S274	1	ok:done	-	-	-	manager=opus;pick=opus	2	
+S275	1	ok:done	-	-	-	manager=opus;pick=fable	0	pick
+S276	1	ok:task	impl=ok;panel=all;judge=done	-	fable	manager=fable;pick=clear	2	pick,impl1:ok,panel1:all:astra+opus+sol
+S277	2	ok:task	impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=done	-	clear|fable	manager=fable;pick=clear	2	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1,impl2:ok,panel2:all:astra+opus+sol
+S278	2	ok:task	impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=done	-	fable|fable	implementer=fable;pick=clear	0	pick,impl1:ok,panel1:all:astra+opus+sol,judge1,impl2:ok,panel2:all:astra+opus+sol,judge2
+S279	1	ok:task	impl=ok;panel=all;judge=done	-	fail	manager=fable;implementer=fable;pick=fail	0	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1
+S280	1	ok:task	impl=ok;panel=all;judge=done	-	loose	manager=fable;implementer=fable;pick=loose	0	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1
+S281	1	ok:done	-	-	-	manager=claude;pick=session90	2	
+S282	1	ok:done	-	-	-	implementer=claude;pick=session090	2	
+S283	1	ok:done	-	-	-	manager=claude;pick=session101	2	
+S284	1	ok:task	impl=ok;panel=all;judge=done	-	session99	manager=claude;pick=session89	0	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1
+S285	1	ok:task	impl=ok;panel=all;judge=done	-	session101	manager=claude;pick=clear	0	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1
+S286	1	ok:task	impl=ok;panel=all;judge=done	-	session0100	manager=claude;pick=clear	2	pick,impl1:ok,panel1:all:astra+sol
+S287	1	ok:task	impl=ok;panel=all;judge=done	-	session100	implementer=claude;pick=clear	0	pick,impl1:ok,panel1:all:astra+sol,judge1
+S288	1	ok:task	impl=ok;panel=all;judge=done	-	session100	manager=opus;pick=clear	2	pick,impl1:ok,panel1:all:astra+sol
+S289	1	ok:task	impl=ok;panel=all;judge=done	-	session99	manager=opus;pick=clear	0	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1
+S290	1	ok:done	-	-	-	manager=fable;pick=session89-fable	2	
+S291	1	ok:task	impl=ok;panel=all;judge=done	-	session100	manager=codex-opus;pick=session100	0	pick,impl1:ok,panel1:all:astra+sol,judge1
+S292	1	ok:task	impl=ok;panel=all;judge=done	-	session100	pick=session100	0	pick,impl1:ok,panel1:all:astra+sol,judge1
+S293	1	ok:task	impl=ok;panel=all;judge=done	-	session-fail	manager=claude;pick=session-fail	0	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1
+S294	1	ok:task	impl=ok;panel=all;judge=done	-	session-loose	manager=claude;pick=session-loose	0	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1
+S295	1	ok:task	impl=ok;panel=all;judge=done	-	-	manager=fable;implementer=fable;pick=clear	0	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1

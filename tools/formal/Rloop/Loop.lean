@@ -125,13 +125,26 @@ inductive Spawn
   | judge (round : Nat)
   deriving DecidableEq, Repr
 
-/-- The agents' behaviour, as a total function of the Round so that no Round is ever "off the end
-of the script". `available k r` is false exactly when `RUN-21` recorded `r` `unavailable` before
-Round `k`'s Panel, or before the pick when `k` is `0`; `unknown` means call it, so it is `true`,
-and so is every Reviewer by default. `panel k` is the class of the Reviewers that were called.
-`seat s` is where Seat `s`'s model stands in `RUN-21`'s table: `none` when the table does not name
-it, the default, and otherwise the Reviewer whose model it is, since the table's two rows are the
-models of `fable` and `opus` (`AGT-7`, `AGT-8`). -/
+/-- Preset identity is independent of family membership (`RUN-21`). `claude none` is an
+off-table claude model; `codex` is exempt from the session cap. -/
+structure SeatModel where
+  usesClaude : Bool
+  family : Option Reviewer := none
+  deriving DecidableEq, Repr
+
+def SeatModel.codex : SeatModel := { usesClaude := false }
+def SeatModel.claude (family : Option Reviewer) : SeatModel := { usesClaude := true, family }
+
+/-- The successful, within-bound Probe's parsed session percentage. Byte parsing and process
+success are inputs, not properties proved by this model. `0` is the pick, every other index a Round. -/
+@[req "RUN-21"]
+def sessionExhausted (k n : Nat) : Bool := if k == 0 then n ≥ 90 else n == 100
+
+/-- The agents' behaviour, total in the Round. `available` carries each Reviewer's combined
+family/session verdict (`unknown` is true). `familyAvailable` carries the family reading alone;
+`sessionAvailable` carries the account verdict alone,
+so off-table claude Seats can read it too. `seat` carries preset identity and family membership
+separately. Defaults are codex Seats and no exhaustion. -/
 structure Behaviour where
   pick : ManagerResult
   implementer : Nat → Bool
@@ -139,16 +152,16 @@ structure Behaviour where
   judge : Nat → ManagerResult
   interference : Nat → Point → Interference
   available : Nat → Reviewer → Bool := fun _ _ => true
-  seat : Seat → Option Reviewer := fun _ => none
+  familyAvailable : Nat → Reviewer → Bool := fun _ _ => true
+  sessionAvailable : Nat → Bool := fun _ => true
+  seat : Seat → SeatModel := fun _ => .codex
 
-/-- The verdict `RUN-21` records for Seat `s` from the probe before Round `k` (`0`: before the
-pick), `true` for `unknown`. A Seat whose model is off the table is `unknown` whatever the probe
-wrote; one on it reads what the Reviewer holding that model reads. One rule, then, for every Seat:
-a verdict belongs to a model's family, not to a role. -/
+/-- The verdict for a Manager or Implementer Seat: codex is session-exempt; claude reads the
+account cap regardless of family membership and still reads any applicable family verdict. -/
 def Behaviour.seatAvailable (b : Behaviour) (k : Nat) (s : Seat) : Bool :=
-  match b.seat s with
-  | none => true
-  | some r => b.available k r
+  let model := b.seat s
+  (!model.usesClaude || b.sessionAvailable k) &&
+    (model.family.map (b.familyAvailable k)).getD true
 
 /-- A Behaviour with the interference removed: what the Checkpoint is supposed to make every Run
 equivalent to. -/

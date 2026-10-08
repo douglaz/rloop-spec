@@ -109,8 +109,8 @@ observed_trace() { # observed_trace <record dir>
 }
 
 # --- the Seats (RUN-21, RUN-22) ---------------------------------------------------------------------
-# A model RUN-21's table does not name: a Seat holding it reads `unknown` whatever the probe says,
-# so a Run can be refused, or its judge withheld, only where a script seats a model on the table.
+# A model outside RUN-21's family table. A claude Seat holding it still reads the session cap;
+# replay sets the preset independently so codex exemption is not inferred from model spelling.
 # For the assigned literal, see CNF-3 in 06-conformance.md; keep value changes in agreement with it.
 off_table_model=claude-sonnet-5
 # The invariant every reader of it rests on: no Seat defaults to it and no Reviewer's command line
@@ -119,16 +119,19 @@ off_table_model=claude-sonnet-5
 # (AGT-5, AGT-6), and the one each Reviewer's command line fixes (AGT-7, AGT-8, AGT-10, AGT-11).
 # It covers RUN-21's table only while every table model is among the guarded default/fixed Seat
 # models. A table amendment adding a model outside that set requires reconsidering this guard's
-# coverage. Off RUN-21's table,
-# `Every other case is` `unknown`. A suite whose own fixture is wrong has nothing to report, so
+# coverage. A suite whose own fixture is wrong has nothing to report, so
 # this refuses before any item rather than letting one go red.
 case "$off_table_model" in
   claude-fable-5-1|gpt-6-astra|claude-opus-5-5|gpt-6-sol)
     echo "conformance: off_table_model is $off_table_model, a model a Seat defaults to or fixes (AGT-3, AGT-5, AGT-6, AGT-7, AGT-8, AGT-10, AGT-11), and the suite needs one no Seat defaults to and no Reviewer's command line fixes" >&2
     exit 2 ;;
 esac
-seat_model() { # seat_model <fable|opus|anything else> -> that Reviewer's model (AGT-7, AGT-8), or the off-table one
-  case $1 in fable) echo claude-fable-5-1 ;; opus) echo claude-opus-5-5 ;; *) echo "$off_table_model" ;; esac
+seat_model() { # seat_model <fable|opus|codex-fable|codex-opus|anything else> -> that Reviewer's model (AGT-7, AGT-8), or the off-table one
+  case $1 in fable|codex-fable) echo claude-fable-5-1 ;; opus|codex-opus) echo claude-opus-5-5 ;; *) echo "$off_table_model" ;; esac
+}
+
+seat_preset() { # named Seats run claude; the unnamed default runs codex
+  case $1 in fable|opus|claude) echo claude ;; *) echo codex ;; esac
 }
 
 # --- CNF-3: the scenarios ---------------------------------------------------------------------------
@@ -148,6 +151,7 @@ run_scenarios() { # run_scenarios <scenarios file> -> prints "<failures> <total>
     got_exit=$(RLOOP_FAKE_PICK="$pick" RLOOP_FAKE_ROUNDS="${rounds/#-/}" RLOOP_FAKE_INTERFERENCE="$interf" \
       RLOOP_FAKE_PROBE="${probe/#-/}" RLOOP_FAKE_PROBE_PICK="$pick_probe" run_rloop "$repo" "$rec" \
       --run-dir "$repo/run" --max-rounds "$max" \
+      --manager "$(seat_preset "$manager_seat")" --implementer "$(seat_preset "$implementer_seat")" \
       --manager-model "$(seat_model "$manager_seat")" --implementer-model "$(seat_model "$implementer_seat")")
     got_trace="$(observed_trace "$rec")"
     if [ "$got_exit" != "$exp_exit" ] || [ "$got_trace" != "$exp_trace" ]; then

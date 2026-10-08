@@ -239,8 +239,9 @@ probe before the pick that reads `out`'s family at 100%: `fable` takes out the M
 `opus` the Implementer's. -/
 def seated (out : Reviewer) : Behaviour :=
   { restless with
-    seat := fun s => match s with | .manager => some .fable | .implementer => some .opus
-    available := fun k r => !(k == 0 && r == out) }
+    seat := fun s => match s with | .manager => .claude (some .fable) | .implementer => .claude (some .opus)
+    available := fun k r => !(k == 0 && r == out)
+    familyAvailable := fun k r => !(k == 0 && r == out) }
 
 /-- With the refusal off, each Seat's arm spawns the pick it was to refuse. -/
 @[req "RUN-22"]
@@ -294,8 +295,9 @@ theorem judged_only_when_manager_answers (b : Behaviour) (m k : Nat) :
 family at 100%: a Manager that runs out mid-Run. -/
 def runsOut : Behaviour :=
   { restless with
-    seat := fun s => match s with | .manager => some .fable | .implementer => none
-    available := fun k r => !(k == 2 && r == .fable) }
+    seat := fun s => match s with | .manager => .claude (some .fable) | .implementer => .codex
+    available := fun k r => !(k == 2 && r == .fable)
+    familyAvailable := fun k r => !(k == 2 && r == .fable) }
 
 /-- Round 2's Panel runs, without `fable`, and the exit takes its judge's place. -/
 @[req "RUN-22"]
@@ -309,6 +311,34 @@ theorem manager_out_skips_judge :
 theorem judge_refusal_off_judges :
     ((run { Guards.all with judgeRefusal := false } runsOut 3).2.any (Spawn.isJudgeOf 2)) = true := by
   decide
+
+/-! ## `RUN-21` — account readings and preset identity -/
+
+@[req "RUN-21"]
+theorem session_boundaries :
+    sessionExhausted 0 89 = false ∧ sessionExhausted 0 90 = true ∧
+    sessionExhausted 0 101 = true ∧ sessionExhausted 1 99 = false ∧
+    sessionExhausted 1 100 = true ∧ sessionExhausted 1 101 = false := by decide
+
+/-- A claude Seat outside the family table still reads the account cap. -/
+def sessionOut : Behaviour :=
+  { restless with seat := fun _ => .claude none, sessionAvailable := fun _ => false }
+
+@[req "RUN-21"]
+theorem off_table_session_refused : run Guards.all sessionOut 1 = (.e2, []) := by decide
+
+/-- Absence witness for the session reading: erasing it spawns the pick. -/
+@[req "RUN-21"]
+theorem session_reading_off_picks :
+    (run Guards.all { sessionOut with sessionAvailable := fun _ => true } 1).2.head? =
+      some .pick := by decide
+
+@[req "RUN-21"]
+theorem codex_session_exempt (b : Behaviour) (k : Nat) (s : Seat) (reading : Nat → Bool)
+    (h : (b.seat s).usesClaude = false) :
+    ({ b with sessionAvailable := reading } : Behaviour).seatAvailable k s =
+      b.seatAvailable k s := by
+  simp [Behaviour.seatAvailable, h]
 
 /-! ## `RUN-12` — no decision -/
 

@@ -1232,3 +1232,32 @@ never matched; an Opus Seat reads `unknown` in practice. Moving defaults away fr
 them off the only observed family line; the refusal protects them only if an Opus line appears.
 `RUN-21` states `An absent family line is` `unknown`, `never` `unavailable`. This is the existing
 fail-open design, not a defect to fix in this amendment.
+
+
+## F23 — Session quota: owner evidence and threshold cost (2026-10-08)
+
+Bead `rl-8ee8` amends `RUN-21`, `RUN-22`, `AGT-18` and `AGT-17`. This records the owner's
+2026-10-08 review, not measurements or live vendor checks by this Run. The owner reviewed 430
+Runs from 2026-09-19 through 2026-10-08. Four Manager calls returned only
+`You've hit your session limit · resets <time>`; three more hung with zero bytes while the
+session reading was 90–99%.
+
+Every inspected Probe output carried `Current session: <n>% used · resets <time>`.
+`Current session: 100% used` occurred four times, in the same shape as the weekly family output.
+Before the pick with a claude Manager, six of eight Runs at session 90% or more died without a
+Finished File; two finished. At 95% or more, both of the two Runs died. No pre-pick Probe read
+100%: those Runs began high and exhausted the account during the Run.
+
+Before a Panel, nine of thirteen judges at 90–99% still answered. Both judges after a 100%
+reading, tetasm `20261006T145826` and `20261007T073726`, Round 1, returned the session-limit
+message. The owner reports median judge durations of 2–8 minutes. The higher Round threshold
+preserves the chance to judge work already done. The known cost of the pick threshold is the two
+successful Runs it would have refused: rloop `20261002T071749` and btc-policy-spec
+`20260925T004749`.
+
+After `rl-4i7t`, the default claude Manager and Implementer use Opus; Reviewer `fable` still uses
+Fable. Across 867 inspected Probe readings there was never an Opus weekly line. The session line
+is therefore the only observed quota reading that can remove those default Seats. This supersedes
+F22's family-only observation about their protection; the absence of an Opus family line remains
+an observation. F22's correction is intact: the observed Opus Manager Runs used effort `high`,
+not `xhigh`. Real `xhigh` Manager timing remains open.

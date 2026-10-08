@@ -90,50 +90,66 @@ each call it MUST record for every Seat exactly one verdict — `unavailable` or
 Seat's model is `<manager model>` (`AGT-3`), the Implementer's is `<implementer model>` (`AGT-5`,
 `AGT-6`), and each Reviewer's is the one its command line fixes (`AGT-11`).
 
-A Seat is **`unavailable`** only when the probe exited zero within its bound and some line of
-its standard output **begins** with `Current week (<family>): 100% used` — anchored at the start
-of the line, with whatever follows ignored — where `<family>` is the Seat's model's family by
-this table and nothing else:
+A Seat is **`unavailable`** only when the probe exited zero within its bound and either of
+these readings establishes exhaustion:
+
+- A line of its standard output **begins** with `Current week (<family>): 100% used` — anchored
+  at the start of the line, with whatever follows ignored — where `<family>` is the Seat's
+  model's family by this table and nothing else:
 
 | model | family |
 |---|---|
 | `claude-fable-5-1` | `Fable` |
 | `claude-opus-5-5` | `Opus` |
 
-Every other case is **`unknown`**: the probe exited non-zero, hit its bound, wrote nothing, wrote
-output with no such line, named a percentage below 100, or the Seat's model is not in that table.
-The last holds whatever the probe wrote: a Reviewer is `unknown` whenever the Reviewer's model is
-not in that table — which is every codex Reviewer, since that vendor publishes no quota at all —
-and so are the Manager's and the Implementer's Seats for any `--manager-model` or
-`--implementer-model` value the table does not name. An absent family line is `unknown`, never
-`unavailable`: the probe lists only families it has something to report.
+- A line of its standard output **begins** with `Current session: <n>% used`, where `<n>` is
+  decimal digits read in base ten, and the Seat's command line runs `claude`. Before the pick,
+  `<n>` is **90 or more**; in a Round's Probe, `<n>` is **exactly 100**. Whatever follows is
+  carried, not parsed. This applies to the Manager under `--manager claude`, the Implementer
+  under `--implementer claude`, and Reviewers `fable` and `opus`, including off-table
+  `--manager-model` and `--implementer-model` values. The CLI preset, not the model's spelling,
+  determines whether this session reading applies. It never applies to a codex Seat.
+
+Every other case is **`unknown`**: a failed or timed-out Probe, empty, missing, unreadable or
+off-format output, or output with neither qualifying reading for that Seat. An absent family
+line is `unknown`, never `unavailable` on the family reading alone: the probe lists only families
+it has something to report. An off-table model has no family reading, but a claude Seat can still
+be exhausted by the session reading. Neither reading removes exhaustion established by the other.
 
 The match is anchored because the probe's output is a model's turn, not a machine format: an
 unanchored search would let a refusal or an explanation that merely repeats those words remove a
 Reviewer or refuse a Run, and that is the one direction fail-open does not protect. The aggregate
-`Current week (all models)` line is deliberately **not** read: no family is named in it, nobody
-has observed what the probe prints when a whole account is exhausted, and a rule written against
-an unobserved format is a guess. That case therefore reads `unknown` and saves nothing, which is
-the honest outcome until someone sees it.
+`Current week (all models)` line is deliberately **not** read: it names no family and is neither
+of the readings above. That line alone therefore reads `unknown`.
 
 *Fail open is the whole design. A verdict is evidence about one moment, the format belongs to a
 vendor and will drift, and a wrong `unavailable` silently shrinks the Panel or refuses a Run that
 would have worked — so only a positive, unambiguous reading counts, and everything else means
-"spawn it". This is also what keeps a typo loud: a misspelled model name fails fast and non-zero,
+"spawn it". The threshold is a decision on an unambiguous reading; fail-open still governs
+unreadable, missing and off-format output. This is also what keeps a typo loud: a misspelled model
+name fails fast and non-zero,
 while an exhausted one hangs and writes nothing, and the two are not confusable.* What a Panel
 does with an `unavailable` Reviewer is `RUN-15`'s; what a Run does with an `unavailable` Manager's
 or Implementer's Seat is `RUN-22`'s.
 
 *Amended 2026-10-08 (`rl-4i7t`): the Opus row now names `claude-opus-5-5`; the family,
-Probe parsing and availability policy are unchanged.*
+Probe parsing and availability policy were unchanged by that amendment.*
+
+*Amended 2026-10-08 (`rl-8ee8`): add the account session reading to `RUN-21`, with different
+thresholds at the two call sites. `F23` records the owner's evidence and the successful Runs the
+pick threshold would have refused.*
 
 **RUN-22** When `probe-pick.md` records the Manager's Seat `unavailable`, or the Implementer's Seat
 `unavailable`, rloop MUST exit 2 without spawning any agent, and MUST write to standard error a
 message naming the Seat — both, when both are — its model, and the reset the probe reported, which
-it names by quoting the probe's matching line verbatim. The message SHOULD name the flag that
-chooses another model, `--manager-model` or `--implementer-model` (`AGT-1`). *The line is carried,
-not parsed: `RUN-21` reads nothing past `100% used`, and `AGT-17` records that the reset's format
-already drifted once.*
+it names by quoting the probe's matching line verbatim. For a family-line refusal, the message
+SHOULD name the flag that chooses another model,
+`--manager-model` or `--implementer-model` (`AGT-1`). For a session-line refusal, the message
+SHOULD instead name the relevant preset flag, `--manager codex` or `--implementer codex`
+(`AGT-1`), because another claude model shares the same cap. The matching line quoted for a
+session-triggered refusal is the session line, reset text included. rloop MUST refuse immediately,
+without waiting for reset or retrying. *The line is carried, not parsed: the matching prefixes in
+`RUN-21` end at `used`, and `AGT-17` records that the reset's format already drifted once.*
 
 rloop MUST NOT make Round `r`'s judge call when `probe-<r>.md` records the Manager's Seat
 `unavailable`; it MUST exit 2, with the message above for the Manager's Seat. The Round's Panel and

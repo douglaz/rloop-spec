@@ -289,7 +289,8 @@ It is a **Probe** (`CONTEXT.md`), not an agent: no prompt is rendered into it, n
 comes out of it, and it takes no part in the spawn trace the Conformance Suite compares (`CNF-3`).
 One invocation serves every Seat, whichever model each holds, because it reports every claude
 family at once and answers even through a model that is itself exhausted; what each Seat then
-reads is `RUN-21`'s. There is no codex command line here.
+reads is `RUN-21`'s. The same output also reports the account session line. There is no codex
+command line here.
 
 `AGT-12` through `AGT-16` each name the **Probe** beside every agent process, so it is started,
 bounded and killed by those rules rather than by anything stated here. *Everything they exist to
@@ -316,10 +317,15 @@ verification with trivial prompts, not whole-roster, session-resumption, deny-li
 verification. It does not establish observed `xhigh` Manager performance; `F22` records the
 evidence and the open timeout question.*
 
+*Amended 2026-10-08 (`rl-8ee8`): the owner's review found `Current session: <n>% used · resets
+<time>` in every inspected Probe output, with `Current session: 100% used` observed four times,
+in the same shape as the weekly family output. This is the owner's observed evidence (`F23`),
+not a new live verification by this Run.*
+
 A fake agent accepts any flag, so the Conformance
 Suite cannot tell a wrong flag from a right one; a flag that a newer CLI rejects is found only by a
 live Run, and `06-conformance.md` carries the item that says so. The probe's output format is the
 same class of exposure and is not a new one: between 2026-09-20 and 2026-09-21 the reset time in
 that line moved from `2:59pm` to `3pm` without the percentage changing, which is why `RUN-21` reads
-the family and the percentage and nothing else — and why a format that drifts past it degrades to
-`unknown`, not to a smaller Panel.
+the family or session prefix and the percentage and nothing else — and why a format that drifts
+past it degrades to `unknown`, not to a smaller Panel.

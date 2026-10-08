@@ -271,12 +271,12 @@ case "$role" in
       # name, so it is called whatever the probe reported: some is a mixed Panel in every Round.
       some) case "$reviewer" in fable|astra) o=ok ;; *) o=fail ;; esac ;;
     esac
-    [ "$reviewer" = fable ] && interfere afterPanel
+    [ "$reviewer" = "${RLOOP_FAKE_INTERFERING_REVIEWER:-fable}" ] && interfere afterPanel
     if [ "$o" = ok ]; then echo "No findings."; else echo "partial feedback"; status=7; fi
     outcome="$o"
     ;;
   probe)
-    # RUN-21 reads one shape and calls everything else unknown; RLOOP_FAKE_PROBE picks which
+    # RUN-21 reads family and session prefixes; RLOOP_FAKE_PROBE picks which
     # shape this Round's probe writes, so the suite can drive every fail-open path, and a Round's
     # own shape lets one Round report exhaustion and a later one capacity.
     if [ "$round" = 0 ]; then
@@ -286,7 +286,18 @@ case "$role" in
       shape=$(echo "$shapes" | tr '|' '\n' | sed -n "${round}p")
       [ -n "$shape" ] || shape=clear
     fi
+    # Session shapes: decimal boundaries and leading zeros, malformed/failing readings, and a
+    # low session beside an exhausted family to ensure the two readings are combined.
     case "$shape" in
+      session89|session90|session99|session100|session101|session090|session0100)
+               printf 'Current session: %s%% used · resets 6pm (UTC)\n' "${shape#session}" ;;
+      session89-fable)
+               printf 'Current session: 89%% used · resets 6pm (UTC)\n'
+               printf 'Current week (Fable): 100%% used · resets Sep 24, 3pm (UTC)\n' ;;
+      session-fail) printf 'Current session: 100%% used · resets 6pm (UTC)\n'; status=3 ;;
+      session-loose) printf 'I checked and Current session: 100%% used · resets 6pm (UTC)\n' ;;
+      session-garbage) printf 'Current session: ninety%% used · resets 6pm (UTC)\n' ;;
+      session-nul) printf 'Current session: 1\0'; printf '00%% used · resets 6pm (UTC)\n' ;;
       clear)   printf 'Current week (all models): 67%% used · resets Sep 24, 3pm (UTC)\n' ;;
       aggregate) printf 'Current week (all models): 100%% used\n' ;;
       both)    printf 'Current week (%s): 100%% used\n' Fable Opus ;;

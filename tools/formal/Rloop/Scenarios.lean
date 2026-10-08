@@ -5,14 +5,14 @@ Every scripted Behaviour over a small alphabet, run through the model with `Guar
 as one line each: the script the fakes replay, and the exit code and spawn trace the executable
 must reproduce. The enumeration extends a script only while the model's Run continues, so no line
 scripts a Round the Run does not reach. Among the lines with no interference, no probe script and
-no Seat on the table, each is a distinct executed trace and none carries choices nothing reads.
+codex Manager and Implementer, each is a distinct executed trace and none carries choices nothing reads.
 
 Two blocks are appended, each from a narrower alphabet, and in each a choice may deliberately
 change nothing. Interference is added to the one-Round scripts only, at one point each
 (`ADR-0002`: at most one point per script); under `Guards.all` it changes nothing, which is
 exactly what the suite then checks of the executable. A probe script says what the availability
-probe prints in each Round (`RUN-21`): a family at 100% takes that Reviewer out of the Panel's
-calls, and every other shape — the fail-open paths — takes out nobody, so those lines repeat the
+probe prints in each Round (`RUN-21`): a family at 100% or a qualifying session reading takes
+claude Reviewers out of the Panel's calls. Fail-open shapes take out nobody, so those lines repeat the
 exit and trace of a line with no probe script, which is what the suite then checks: that the
 executable's Panel stays whole.
 
@@ -30,10 +30,12 @@ The line format, tab-separated:
 Round joined by `|` (`-` when no Round runs); `interference` is `-` or
 `<round>:<afterImplementer|afterPanel>:<editTask|writeFinished|both>`; `probe` is `-` (the fakes'
 default, a probe reporting nothing exhausted) or the fakes' probe shape per Round joined by `|`;
-`seats` is `-` or, joined by `;`, `manager=<fable|opus>` and `implementer=<fable|opus>` for a
-Seat whose model is the one that Reviewer holds, which `RUN-21`'s table names, and `pick=<shape>`
-for what the probe before the pick prints — a Seat not named holds a model the table does not
-name, and `-` is both so with a probe before the pick reporting nothing exhausted;
+`seats` is `-` or, joined by `;`, `manager=<fable|opus|claude>` and
+`implementer=<fable|opus|claude>`: the first two run claude with that Reviewer's model, `claude`
+runs an off-table model. `codex-fable` and `codex-opus` run codex with the corresponding table
+model. An unnamed Seat runs codex with the same off-table model literal, so
+preset identity cannot be inferred from the model's spelling. `pick=<shape>` scripts the Probe
+before the pick; `-` uses codex for both Seats and a clear pick Probe.
 `trace` is the spawns joined by `,`, empty for a Run that spawned nothing: `pick`, `impl<r>:<ok|fail>`,
 `panel<r>:<all|some|none>:<members>`, `judge<r>`. `members` joins the names of the Reviewers
 called with `+` in canonical name order, including failed Reviewers; a Reviewer `RUN-21` recorded
@@ -65,34 +67,47 @@ def interferenceChoices : List (String × Interference) :=
 def pointName : Point → String
   | .afterImplementer => "afterImplementer" | .afterPanel => "afterPanel"
 
-/-- Which Reviewers `RUN-21` leaves to be called after the probe prints the fakes' shape `n`
-(`conformance/fakes/agent` says what each prints). Only a line beginning with a family at 100%,
-from a probe that exited zero, takes a Reviewer out, and only `Fable` and `Opus` are in the
-table; every other shape — `clear`, `fail`, `loose`, `unlisted` among them — reads `unknown`
-for all four and takes out nobody. -/
-def probeReads : String → Reviewer → Bool
-  | "fable" => (· != .fable)
+/-- Successful session shapes; every malformed or failed shape is absent. The fakes own bytes,
+and hand-written suite items cover parsing and the process bound. -/
+def sessionReading : String → Option Nat
+  | "session89" => some 89 | "session90" => some 90 | "session99" => some 99
+  | "session100" => some 100 | "session101" => some 101
+  | "session090" => some 90 | "session0100" => some 100
+  | "session89-fable" => some 89
+  | _ => none
+
+def sessionReads (k : Nat) (shape : String) : Bool :=
+  !(sessionReading shape |>.map (sessionExhausted k) |>.getD false)
+
+/-- Existing family reading, independent of the account reading. -/
+def familyReads : String → Reviewer → Bool
+  | "fable" | "session89-fable" => (· != .fable)
   | "opus" => (· != .opus)
   | "both" => fun r => r != .fable && r != .opus
   | _ => fun _ => true
 
+def probeReads (k : Nat) (shape : String) (sessionQuota : Bool := true) (r : Reviewer) : Bool :=
+  familyReads shape r &&
+    (!(r == .fable || r == .opus) || !sessionQuota || sessionReads k shape)
+
 def Reviewer.name : Reviewer → String
   | .astra => "astra" | .fable => "fable" | .opus => "opus" | .sol => "sol"
 
-/-- Where a line seats the Manager and the Implementer (`RUN-22`): the Reviewer whose model each
-Seat holds, `none` for a model `RUN-21`'s table does not name, and the shape the probe before the
-pick prints. The default is every other line's: both Seats off the table and a probe reporting
-nothing exhausted, so no Seat's verdict can stop the Run. -/
+/-- The CLI preset and optional family membership, plus the pick Probe shape. -/
 structure Seats where
-  manager : Option Reviewer := none
-  implementer : Option Reviewer := none
+  manager : SeatModel := .codex
+  implementer : SeatModel := .codex
   pick : String := "clear"
 
+def seatName (s : SeatModel) : Option String :=
+  if s.usesClaude then some (s.family.map Reviewer.name |>.getD "claude")
+  else s.family.map (fun r => s!"codex-{Reviewer.name r}")
+
 def Seats.name (s : Seats) : String :=
-  if s.manager.isNone && s.implementer.isNone && s.pick == "clear" then "-" else
+  if s.manager == .codex && s.implementer == .codex && s.pick == "clear" then "-" else
   String.intercalate ";"
-    ((s.manager.map (s!"manager={Reviewer.name ·}")).toList
-      ++ (s.implementer.map (s!"implementer={Reviewer.name ·}")).toList ++ [s!"pick={s.pick}"])
+    (((seatName s.manager).map (s!"manager={·}")).toList
+      ++ ((seatName s.implementer).map (s!"implementer={·}")).toList ++ [s!"pick={s.pick}"])
 
 /-- One Round's scripted choices. -/
 structure RoundChoice where
@@ -108,8 +123,8 @@ reached, since the enumeration stops where the Run stops) the agents fail, and
 `conformance/fakes/agent` fails there too. A Round past the probe script's last shape reads `-`,
 every Reviewer available, and `conformance/fakes/agent` writes `clear` there so the two agree. -/
 def behaviour (pick : String × (Nat → ManagerResult)) (rounds : List RoundChoice)
-    (interf : Option (Nat × Point × Interference)) (probes : List String) (seats : Seats := {}) :
-    Behaviour :=
+    (interf : Option (Nat × Point × Interference)) (probes : List String) (seats : Seats := {})
+    (sessionQuota : Bool := true) : Behaviour :=
   { pick := pick.2 0
     implementer := fun k => rounds[k - 1]?.map (·.impl.2) |>.getD false
     panel := fun k => rounds[k - 1]?.map (·.panel.2) |>.getD .none
@@ -118,7 +133,10 @@ def behaviour (pick : String × (Nat → ManagerResult)) (rounds : List RoundCho
     interference := fun k p => match interf with
       | some (r, q, i) => if r == k && q == p then i else .none
       | none => .none
-    available := fun k => probeReads (if k == 0 then seats.pick else probes[k - 1]?.getD "-")
+    available := fun k => probeReads k (if k == 0 then seats.pick else probes[k - 1]?.getD "-") sessionQuota
+    familyAvailable := fun k => familyReads (if k == 0 then seats.pick else probes[k - 1]?.getD "-")
+    sessionAvailable := fun k => !sessionQuota ||
+      sessionReads k (if k == 0 then seats.pick else probes[k - 1]?.getD "-")
     seat := fun | .manager => seats.manager | .implementer => seats.implementer }
 
 /-- Encode membership as a set, regardless of list order or repetition. -/
@@ -212,7 +230,8 @@ and families outside the table; then a Round that reads `fable` `unavailable` fo
 reads nobody so, which only a Run that probes again each Round gets right. -/
 def probeScripts : List (Nat × List String) :=
   [ (1, ["fable"]), (1, ["opus"]), (1, ["both"]), (1, ["fail"]), (1, ["loose"]), (1, ["unlisted"]),
-    (2, ["fable", "clear"]) ]
+    (2, ["fable", "clear"]), (1, ["session100"]), (1, ["session99"]),
+    (1, ["session101"]), (1, ["session-fail"]), (1, ["session-loose"]) ]
 
 /-- A Manager choice by name, and a Round whose Implementer and Panel succeed, judged by name. -/
 def managerChoice (n : String) : String × (Nat → ManagerResult) :=
@@ -226,18 +245,35 @@ Manager's on the table's other row so that one row cannot pass for the table; th
 after a Round the probe read clear; the Implementer's Seat recorded `unavailable` in both Rounds
 and the Run finishing regardless (`ADR-0008`'s rejected arm; `RUN-14`); and both Seats on the table
 under two probes that fail open — the matching line from a probe that exits non-zero and the words
-not at the start of a line — and one clear one, a report of nothing exhausted. -/
+not at the start of a line — and one clear one, a report of nothing exhausted. Session scripts
+then exercise both thresholds, off-table claude Seats, codex exemption independently of family
+membership, failure and anchoring, and family exhaustion beside a low session. -/
 def seatScripts : List (Nat × String × List String × List String × Seats) :=
-  [ (1, "done", [], [], { manager := some .fable, pick := "fable" }),
-    (1, "done", [], [], { implementer := some .fable, pick := "fable" }),
-    (1, "done", [], [], { manager := some .opus, pick := "opus" }),
-    (1, "done", [], [], { manager := some .opus, pick := "fable" }),
-    (1, "task", ["done"], ["fable"], { manager := some .fable }),
-    (2, "task", ["task", "done"], ["clear", "fable"], { manager := some .fable }),
-    (2, "task", ["task", "done"], ["fable", "fable"], { implementer := some .fable }),
-    (1, "task", ["done"], ["fail"], { manager := some .fable, implementer := some .fable, pick := "fail" }),
-    (1, "task", ["done"], ["loose"], { manager := some .fable, implementer := some .fable, pick := "loose" }),
-    (1, "task", ["done"], [], { manager := some .fable, implementer := some .fable }) ]
+  [ (1, "done", [], [], { manager := .claude (some .fable), pick := "fable" }),
+    (1, "done", [], [], { implementer := .claude (some .fable), pick := "fable" }),
+    (1, "done", [], [], { manager := .claude (some .opus), pick := "opus" }),
+    (1, "done", [], [], { manager := .claude (some .opus), pick := "fable" }),
+    (1, "task", ["done"], ["fable"], { manager := .claude (some .fable) }),
+    (2, "task", ["task", "done"], ["clear", "fable"], { manager := .claude (some .fable) }),
+    (2, "task", ["task", "done"], ["fable", "fable"], { implementer := .claude (some .fable) }),
+    (1, "task", ["done"], ["fail"], { manager := .claude (some .fable), implementer := .claude (some .fable), pick := "fail" }),
+    (1, "task", ["done"], ["loose"], { manager := .claude (some .fable), implementer := .claude (some .fable), pick := "loose" }),
+    (1, "done", [], [], { manager := .claude none, pick := "session90" }),
+    (1, "done", [], [], { implementer := .claude none, pick := "session090" }),
+    (1, "done", [], [], { manager := .claude none, pick := "session101" }),
+    (1, "task", ["done"], ["session99"], { manager := .claude none, pick := "session89" }),
+    (1, "task", ["done"], ["session101"], { manager := .claude none }),
+    (1, "task", ["done"], ["session0100"], { manager := .claude none }),
+    (1, "task", ["done"], ["session100"], { implementer := .claude none }),
+    (1, "task", ["done"], ["session100"], { manager := .claude (some .opus) }),
+    (1, "task", ["done"], ["session99"], { manager := .claude (some .opus) }),
+    (1, "done", [], [], { manager := .claude (some .fable), pick := "session89-fable" }),
+    (1, "task", ["done"], ["session100"],
+      { manager := { usesClaude := false, family := some .opus }, pick := "session100" }),
+    (1, "task", ["done"], ["session100"], { pick := "session100" }),
+    (1, "task", ["done"], ["session-fail"], { manager := .claude none, pick := "session-fail" }),
+    (1, "task", ["done"], ["session-loose"], { manager := .claude none, pick := "session-loose" }),
+    (1, "task", ["done"], [], { manager := .claude (some .fable), implementer := .claude (some .fable) }) ]
 
 def seatLines : List Scenario :=
   seatScripts.map fun (cap, pick, judges, probes, seats) =>
@@ -270,11 +306,15 @@ def controls : List (String × Nat) :=
       ("checkpoint", { Guards.all with checkpoint := false }),
       ("pickRefusal", { Guards.all with pickRefusal := false }),
       ("judgeRefusal", { Guards.all with judgeRefusal := false }) ]
-  without.map fun (name, g) =>
+  (without.map fun (name, g) =>
     (name, (all.filter fun s =>
       let interf := parseInterference s.interference
       let pick := managerChoices.find? (fun (n, _) => pickName n == s.pick) |>.getD ("fail", fun _ => { ok := false, writesFinished := none, writesTask := none })
-      run g (behaviour pick s.rounds interf s.probes s.seats) s.maxRounds != (s.exit, s.trace)).length)
+      run g (behaviour pick s.rounds interf s.probes s.seats) s.maxRounds != (s.exit, s.trace)).length)) ++
+  [("sessionQuota", (all.filter fun s =>
+      run Guards.all (behaviour (managerChoices.find? (fun (n, _) => pickName n == s.pick)
+        |>.getD (managerChoice "fail")) s.rounds (parseInterference s.interference)
+        s.probes s.seats false) s.maxRounds != (s.exit, s.trace)).length)]
 where
   parseInterference (n : String) : Option (Nat × Point × Interference) :=
     if n == "-" then none else
