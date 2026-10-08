@@ -1194,3 +1194,41 @@ awk '/^  (PASS|FAIL)  CNF-/ { print $1, $2 }' "$E/$label.stdout" > "$E/$label.ve
 ```
 
 Compare `.verdicts` files with `cmp` and the statuses directly.
+
+## F22 — Model defaults and effort: owner evidence and open timeout question (2026-10-08)
+
+Bead `rl-4i7t`, including the owner's correction comment 42. This records the owner's review
+and live checks, not an independent remeasurement of the host by this Run. The decision amends
+`AGT-3`, `AGT-4`, `AGT-5`, `AGT-6`, `AGT-8`, `AGT-17`, `PRM-1`, `PRM-2` and `RUN-21`.
+
+The owner reviewed 430 Runs in 14 repositories from 2026-09-19 through 2026-10-08. Since
+October 1, among 156 Runs that reached a Round, 50 used `claude-fable-5-1` in both default Seats
+and 106 used a codex Implementer. Sixteen Runs used `claude-opus-5-5` as Manager via
+`--manager-model`: 15 done, zero blocked. **Correction comment 42:** those Managers used
+`--effort high`, not `xhigh`; no Opus Manager Run at `xhigh` had been observed. The longest
+observed pick was 24 minutes, measured from the pick Probe record to the pick output; the longest
+judge was 14 minutes, measured from the Round's last Feedback File to the judge output.
+`AGT-1` lists `--manager-timeout SECONDS` with `(default: 3600)`, and `RUN-20` states
+`Each call's chosen maximum duration MUST be at least 600 seconds.` **Open:** whether an
+`xhigh` Opus Manager stays within 3600 seconds. The first live Runs under the new default will
+settle it. The decision stands despite the correction.
+
+Roughly one in six claude-Manager Runs died without a Finished File. Visible causes included
+four Manager outputs containing only `You've hit your session limit · resets <time>`, three
+zero-byte hangs with `Current session` at 90–99%, and two `API Error: 529 Overloaded` outputs.
+These are account-wide limits, not evidence of a Fable-specific defect.
+
+On 2026-10-08 the owner checked `claude-opus-5-5` at `xhigh` and at `high` on Claude Code
+2.1.293, and `gpt-6-sol` at `high` on codex-cli 0.160.0. Each used `Reply with exactly: ok`,
+stdin from `/dev/null`, a 300-second bound, and the permission-bypass flags and argument shapes
+now specified; each exited zero with `ok`. The claude session transcript named the Opus model;
+the codex banner reported the model and effort. These trivial-prompt checks support the partial
+verification in `AGT-17`, not whole-roster, session-resumption, deny-list or real-task verification,
+and not observed `xhigh` Manager performance.
+
+Across 867 Probe readings in all repositories on the owner's machine, `/usage` printed only
+`Current week (all models)` and `Current week (Fable)`, never an Opus line. The Opus row has
+never matched; an Opus Seat reads `unknown` in practice. Moving defaults away from Fable moves
+them off the only observed family line; the refusal protects them only if an Opus line appears.
+`RUN-21` states `An absent family line is` `unknown`, `never` `unavailable`. This is the existing
+fail-open design, not a defect to fix in this amendment.

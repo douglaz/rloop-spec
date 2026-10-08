@@ -53,11 +53,14 @@ what `tools/formal/` enumerates (`ADR-0002`, `tools/check_scenarios.py`). A line
 `RUN-21`'s table does not name, `claude-sonnet-5`, and with a probe before the pick reporting
 nothing exhausted; any other line names the Seats on the table's models and what that probe
 prints. *Those older lines were written for Runs no Seat's verdict could stop, and a replay on the
-default models would now refuse or cut short the ones whose probe reports `Fable`; the column is
+default models would now refuse or cut short the ones whose probe reports `Opus` exhausted; the column is
 where the file says so, rather than a replay that assumes it.* This item is the executable form
 of the decision table and the Round: (`RUN-5`, `RUN-6`, `RUN-7`, `RUN-9`,
 `RUN-10`, `RUN-11`, `RUN-12`, `RUN-13`, `RUN-14`, `RUN-15`, `RUN-21`, `RUN-22`, `DIR-5`, `DIR-6`,
 `DIR-7`, `OVR-1`)
+
+*Amended 2026-10-08: the rationale names the default Seats' Opus family; the replay's explicit
+model choices and off-table setup are unchanged.*
 
 **CNF-4** The suite MUST be able to fail: run with `--self-check` it flips one expected exit in
 a copy of the scenario file, replays it, and requires a red result. The scenario file is shown
@@ -132,6 +135,9 @@ and every role's list — the pick's, the Implementer's, the four Reviewers' and
 its fixture with those paths' bytes unchanged; the suite makes both paths itself rather than
 reading either out of `TMPDIR`, so no verdict here moves with what the caller exported. (`AGT-3`,
 `AGT-4`, `AGT-5`, `AGT-6`, `AGT-7`, `AGT-8`, `AGT-10`, `AGT-11`, `RUN-16`, `RUN-23`, `OVR-2`)
+
+*Amended 2026-10-08 (`rl-4i7t`): default-model expectations and the generated argv fixtures now include the new
+models and explicit Implementer effort; the Manager override uses Fable to differ from its default.*
 
 **CNF-12** For each role the recorded prompt argument equals the fixture in
 `conformance/fixtures/prompts/` rendered by `PRM-6` with the values the suite knows: the Run
@@ -235,9 +241,9 @@ fake that exited before its child published one and a child whose pid is unrecor
 once the executable has returned are each red. A last Run of the probes' shape, for the read of a
 probe's output rather than for the record: every probe's child writing to the standard output it
 inherited rather than sleeping — one second after its own fake has exited, the line `Current week
-(Fable): 100% used` — and `--kill-after 4`. The Run exits 2, the probe before the pick is the only
+(Opus): 100% used` — with the default Seat models and `--kill-after 4`. The Run exits 2, the probe before the pick is the only
 call it makes, that line is in `probe-pick.out`, `probe-pick.md` records the Manager's Seat, the
-Implementer's and `fable` unavailable and the other three unknown, and the child's pid is recorded
+Implementer's and `opus` unavailable and the other three unknown, and the child's pid is recorded
 and not running once the executable has returned — so rloop read that probe's output after reaping
 its group and not before. Nor does that Run pass on absent evidence: a line that never reached the
 capture leaves the read nothing to witness and is red.
@@ -300,6 +306,9 @@ records the separate own-process and child measurements. The watching Runs use `
 and after every judge call whose verdict is *next Round*` as observable steps. `F17` owns the
 remaining limitations.*
 (`AGT-15`, `AGT-16`, `DIR-4`, `DIR-5`, `DIR-6`, `RUN-6`, `RUN-7`, `RUN-8`, `RUN-11`, `RUN-21`, `RUN-22`)
+
+*Amended 2026-10-08: the probe-output read witness reports Opus exhaustion to refuse the default
+Seats, with the corresponding Reviewer verdict; its timing and absence-of-evidence checks remain.*
 
 **CNF-35** With one Round, `--kill-after 1`, the `fable` Reviewer fake sleeping 10 seconds while the
 other three answer at once, and every Reviewer fake spawning a child that ignores SIGTERM: the child
@@ -517,82 +526,95 @@ every other item, and the Manager reads the two as different things (`PRM-2`).* 
 `RUN-21`, `PRM-2`, `DIR-4`)
 
 **CNF-28** With the default models and the probe before the pick scripted to report
-`Current week (Fable): 100% used · resets Sep 24, 3pm (UTC)`, the executable exits 2, and **no
+`Current week (Opus): 100% used · resets Sep 24, 3pm (UTC)`, the executable exits 2, and **no
 Manager, Implementer or Reviewer argument list is recorded** — the probe's own is, exactly once;
-standard output is empty; standard error names `claude-fable-5-1`, that line, reset and all, and
+standard output is empty; standard error names `claude-opus-5-5`, that line, reset and all, and
 both `manager` and `implementer`, since both Seats are `unavailable` and `RUN-22`'s message names
 `the Seat — both, when both are`; the Run Directory holds exactly `probe-pick.out`,
 `probe-pick.err` and `probe-pick.md`; and `probe-pick.md` reads `manager:unavailable`, `implementer:unavailable`,
-`fable:unavailable`, then `unknown` for `opus`, `astra` and `sol`. With `--manager-model
-claude-opus-5`, the Implementer's model off the table and `Current week (Opus): 100% used`
-instead, the Run is refused the same way and standard error names `claude-opus-5`. The pick is
+`fable:unknown`, `opus:unavailable`, then `unknown` for `astra` and `sol`. With `--manager-model
+claude-fable-5-1`, the Implementer's model off the table and `Current week (Fable): 100% used`
+instead, the Run is refused the same way and standard error names `claude-fable-5-1`. The pick is
 scripted to fail. Here and in `CNF-29` and `CNF-30`, standard error names a Seat when the Seat's
 word stands whole in what is left of standard error once every `manager-model` and
 `implementer-model` is deleted together with any dashes before it. *The spawn record is the
 assertion: a Run that spawned a Manager which then failed also exits 2, so the status alone passes
 an Implementation that ignores the refusal. The second Run is there because one row cannot tell a
-Seat read from its own model from a rule that hardcodes `fable`. The flag names go first because
+Seat read from its own model from a rule that hardcodes `opus`. The flag names go first because
 `RUN-22`'s message `SHOULD name the flag that chooses another model` and each flag's name carries a
 Seat's word, so a message naming the flag and no Seat would otherwise pass.* (`RUN-22`, `RUN-21`,
 `DIR-4`, `RUN-10`)
 
+*Amended 2026-10-08 (`rl-4i7t`): the default-model refusal now exercises Opus and the Manager override exercises
+Fable, preserving both family rows.*
+
 **CNF-29** With the Manager's model off `RUN-21`'s table, the Implementer's at its default and the
-probe before the pick reporting `Current week (Fable): 100% used`, the executable exits 2 with no
+probe before the pick reporting `Current week (Opus): 100% used`, the executable exits 2 with no
 Manager, Implementer or Reviewer argument list recorded, standard output empty, the Run Directory
 holding the three `probe-pick.*` files alone, `probe-pick.md` reading `manager:unknown` and
-`implementer:unavailable`, and standard error naming `implementer`, `claude-fable-5-1` and the
-probe's line. With `--implementer-model claude-opus-5` and `Current week (Opus): 100% used`
-instead, the Run is refused the same way and standard error names `claude-opus-5`. Of standard
+`implementer:unavailable`, and standard error naming `implementer`, `claude-opus-5-5` and the
+probe's line. With `--implementer-model claude-fable-5-1` and `Current week (Fable): 100% used`
+instead, the Run is refused the same way and standard error names `claude-fable-5-1`. Of standard
 error the item asserts presence only. `RUN-22` states `a message naming the Seat — both, when both
 are — its model, and the reset the probe reported`, and bounds the stream no further; `RUN-10`
 states `Progress and diagnostics go to standard error and their wording is not specified`. The pick
 is scripted to fail. *Again the spawn record, not the status, is what an Implementation that
 refuses only for the Manager's Seat fails. The second Run is there because one row cannot tell a
-Seat read from its own model from a rule that hardcodes `fable`, and a per-Seat or per-site lookup
+Seat read from its own model from a rule that hardcodes `opus`, and a per-Seat or per-site lookup
 can get one Seat's row right and another's wrong. A message naming both Seats unavailable when only
 one is passes here, since no sentence in the set forbids it; the per-Seat reading stays asserted
 where it is observable, in `probe-pick.md` above.* (`RUN-22`, `RUN-21`, `DIR-4`, `RUN-10`)
 
+*Amended 2026-10-08 (`rl-4i7t`): the default Implementer refusal now exercises Opus and its override exercises
+Fable, preserving both family rows.*
+
 **CNF-30** With the Manager's model at its default and the Implementer's off `RUN-21`'s table, the
 probes before the pick and in Round 1 reporting nothing exhausted, Round 2's reporting
-`Current week (Fable): 100% used`, and Round 1 judged `rewrite`: the executable exits 2;
+`Current week (Opus): 100% used`, and Round 1 judged `rewrite`: the executable exits 2;
 `manager-judge-1.out` exists and **`manager-judge-2.out` does not**, nor is a Round 2 judge argument
-list recorded; Round 2's Implementer ran and its Panel ran without `fable` — `opus`, `astra` and
-`sol` called, `feedback-2-fable.md` exactly the not-run line; `probe-2.md` reads
-`manager:unavailable` and `fable:unavailable`, every other Seat `unknown`; there is no Finished File
-and standard output is empty; and standard error names `manager`, `claude-fable-5-1` and the probe's
-`Fable` line, reset and all, since `RUN-22` exits `with the message above for the Manager's Seat`,
+list recorded; Round 2's Implementer ran and its Panel ran without `opus` — `fable`, `astra` and
+`sol` called, `feedback-2-opus.md` exactly the not-run line; `probe-2.md` reads
+`manager:unavailable` and `opus:unavailable`, every other Seat `unknown`; there is no Finished File
+and standard output is empty; and standard error names `manager`, `claude-opus-5-5` and the probe's
+`Opus` line, reset and all, since `RUN-22` exits `with the message above for the Manager's Seat`,
 which names the reset by `quoting the probe's matching line verbatim`. With Round 1's probe
-reporting `Fable` instead, the Run exits 2 with no `manager-judge-1.out`, and standard error names
-the same three. With `--manager-model claude-opus-5` and `Current week (Opus): 100% used` instead,
-both Runs go the same way with `opus` in `fable`'s place, and standard error names `claude-opus-5`.
+reporting `Opus` instead, the Run exits 2 with no `manager-judge-1.out`, and standard error names
+the same three. With `--manager-model claude-fable-5-1` and `Current week (Fable): 100% used` instead,
+both Runs go the same way with `fable` in `opus`'s place, and standard error names `claude-fable-5-1`.
 The withheld judge is scripted to fail. *The missing judge is the assertion: a Run whose judge was
 called and failed also exits 2. The second pair of Runs is there because one row cannot tell a Seat
-read from its own model from a rule that hardcodes `fable`, and a per-Seat or per-site lookup can
+read from its own model from a rule that hardcodes `opus`, and a per-Seat or per-site lookup can
 get one Seat's row right and another's wrong.* (`RUN-22`, `RUN-21`, `RUN-7`, `RUN-10`, `DIR-4`)
+
+*Amended 2026-10-08 (`rl-4i7t`): the default Manager now exercises Opus in both Rounds; the Fable pair uses an
+explicit Manager override.*
 
 **CNF-31** With both Seats' models off `RUN-21`'s table and the probe before the pick reporting
 `Current week (Fable): 100% used`, or `Fable` and `Opus` both at 100%, the Run starts — the pick
 is called — and ends 0, and `probe-pick.md` reads `manager:unknown`, `implementer:unknown` and
-the Reviewers' lines `CNF-25` and `CNF-27` give those reports. With the default models, the Run
+the Reviewers' lines `CNF-25` and `CNF-27` give those reports. With both Seats explicitly on
+`claude-fable-5-1`, matching the family in the malformed, failed and timed-out reports, the Run
 starts and ends 0, every Seat `unknown` in `probe-pick.md`, when the probe before the pick writes
 nothing; writes no usage line; reports only `Current week (all models): 100% used`; reports only
 families outside the table; reports `99% used`; writes `Current week (Fable): 100% used` other
 than at the start of a line; writes a family line whose `100% used` is split by a NUL byte;
 reports a family at `100% used` but **exits non-zero**; or does not finish within `--probe-timeout
 1`. *This is what shows fail-open reaches the pick: the pick being called is the assertion, since
-a refused Run and an agent that failed both end without a Finished File. On the default models the
+a refused Run and an agent that failed both end without a Finished File. On those Fable overrides the
 Manager's or the Implementer's Seat misread `unavailable` here refuses the Run under `RUN-22`.
 Both sites drive these shapes in one order but not the same set: this one adds the families
 outside the table, and leaves out the Run `CNF-26` compares against, `with a probe reporting
 nothing exhausted`, which is that item's control rather than a fail-open shape.*
 (`RUN-21`, `RUN-22`)
 
+*Amended 2026-10-08 (`rl-4i7t`): the malformed, failed and timed-out reports keep both Seats on explicit Fable
+overrides so an incorrectly accepted report would still refuse the Run.*
+
 **CNF-32** The pick's prompt argument equals `PRM-1`'s fixture rendered as in `CNF-12`, with
 `{{UNAVAILABLE}}` as the Probe before the pick leaves it, compared byte for byte in four Runs of
 this item's own, each of which starts, calls the pick and ends 0. With the default models and that
-Probe reporting `Opus` at 100%, `{{UNAVAILABLE}}` is the one line `opus`. With both Seats' models
-off `RUN-21`'s table and `Fable` at 100%, it is the one line `fable`. With both Seats' models off
+Probe reporting `Fable` at 100%, `{{UNAVAILABLE}}` is the one line `fable`. With both Seats' models
+off `RUN-21`'s table and `Opus` at 100%, it is the one line `opus`. With both Seats' models off
 the table and `Fable` and `Opus` both at 100%, it is `fable`, a newline and `opus`, in that order
 and nothing else. With the default models and a Probe reporting nothing exhausted, it is the empty
 string: the prompt is the fixture with the placeholder replaced by nothing. *The empty form is
@@ -600,10 +622,13 @@ asserted here, and not left to `CNF-12`, because each form alone passes a wrong 
 that renders the list whatever the Probe said passes the populated Runs, and one that never renders
 it passes the empty one. Each Seat has a Run of its own because no single Run can tell a working
 render from one that hardcodes a Seat, the same argument `CNF-25` and `CNF-28` make of one row of
-the table. The Seats are chosen so that no Run is refused (`RUN-22`): on the default models a
-`Fable` report refuses the Run before any pick prompt exists, so the Runs that report it put both
+the table. The Seats are chosen so that no Run is refused (`RUN-22`): on the default models an
+`Opus` report refuses the Run before any pick prompt exists, so the Runs that report it put both
 Seats off the table.*
 (`PRM-1`, `PRM-6`, `RUN-21`, `RUN-20`, `RUN-22`)
+
+*Amended 2026-10-08 (`rl-4i7t`): the default-model populated prompt now reports Fable; Opus reports use models
+off the table so each prompt-rendering Run reaches the pick.*
 
 **CNF-33** With the default Manager preset a Run of two Rounds — Round 1 judges `rewrite`, Round 2
 judges `done` — ends 0, and the recorded argument list of the judge call of each of those two

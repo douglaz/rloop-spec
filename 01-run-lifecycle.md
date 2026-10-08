@@ -98,7 +98,7 @@ this table and nothing else:
 | model | family |
 |---|---|
 | `claude-fable-5-1` | `Fable` |
-| `claude-opus-5` | `Opus` |
+| `claude-opus-5-5` | `Opus` |
 
 Every other case is **`unknown`**: the probe exited non-zero, hit its bound, wrote nothing, wrote
 output with no such line, named a percentage below 100, or the Seat's model is not in that table.
@@ -123,6 +123,9 @@ would have worked — so only a positive, unambiguous reading counts, and everyt
 while an exhausted one hangs and writes nothing, and the two are not confusable.* What a Panel
 does with an `unavailable` Reviewer is `RUN-15`'s; what a Run does with an `unavailable` Manager's
 or Implementer's Seat is `RUN-22`'s.
+
+*Amended 2026-10-08 (`rl-4i7t`): the Opus row now names `claude-opus-5-5`; the family,
+Probe parsing and availability policy are unchanged.*
 
 **RUN-22** When `probe-pick.md` records the Manager's Seat `unavailable`, or the Implementer's Seat
 `unavailable`, rloop MUST exit 2 without spawning any agent, and MUST write to standard error a

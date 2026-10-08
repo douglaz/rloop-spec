@@ -3,4 +3,6 @@ claude
 <implementer prompt>
 --model
 <implementer model>
+--effort
+high
 --dangerously-skip-permissions

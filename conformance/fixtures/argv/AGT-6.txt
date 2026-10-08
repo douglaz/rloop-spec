@@ -3,4 +3,6 @@ exec
 --dangerously-bypass-approvals-and-sandbox
 -m
 <implementer model>
+-c
+model_reasoning_effort=high
 <implementer prompt>

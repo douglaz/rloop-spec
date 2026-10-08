@@ -66,7 +66,7 @@ argument's extent and are not part of it.
 **AGT-3** The pick MUST be, with `--manager claude`:
 
 ```text
-claude -p <pick prompt> --session-id <session id> --model <manager model> --effort high --dangerously-skip-permissions
+claude -p <pick prompt> --session-id <session id> --model <manager model> --effort xhigh --dangerously-skip-permissions
 ```
 
 and with `--manager codex`:
@@ -75,11 +75,14 @@ and with `--manager codex`:
 codex exec --json --dangerously-bypass-approvals-and-sandbox -m <manager model> -c model_reasoning_effort=high <pick prompt>
 ```
 
-`<manager model>` is `--manager-model`'s value, which defaults to `claude-fable-5-1` under
+`<manager model>` is `--manager-model`'s value, which defaults to `claude-opus-5-5` under
 `--manager claude` and to `gpt-6-astra` under `--manager codex`. The two presets reach their
 `<session id>` differently and `RUN-16` owns that rule: under `claude` it is a UUID rloop
 generated for this Run before the call, under `codex` it is the id the call reports. Either way
 rloop writes it to the Run Directory's `session` file (`DIR-4`).
+
+*Amended 2026-10-08 (`rl-4i7t`): the claude default is now `claude-opus-5-5` and its
+pick effort is `xhigh`; the codex preset is unchanged. `F22` records the owner's evidence and limits.*
 
 *The codex Manager was added 2026-09-20, after the claude account behind `claude-fable-5-1` hit
 its quota mid-Run and a Manager-seat evaluation of `gpt-6-astra` on the `PRM-1` prompt picked a
@@ -98,7 +101,7 @@ cosmetic and a specification that matched one would break on a cosmetic change. 
 **AGT-4** The judge call MUST be, with `--manager claude`:
 
 ```text
-claude -p <judge prompt> --resume <session id> --model <manager model> --effort high --dangerously-skip-permissions
+claude -p <judge prompt> --resume <session id> --model <manager model> --effort xhigh --dangerously-skip-permissions
 ```
 
 and with `--manager codex`:
@@ -110,20 +113,25 @@ codex exec resume --dangerously-bypass-approvals-and-sandbox -m <manager model> 
 with the pick's `<session id>` either way. *Resuming is what makes the Manager one conversation:
 it judges Round 3 remembering why it wrote Round 2's brief.*
 
+*Amended 2026-10-08 (`rl-4i7t`): the claude judge effort is now `xhigh`, matching the pick.*
+
 **AGT-5** The Implementer, with `--implementer claude`, MUST be:
 
 ```text
-claude -p <implementer prompt> --model <implementer model> --dangerously-skip-permissions
+claude -p <implementer prompt> --model <implementer model> --effort high --dangerously-skip-permissions
 ```
 
-`<implementer model>` is `--implementer-model`'s value, which defaults to `claude-fable-5-1` under
-`--implementer claude` and to `gpt-6-astra` under `--implementer codex`, the same defaults `AGT-3`
-gives the Manager.
+`<implementer model>` is `--implementer-model`'s value, which defaults to `claude-opus-5-5` under
+`--implementer claude` and to `gpt-6-sol` under `--implementer codex`.
+
+*Amended 2026-10-08 (`rl-4i7t`): both preset defaults changed, and effort is now the literal
+`high` for every Implementer model, including `--implementer-model` overrides. The override
+remains available for weaker test models; there is no model-to-effort table.*
 
 **AGT-6** The Implementer, with `--implementer codex`, MUST be:
 
 ```text
-codex exec --dangerously-bypass-approvals-and-sandbox -m <implementer model> <implementer prompt>
+codex exec --dangerously-bypass-approvals-and-sandbox -m <implementer model> -c model_reasoning_effort=high <implementer prompt>
 ```
 
 with `<implementer model>` as `AGT-5` gives it.
@@ -133,8 +141,13 @@ sandbox blocks the network and `.git`, which breaks `nix`, `cargo fetch` and com
 2026-09-22 neither line carried a model flag and the CLI's configured default was the
 Implementer's model; that day `ADR-0008` needed every Seat to have a model rloop can name, and a
 Seat filled by a CLI's configured default is one rloop cannot Probe. The cost is live: an operator
-whose `claude` default is not `claude-fable-5-1`, or whose `codex` default is not `gpt-6-astra`,
-now gets that model unless they pass `--implementer-model`.*
+whose `claude` default is not `claude-opus-5-5`, or whose `codex` default is not `gpt-6-sol`,
+gets the preset's model unless they pass `--implementer-model`.*
+
+*Amended 2026-10-08 (`rl-4i7t`): the preset models changed to the defaults in `AGT-5`, and
+effort is newly pinned to `high` for every model, overrides included. The 2026-09-22 amendment
+pinned the model so it could be Probed; this amendment also removes effort's dependence on the
+operator's CLI configuration. `F22` records the owner's verification.*
 
 **AGT-7** Reviewer `fable` MUST be:
 
@@ -145,8 +158,11 @@ claude -p <review prompt> --model claude-fable-5-1 --effort high --dangerously-s
 **AGT-8** Reviewer `opus` MUST be:
 
 ```text
-claude -p <review prompt> --model claude-opus-5 --effort xhigh --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
+claude -p <review prompt> --model claude-opus-5-5 --effort xhigh --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
 ```
+
+*Amended 2026-10-08 (`rl-4i7t`): Reviewer `opus` now uses `claude-opus-5-5`; its roster name,
+`xhigh` effort and other arguments are unchanged.*
 
 **AGT-9** The deny list in `AGT-7` and `AGT-8` is one argument — the quotes above mark it, and
 `Bash(git checkout:*)` holds a space that must not split it. It holds because
@@ -290,6 +306,15 @@ with `gpt-6-sol` and `xhigh` was verified on codex-cli 0.156.1 using a trivial p
 This was a partial verification, not a recheck of the whole current roster. That Run's Manager
 used Claude Code 2.1.282; that observation alone establishes neither whole-roster nor deny-list
 verification on that version.
+
+*Amended 2026-10-08 (`rl-4i7t`): the owner verified `claude-opus-5-5` at `xhigh` and at
+`high` on Claude Code 2.1.293, and `gpt-6-sol` at `high` on codex-cli 0.160.0. Each used
+`Reply with exactly: ok`, stdin from `/dev/null`, a 300-second bound, and the permission-bypass
+flags and argument shapes now specified; each exited 0 with `ok`. The claude session transcript
+named the Opus model; the codex banner reported the model and effort. This was a partial
+verification with trivial prompts, not whole-roster, session-resumption, deny-list or real-task
+verification. It does not establish observed `xhigh` Manager performance; `F22` records the
+evidence and the open timeout question.*
 
 A fake agent accepts any flag, so the Conformance
 Suite cannot tell a wrong flag from a right one; a flag that a newer CLI rejects is found only by a
