@@ -1261,3 +1261,51 @@ is therefore the only observed quota reading that can remove those default Seats
 F22's family-only observation about their protection; the absence of an Opus family line remains
 an observation. F22's correction is intact: the observed Opus Manager Runs used effort `high`,
 not `xhigh`. Real `xhigh` Manager timing remains open.
+
+## F24 — Reviewer timeout default (closed 2026-10-09)
+
+The owner's decision from issue #12, tracked by `rl-zyr5`, amends `AGT-1`'s
+`--reviewer-timeout` row to `(default: 3600)` from the former 1800 seconds. This entry
+records the owner's observations, not a remeasurement of other repositories or the host by
+this Run.
+
+Issue #12 reported btc-policy-spec Run `20261009T195333.279708479Z-3038481`, Round 1, using
+defaults. All four Reviewers started at 20:51:00 UTC. `sol` answered after 25 minutes and
+`astra` after 28. `fable` and `opus` were killed at 21:21:00 with
+`REVIEWER FAILED (exit 124)` and zero-byte `.err` files, leaving the Manager with two codex
+answers. The preceding Probe read `Current session: 24% used`. The owner attributes this
+incident to slow review rather than quota.
+
+The owner swept 2,100 Reviewer calls across 14 repositories from 2026-09-19 through
+2026-10-09:
+
+| Reviewer | Timed out at the bound | Answered after 25+ minutes | Slowest answer |
+|---|---|---|---|
+| `opus` | 31 of 525 | 24 | 45 minutes |
+| `fable` | 5 | 1 | 29 minutes |
+| `sol` | 1 | 4 | 28 minutes |
+| `astra` | 0 | 0 | 15 minutes |
+
+The owner concludes that the old bound was too short beyond gate-heavy repositories, mainly
+for `opus` at `xhigh`. In 25 of `opus`'s 31 timeouts, that Round's Probe read session usage
+below 90%, and `fable` either answered in the same Round or was not run. Only 4 of all 37
+timeouts had session usage of 90% or more. The cost of the new default is that a truly hung
+Reviewer can hold its Round for 60 minutes instead of 30. Since `rl-8ee8`, `RUN-21`'s
+Round Probe reading makes a claude Seat `unavailable` when
+``in a Round's Probe, `<n>` is **exactly 100**``. The owner says this benches claude
+Reviewers before a Panel. According to the owner, tetasm has used
+`--reviewer-timeout 3600` since 2026-10-06: one `opus` review answered at 31 minutes,
+and one hung for the full 60.
+
+The owner rejected these alternatives:
+
+- Put the bound in the Reviewer prompt (`PRM-4`). A model cannot track wall-clock time well,
+  and changing that prompt would require every Implementation to re-splice it.
+- Stream claude Reviewer output to retain partial findings after a kill. `DIR-4` describes
+  the Feedback File as `rloop, from the Reviewer's stdout, or rloop's own when the Reviewer
+  was not called` and `RUN-8` states `Each called Reviewer's standard output is its Feedback
+  File`. Streamed JSON would break that file, and the Manager should not judge half a review.
+- Add per-Reviewer timeouts. `AGT-11` states `There is no flag, file or variable that changes
+  the Panel`; `AGT-1` states `An Implementation MUST accept exactly this invocation` and lists
+  one `--reviewer-timeout` option for the role. New flags per Seat would conflict with the
+  fixed Panel and the one-value-per-role command line.

@@ -22,7 +22,7 @@ rloop [OPTIONS] [INSTRUCTION]
   --max-runs N                 Runs per Sequence                               (default: 20)
   --manager-timeout SECONDS    per Manager call                                (default: 3600)
   --implementer-timeout SECONDS  per Implementer call                          (default: 14400)
-  --reviewer-timeout SECONDS   per Reviewer call                               (default: 1800)
+  --reviewer-timeout SECONDS   per Reviewer call                               (default: 3600)
   --probe-timeout SECONDS      the availability probe's bound (RUN-21)         (default: 60)
   --kill-after SECONDS         SIGTERM-to-SIGKILL grace                        (default: 10)
   --version                    print the Implementation's version and exit 0
@@ -32,6 +32,9 @@ rloop [OPTIONS] [INSTRUCTION]
 `INSTRUCTION` is one argument, free text, rendered into the Manager's pick prompt (`PRM-1`);
 absent, the Manager picks on its own. A long option that takes a value MAY also be given as
 `--flag=value`. There are no environment-variable equivalents and no configuration file.
+
+*Amended 2026-10-09 (issue #12, `rl-zyr5`): the default `--reviewer-timeout` is 3600 seconds.
+`F24` records the owner's evidence, cost and rejected alternatives.*
 
 **AGT-2** An unknown option, a missing or non-numeric value, a value outside the set a preset
 flag names — `--manager` and `--implementer` each take `claude` or `codex` and nothing else — a
