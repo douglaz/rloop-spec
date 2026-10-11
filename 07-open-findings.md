@@ -1309,3 +1309,40 @@ The owner rejected these alternatives:
   the Panel`; `AGT-1` states `An Implementation MUST accept exactly this invocation` and lists
   one `--reviewer-timeout` option for the role. New flags per Seat would conflict with the
   fixed Panel and the one-value-per-role command line.
+
+## F25 — The Manager reads the specifications in full (open 2026-10-11)
+
+The owner's decision, tracked by `rl-yt98`, adds to `PRM-1`'s step 1
+`If it has specifications, read all of them in full: every requirement document, any glossary
+and every architecture decision record (ADR).` Before it, claude Managers read a mean of 2% of
+this repository's specification lines at the pick, over 131 Runs, and none read an ADR; codex
+Managers read 62%.
+
+The evidence is a pick-only replay of two past two-Round Runs at their base commits, twice per
+arm, on `claude-opus-5-5` at `xhigh`. Arm A was the old prompt; arm B added the sentence with
+the decision records unnamed. Each was scored on whether its brief already held what that Run's
+Round 2 had to add.
+
+| Task | A | B |
+|---|---|---|
+| `rl-cnf34-note-probe-nits-ds2` | 0 of 2 (3–4% read) | 2 of 2 (83–100% read) |
+| `rl-cnf33-panel-nits-agj` | 1 of 2 (1–2% read) | 1 of 2 (100% read) |
+
+On the first task, both B briefs held the point the original Round 2 had to add: `RUN-8`'s
+`MUST wait for every one of them before the Checkpoint that follows` puts a Reviewer's own
+process in reach of the judge's record. Every arm read the same related bead. On the second
+task, neither pass came from specification text; one B arm read everything and still carried
+the bead's false premise. One B arm read no ADR, which is why the adopted sentence names them.
+
+What is still open:
+
+- No live Run has shown the sentence working. The test above replayed picks only.
+- Arm B's pick peaked near 340k tokens of context, against about 150k for A. It also used about
+  twice the input tokens, most of them cache reads. The judge resumes that conversation and adds
+  the Round to it. The highest whole-Run peak in 132 earlier claude Manager transcripts was 407k,
+  and none was compacted.
+- It is untested on a codex Manager and on a repository that holds its specifications in a
+  submodule, such as an Implementation's `spec/`.
+
+Rejected: read only the documents the task touches, which costs less. The step-4 check needs
+the passages a search did not surface.

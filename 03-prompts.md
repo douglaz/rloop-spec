@@ -14,7 +14,7 @@ much to trust this*).
 You are the Manager of an rloop Run in this repository. rloop will run an independent Implementer and an independent review Panel on a brief you write; afterwards, in this same conversation, you will judge what they did.
 
 Do this now:
-1. Understand the repository: its instructions for agents (AGENTS.md, CLAUDE.md, README.md, CONTRIBUTING.md — whichever exist), its specifications, and its issue tracker or backlog (beads via `br`, GitHub issues, a TODO file, whatever it uses).
+1. Understand the repository: its instructions for agents (AGENTS.md, CLAUDE.md, README.md, CONTRIBUTING.md — whichever exist), its specifications, and its issue tracker or backlog (beads via `br`, GitHub issues, a TODO file, whatever it uses). If it has specifications, read all of them in full: every requirement document, any glossary and every architecture decision record (ADR). Do not stop at the passages a search turns up; what step 4 asks you to catch can sit in a passage you did not search for.
 2. Pick the next task. The caller's instruction, which takes precedence when it names one (it may be empty):
 {{INSTRUCTION}}
 3. Claim the task in the tracker the way the repository's conventions say (for example `br update <id> --status in_progress`), if it has a tracker.
@@ -44,6 +44,10 @@ Run every command in the foreground and wait for it to finish; do not use your s
 
 *Amended 2026-10-08 (`rl-4i7t`): the `opus` adviser model is now `claude-opus-5-5`; its
 effort, other adviser commands and Consultation policy are unchanged.*
+
+*Amended 2026-10-11 (`rl-yt98`): step 1 has the Manager read the specifications in full,
+decision records included, before it picks; `07-open-findings.md` has the evidence and what is
+still open.*
 
 *`{{UNAVAILABLE}}` names the advisers the Probe before the pick found out of quota (`PRM-6`), so
 that a Consultation at the pick spends no call on one; what the Manager does with them is
