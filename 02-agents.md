@@ -125,11 +125,14 @@ claude -p <implementer prompt> --model <implementer model> --effort high --dange
 ```
 
 `<implementer model>` is `--implementer-model`'s value, which defaults to `claude-opus-5-5` under
-`--implementer claude` and to `gpt-6-sol` under `--implementer codex`.
+`--implementer claude` and to `gpt-6.1-sol` under `--implementer codex`.
 
 *Amended 2026-10-08 (`rl-4i7t`): both preset defaults changed, and effort is now the literal
 `high` for every Implementer model, including `--implementer-model` overrides. The override
 remains available for weaker test models; there is no model-to-effort table.*
+
+*Amended 2026-10-13 (`rl-hhzu`): the codex preset's default is now `gpt-6.1-sol`, moving with
+Reviewer `sol`'s model. The claude default and the effort are unchanged.*
 
 **AGT-6** The Implementer, with `--implementer codex`, MUST be:
 
@@ -144,7 +147,7 @@ sandbox blocks the network and `.git`, which breaks `nix`, `cargo fetch` and com
 2026-09-22 neither line carried a model flag and the CLI's configured default was the
 Implementer's model; that day `ADR-0008` needed every Seat to have a model rloop can name, and a
 Seat filled by a CLI's configured default is one rloop cannot Probe. The cost is live: an operator
-whose `claude` default is not `claude-opus-5-5`, or whose `codex` default is not `gpt-6-sol`,
+whose `claude` default is not `claude-opus-5-5`, or whose `codex` default is not `gpt-6.1-sol`,
 gets the preset's model unless they pass `--implementer-model`.*
 
 *Amended 2026-10-08 (`rl-4i7t`): the preset models changed to the defaults in `AGT-5`, and
@@ -184,7 +187,7 @@ codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6-astra -c model_re
 and Reviewer `sol` MUST be:
 
 ```text
-codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6-sol -c model_reasoning_effort=xhigh <review prompt>
+codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6.1-sol -c model_reasoning_effort=xhigh <review prompt>
 ```
 
 *`codex review --base` cannot take a prompt (codex 0.153.4 refuses the combination), and the
@@ -206,6 +209,11 @@ roster stayed as they were. On that date, `codex exec --dangerously-bypass-appro
 returned `ok` and exited 0. The Implementer and each Reviewer independently recorded successful
 calls. The `sol` adviser line of the Consultation in `PRM-1` and `PRM-2` moved with it.
 `AGT-17` states `This was a partial verification, not a recheck of the whole current roster.`*
+
+*Amended 2026-10-13 (`rl-hhzu`): the owner moved the id behind the name again, to
+`gpt-6.1-sol`; the roster name, the effort and everything else about the roster stayed as they
+were. The `sol` adviser line of the Consultation in `PRM-1` and `PRM-2` and the codex
+Implementer's default in `AGT-5` moved with it. `AGT-17` records the verification.*
 
 **AGT-11** The Panel MUST be exactly the four Reviewers `AGT-7`, `AGT-8` and `AGT-10` name, with
 the Feedback File names `DIR-4` gives them. There is no flag, file or variable that changes the
@@ -324,6 +332,13 @@ evidence and the open timeout question.*
 <time>` in every inspected Probe output, with `Current session: 100% used` observed four times,
 in the same shape as the weekly family output. This is the owner's observed evidence (`F23`),
 not a new live verification by this Run.*
+
+*Amended 2026-10-13 (`rl-hhzu`): `gpt-6.1-sol` was verified at `xhigh` and at `high` on
+codex-cli 0.162.1, under `--dangerously-bypass-approvals-and-sandbox` and under `-s read-only`.
+Each of the four calls used `Reply with exactly: ok`, stdin from `/dev/null` and a 300-second
+bound, exited 0 with `ok`, and its banner reported the model and the effort. This was a partial
+verification with trivial prompts, not whole-roster, session-resumption or real-task
+verification.*
 
 A fake agent accepts any flag, so the Conformance
 Suite cannot tell a wrong flag from a right one; a flag that a newer CLI rejects is found only by a

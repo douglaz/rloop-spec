@@ -39,7 +39,7 @@ HEAD = re.compile(r"^\*\*((?:PRM|AGT)-\d+)\*\*")
 # stripped: AGT-7's deny list holds spaces), or a run of non-blanks.
 ARG = re.compile(r'<[^>]+>|"[^"]*"|\S+')
 # A requirement identifier, backticked or bare, standing as a word of its own: `RUN-7`, `F12`.
-# `{{RUN_DIR}}` and `gpt-6-sol` hold none.
+# `{{RUN_DIR}}` and `gpt-6.1-sol` hold none.
 ID = re.compile(r"(?<![A-Za-z0-9_])(?:%s)-?\d+[a-z]?(?![A-Za-z0-9_])" % "|".join(NAMESPACES))
 
 

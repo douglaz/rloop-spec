@@ -1346,3 +1346,26 @@ What is still open:
 
 Rejected: read only the documents the task touches, which costs less. The step-4 check needs
 the passages a search did not surface.
+
+## F26 — `sol` moves to `gpt-6.1-sol` (open 2026-10-13)
+
+The owner's decision, tracked by `rl-hhzu`, moves the id behind the name `sol` from `gpt-6-sol`
+to `gpt-6.1-sol` in its three live uses: Reviewer `sol`, the `sol` adviser line of the
+Consultation, and the codex Implementer's default. `gpt-6-astra` and every claude Seat are
+unchanged.
+
+The evidence is codex's own model catalog, fetched on 2026-10-13 by codex-cli 0.162.1. It
+describes `gpt-6.1-sol` as "Latest workhorse model for coding and everyday work" and `gpt-6-sol`
+as "Previous generation workhorse model". It lists the same six reasoning levels for both, a
+500,000-token context window for the new model against 272,000 for the old, and no retirement
+date for the old one. The trivial-prompt verification is in the 2026-10-13 note under `AGT-17`.
+
+What is still open:
+
+- No live Run has used `gpt-6.1-sol` in any Seat. The verification used trivial prompts only.
+- Whether Reviewer `sol` at `xhigh` on the new model answers inside `--reviewer-timeout` is
+  unmeasured.
+
+Not changed: the dated records of what ran on `gpt-6-sol`, in the notes under `AGT-10` and
+`AGT-17` and in `F22`, and the list of ids in `ADR-0006`, which the 2026-10-08 amendment also
+left as written.

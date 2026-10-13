@@ -122,7 +122,7 @@ off_table_model=claude-sonnet-5
 # coverage. A suite whose own fixture is wrong has nothing to report, so
 # this refuses before any item rather than letting one go red.
 case "$off_table_model" in
-  claude-fable-5-1|gpt-6-astra|claude-opus-5-5|gpt-6-sol)
+  claude-fable-5-1|gpt-6-astra|claude-opus-5-5|gpt-6.1-sol)
     echo "conformance: off_table_model is $off_table_model, a model a Seat defaults to or fixes (AGT-3, AGT-5, AGT-6, AGT-7, AGT-8, AGT-10, AGT-11), and the suite needs one no Seat defaults to and no Reviewer's command line fixes" >&2
     exit 2 ;;
 esac

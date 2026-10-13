@@ -592,7 +592,7 @@ where it is observable, in `probe-pick.md` above.* (`RUN-22`, `RUN-21`, `DIR-4`,
 Fable, preserving both family rows.*
 
 With a codex Manager and session 90 before the pick, independently refuse the claude Implementer
-on its default model and on `claude-sonnet-5` and `gpt-6-sol`. Each Run satisfies the same refusal
+on its default model and on `claude-sonnet-5` and `gpt-6.1-sol`. Each Run satisfies the same refusal
 assertions,
 including the model, Seat and verbatim session line with reset on standard error, and an exact
 record with `implementer`, `fable` and `opus` unavailable and the other Seats unknown.

@@ -338,7 +338,7 @@ $repo/run/feedback-1-sol.md"
 ok=1; detail=""
 [ "$e" = 0 ] || { ok=0; detail="$detail [run 2 (codex implementer): exit $e]"; }
 check_call "$rec" manager-0 "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid" claude-fable-5-1 "pick (clean, no instruction)"
-check_call "$rec" implementer-1 "$fx/argv/AGT-6.txt" "$fx/prompts/PRM-3.txt" "$sid" gpt-6-sol "codex implementer"
+check_call "$rec" implementer-1 "$fx/argv/AGT-6.txt" "$fx/prompts/PRM-3.txt" "$sid" gpt-6.1-sol "codex implementer"
 check_call "$rec" manager-1 "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid" claude-fable-5-1 "judge (clean)"
 argv2_ok=$ok; argv2_detail="$detail"
 # a third Run: the codex Manager preset, at its default model, resuming the id the pick reported,
@@ -1334,7 +1334,7 @@ e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=fable run_rloop "$repo" "$rec" --
 refused "Implementer's Seat on claude-fable-5-1"
 names "Implementer's Seat on claude-fable-5-1" implementer claude-fable-5-1 "$fable_line"
 record_is "$repo/run/probe-pick.md" "Implementer's Seat on claude-fable-5-1" unknown unavailable unavailable unknown unknown unknown
-for model in claude-opus-5-5 "$off_table_model" gpt-6-sol; do
+for model in claude-opus-5-5 "$off_table_model" gpt-6.1-sol; do
   repo="$(new_repo)"; rec="$work/rec-session-implementer-$model"
   e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=session90 run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager codex --implementer-model "$model")
   refused "session Implementer $model"
