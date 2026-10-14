@@ -614,7 +614,7 @@ both of `RUN-21`'s call sites, and `CNF-34` gained a watching straggler at each.
 and the mutant is red. Rebuilt against rloop-bash `18c8807`, gated on `RLOOP_FAKE_WATCH`'s value
 beginning `probe:` — what confines it to the two new Runs, where a gate on the variable merely being
 set would mutate the Checkpoint arm too, whose value is `implementer:rejected-1-task.md`
-(`conformance/run:798`) — and with the wait loop of that executable's `reap` inlined rather than
+(`conformance/run:806`) — and with the wait loop of that executable's `reap` inlined rather than
 reordered so the verdicts still see the status the reaping sets, it gives `[probe-0 watch: the
 probe's child saw probe-pick.md, so its group outlived the call and ran through the record]` and the
 same bracket for `probe-1` and `probe-1.md` as the item's whole detail, with every other verdict
@@ -631,7 +631,7 @@ reading a call's output leaves it no file to find, so a read taken before the re
 after look the same to it. The witness for the read is a straggler that *writes* into the capture
 `DIR-4` has the probe's standard output reach `entire and unmodified` — a line the reader acts on,
 since an inert one changes no verdict — and `CNF-34` gained one Run of it, at the probe before the
-pick (`conformance/run:738-779`). `RUN-22` is what makes the read observable there: it has rloop
+pick (`conformance/run:745-787`). `RUN-22` is what makes the read observable there: it has rloop
 `exit 2 without spawning any agent` on that probe's verdicts, so an executable that derives them
 from bytes the straggler's line has not reached yet calls the pick and runs on. The knob is
 `RLOOP_FAKE_WRITE_STDOUT`, which had only a role and a fixed line and now takes a first-write delay
@@ -986,7 +986,7 @@ it on whitespace`.
 one executable that handles newlines does not extend that obligation to other Implementations.
 The suite now collects quoted globs into arrays, filters unmatched patterns, counts files, and
 selects whole paths in glob order. `spawn_count` (`conformance/run:46`) uses that count;
-`record_of` (`conformance/run:612-618`) retains its missing-record guard. Environment checks also
+`record_of` (`conformance/run:619-625`) retains its missing-record guard. Environment checks also
 reject both absent and duplicate records. Sequence directory selection uses the same arrays;
 the fresh-directory comparison keeps full paths as NUL-separated records. PID and timestamp
 reads, fixed-filename listings and existence-only checks are not full-path selections.
@@ -1369,3 +1369,343 @@ What is still open:
 Not changed: the dated records of what ran on `gpt-6-sol`, in the notes under `AGT-10` and
 `AGT-17` and in `F22`, and the list of ids in `ADR-0006`, which the 2026-10-08 amendment also
 left as written.
+
+## F27 — The default Implementer preset becomes codex (2026-10-13)
+
+The owner's decision, tracked by `rl-9uu1`, amends `AGT-1`'s `--implementer` usage row to
+`(default: codex)`. Command lines and preset model defaults retain their homes in `AGT-5` and
+`AGT-6`. Quota witnesses requiring a claude Implementer now select it explicitly, including
+`CNF-34`'s Probe-output read witness. `CNF-11` observes omitted and explicit preset argv and
+model overrides; `CNF-31` observes the omitted preset in actual Probe records and pick spawns.
+The owner's clarification leaves help output unspecified; `CNF-5` retains its exit/spawn checks.
+
+The sole supplied evidence is the owner's review in `F22`: since October 1, among 156 Runs that
+reached a Round, 106 used a codex Implementer. `F22` owns that evidence; this Run did not
+remeasure those Runs. The owner supplied no other rationale. No quality, speed, cost or
+reliability comparison or live-model verification follows from the fake-agent measurements.
+
+The formal audit found no CLI default encoded in a declaration or rendered region.
+`Behaviour.seat` in `tools/formal/Rloop/Loop.lean` and `Seats` in
+`tools/formal/Rloop/Scenarios.lean` provide Scenario inputs; `run_scenarios` in
+`conformance/scenario-lib.sh` supplies both presets and models explicitly. No Lean declaration,
+witness theorem, rendered region or Scenario meaning needs an amendment or regeneration.
+README's operator view states no old Implementer default and its alternative preset flags remain
+accurate, so it needs no change.
+
+Historical gap evidence: the first Run's Opus report on 2026-10-13, in
+`.rloop/runs/20261013T193512.051485686Z-2118481/feedback-1-opus.md`, measured `split-default`
+as `33 passed, 0 failed` against the earlier suite. Its 560-second bound was below this task's
+minimum and cannot substitute for the compliant demonstrations below. Those measurements are
+historical; none is relabelled as a measurement of the final suite.
+
+Measured on 2026-10-13 against the Specification Base
+`bb2666d07e04abe9ca3f046f7e996815c53f174e` plus this uncommitted amendment. The Implementation
+source was rloop-bash `fe28d7826d6b4f312f0ab46bd7274d653b8a386c`, read from the clean checkout
+`/home/user/p/rloop-bash` and copied into isolated directories under
+`/tmp/rl-9uu1-final-se96mj7m`. Each variant was built with `nix build` in its scratch copy and
+run through its packaged `result/bin/rloop`, including the wrapper's `cmp` input.
+Every suite command ran in the foreground through completion with a 3600-second bound and a
+30-second kill grace; no bound was reached.
+
+Final `conformance/run` SHA-256: `eef01858b448f4afb510f6cd644586c4122e096bf3f401bec215f44e84c2eb49`.
+The complete `conformance/` file manifest SHA-256: `29a88d907a077d49667eb14e56aa21624771cd868f3e88af6b4496f82810b65f`.
+The manifest is the concatenation, in sorted relative-path order, of each regular file's
+SHA-256, two spaces, its relative path and a newline. This covers the fakes, fixtures,
+Scenario file and library as well as the suite executable; reconstruction below computes it.
+
+| Variant | Build exit / elapsed | Suite exit / elapsed | Bound | Actual summary line | Actual failed-item line |
+|---|---|---|---|---|---|
+| `control` | 0 / 1 s | 0 / 183 s | 3600 s | `33 passed, 0 failed` | — |
+| `runtime-claude` | 0 / 1 s | 1 / 183 s | 3600 s | `31 passed, 2 failed` | `failed: CNF-11 CNF-31` |
+| `explicit-claude-argv` | 0 / 1 s | 1 / 184 s | 3600 s | `32 passed, 1 failed` | `failed: CNF-11` |
+| `split-default` | 0 / 1 s | 1 / 184 s | 3600 s | `32 passed, 1 failed` | `failed: CNF-31` |
+
+The control flips only the runtime Implementer preset initializer to codex. Each mutant changes
+one behavior relative to that control: `runtime-claude` restores only the old initializer;
+`explicit-claude-argv` changes only the explicit claude Implementer's effort from `high` to
+`xhigh`; `split-default` changes only Probe processing of an omitted Implementer preset to
+claude and, absent a model override, Opus. Runtime argv and explicit preset selection stay correct
+in `split-default`, whose `CNF-11` passed while `CNF-31` failed. Restoring the old runtime preset
+also restores its Probe Seat, so `runtime-claude` fails both the argv and omitted-preset Probe
+witnesses on the same defect. No unrelated failure occurred in any demonstration.
+
+The actual omitted-preset failure labels name `session90` and `opus`, the exact `probe-pick.md`
+record mismatch, the expected one Probe and one pick, and the spawn trace that must be `pick`.
+Both failed-pick Runs exit 2 under the control and the mutant, so the direct exit alone cannot
+witness this defect. The byte comparator also rejects an absent record; the call counts and trace
+reject absent spawn evidence. `CNF-31` owns these assertions.
+
+| Variant | `bin/rloop` source SHA-256 | Packaged executable SHA-256 |
+|---|---|---|
+| `control` | `502c1d50d9166ad0f08e81d48059cc75c8175a13b885b2ec3e487c57946a8fec` | `1b7acce224a0fff4e51f5b454bcc08054dd2fe930050f594718c3cf049888ef1` |
+| `runtime-claude` | `b180d0204d75294e84438005b80c69fba0f9901b76930cd017be8f1fc4362900` | `f6a6256f30bcfce1225087ca52b32e0f899f850efc25db36f8c906c8fabeb1f0` |
+| `explicit-claude-argv` | `90a172aedbec641c51c01686db562d6edfefcff2c49a61302bddc488a233a10a` | `ff367d4f0609d6875b7d1cb5cf34055e0d2de63baa316bb5ef04a9a9394c9d62` |
+| `split-default` | `b0c9a1ca0e2ac17e1eae02d421ae5427907b00301ae301bd60c9af1719b553c7` | `c8fbf2d0863fee941bf44e98367c45285c15b3905b1e0aa1839d543d728fd7e0` |
+
+UTC suite start and finish, and the resolved packaged executable identities:
+
+- `control`: `2026-10-13T23:43:51Z` through `2026-10-13T23:46:54Z`; `/nix/store/73h2l8cjjvg4abdp99yqm8h3ysgi4znc-rloop/bin/rloop`.
+- `runtime-claude`: `2026-10-13T23:47:02Z` through `2026-10-13T23:50:05Z`; `/nix/store/zyv63zm4c4rrwn6pv9k85fpghc556d5g-rloop/bin/rloop`.
+- `explicit-claude-argv`: `2026-10-13T23:50:21Z` through `2026-10-13T23:53:25Z`; `/nix/store/c64x0x7zw0j9vw7cx8xjsaj1275anfy7-rloop/bin/rloop`.
+- `split-default`: `2026-10-13T23:53:45Z` through `2026-10-13T23:56:49Z`; `/nix/store/bjwhixgf944l2m05kysf0g7yc15lh2x2-rloop/bin/rloop`.
+
+Complete captured suite standard output follows, including every actual diagnostic and summary.
+The same complete standard error was captured for each variant:
+
+```text
+conformance: not on this host, so not on the executable's PATH: arch
+```
+
+The optional `--self-check` item and the live item were not exercised. Their printed `PASS`
+qualifications below are placeholders, not claims that either verification ran. These are
+fake-agent measurements, not live-model verification.
+
+`control` standard output:
+
+```text
+rloop conformance suite against /tmp/rl-9uu1-final-se96mj7m/control/result/bin/rloop
+
+  PASS  CNF-3  295 scenarios replayed
+  PASS  CNF-4  (run with --self-check to exercise)
+  PASS  CNF-5  usage errors exit 2 and spawn nothing; --version/--help exit 0; --max-runs 08 is eight
+  PASS  CNF-6  exit 2, nothing spawned
+  PASS  CNF-7  existing or parentless run dir refused; fresh one created
+  PASS  CNF-8  .rloop/runs/<id>/ created under a repository path holding a space and a tab, self-ignored byte for byte (a pre-existing by-eye .gitignore rewritten), tree clean
+  PASS  CNF-9  exactly DIR-4's names; outputs captured entire; session is a UUID; kept on exit 2; the same names under a repository path holding a space and a tab
+  PASS  CNF-10  RLOOP_* variables, cwd and closed stdin for every role; claude Manager shell ceiling at default and custom timeouts
+  PASS  CNF-11  every role's argv is its fixture with the placeholders filled, under both presets of the Manager and the Implementer, a model given to each, and paths holding a space and a tab
+  PASS  CNF-12  every prompt is its fixture rendered in one pass; placeholder names, backslash, & and %s in an instruction, {{INSTRUCTION}} in the Run Directory path, and a space and a tab in the repository's and the Run Directory's paths survive
+  PASS  CNF-23  a codex Manager Run of two Rounds ends 0 done; the session file holds the reported thread_id, every judge call carries it, the pick's output is kept entire, and a pick reporting none exits 2
+  PASS  CNF-13  --base ref rendered as its hash and stable across Rounds
+  PASS  CNF-14  stdout is the Finished File on 0/1/3, empty on 2 with or without a Finished File
+  PASS  CNF-15  failure note appended, Round proceeded, and the note survives a straggler of the Reviewer's group
+  PASS  CNF-16  four 2-second Reviewers overlapped
+  PASS  CNF-17  timeouts kill the group, the child that ignores SIGTERM included, and the Run goes on or ends as the role says
+  PASS  CNF-34  a call that exits 0 leaves neither its own process nor anything in its group, for a Manager call, for the Implementer, for every Reviewer of the Panel read from the judge's record and for both probes read from the call that follows each, and the group is gone before the step that is no call: the Implementer's before the Checkpoint that follows it, and each probe's before rloop writes that probe's availability record — and before rloop reads that probe's output, a straggler's usage line reaching the verdicts and refusing the Run; the pick's group before task-1.md, every Reviewer's before the second Checkpoint, and the first judge's before a next-Round decision produces task-2.md
+  PASS  CNF-35  an early Reviewer's group is reaped as that Reviewer exits, while a later one still runs, and every group's grace runs on its own
+  PASS  CNF-18  SIGINT/SIGTERM forwarded, exit 2 'interrupted', nothing survives, run dir intact, for a sleeping Implementer and for the probe before the pick; a second SIGINT kills at once during a call and during a reap
+  PASS  CNF-19  only read-only git subcommands; HEAD and reflog unchanged
+  PASS  CNF-20  Sequence: idle ends 0, blocked ends 1, cap ends 2; fresh sessions; stdout per Run, none for a Run that ended 2
+  PASS  CNF-21  a dirty tree stops a Sequence before the next pick; a lone Run only warns
+  PASS  CNF-24  one probe before the pick and one a Round, after the Implementer and before every Reviewer, argv as AGT-18
+  PASS  CNF-25  six lines, one per Seat; either family at 100% reads unavailable, alone, and a Seat reads its own model
+  PASS  CNF-26  family and session fail-open readings and Round boundaries leave every Seat unknown and the Panel whole
+  PASS  CNF-27  family or session exhaustion: omitted Reviewers recorded in place and all feedback reaches the judge; all down aborts
+  PASS  CNF-28  a Manager's Seat recorded unavailable before the pick: exit 2, no agent spawned, only probe-pick.*, the Seat, model and line named
+  PASS  CNF-29  an Implementer's Seat recorded unavailable before the pick, on either row: exit 2, no agent spawned, the Seat, model and line named
+  PASS  CNF-30  a Manager's Seat recorded unavailable in Round 1 or 2, on either row: the Panel runs, no judge is called, exit 2
+  PASS  CNF-31  family-only off-table reports and fail-open session reports start the Run; codex is session-exempt and a Round records Implementer exhaustion without acting on it
+  PASS  CNF-32  the pick prompt lists the Reviewer Seats the Probe before the pick read unavailable: opus; fable; fable and opus; none
+  PASS  CNF-33  a default-preset Run of two Rounds ends 0 and both of its judge calls carry the session file's id
+  PASS  CNF-22  (live; by hand once per release — see 06-conformance.md)
+
+33 passed, 0 failed
+```
+
+`runtime-claude` standard output:
+
+```text
+rloop conformance suite against /tmp/rl-9uu1-final-se96mj7m/runtime-claude/result/bin/rloop
+
+  PASS  CNF-3  295 scenarios replayed
+  PASS  CNF-4  (run with --self-check to exercise)
+  PASS  CNF-5  usage errors exit 2 and spawn nothing; --version/--help exit 0; --max-runs 08 is eight
+  PASS  CNF-6  exit 2, nothing spawned
+  PASS  CNF-7  existing or parentless run dir refused; fresh one created
+  PASS  CNF-8  .rloop/runs/<id>/ created under a repository path holding a space and a tab, self-ignored byte for byte (a pre-existing by-eye .gitignore rewritten), tree clean
+  PASS  CNF-9  exactly DIR-4's names; outputs captured entire; session is a UUID; kept on exit 2; the same names under a repository path holding a space and a tab
+  PASS  CNF-10  RLOOP_* variables, cwd and closed stdin for every role; claude Manager shell ceiling at default and custom timeouts
+  FAIL  CNF-11   [default implementer: argv differs]     [implementer (whitespace paths): argv differs]  [implementer (default preset, --implementer-model claude-sonnet-5): argv differs]
+  PASS  CNF-12  every prompt is its fixture rendered in one pass; placeholder names, backslash, & and %s in an instruction, {{INSTRUCTION}} in the Run Directory path, and a space and a tab in the repository's and the Run Directory's paths survive
+  PASS  CNF-23  a codex Manager Run of two Rounds ends 0 done; the session file holds the reported thread_id, every judge call carries it, the pick's output is kept entire, and a pick reporting none exits 2
+  PASS  CNF-13  --base ref rendered as its hash and stable across Rounds
+  PASS  CNF-14  stdout is the Finished File on 0/1/3, empty on 2 with or without a Finished File
+  PASS  CNF-15  failure note appended, Round proceeded, and the note survives a straggler of the Reviewer's group
+  PASS  CNF-16  four 2-second Reviewers overlapped
+  PASS  CNF-17  timeouts kill the group, the child that ignores SIGTERM included, and the Run goes on or ends as the role says
+  PASS  CNF-34  a call that exits 0 leaves neither its own process nor anything in its group, for a Manager call, for the Implementer, for every Reviewer of the Panel read from the judge's record and for both probes read from the call that follows each, and the group is gone before the step that is no call: the Implementer's before the Checkpoint that follows it, and each probe's before rloop writes that probe's availability record — and before rloop reads that probe's output, a straggler's usage line reaching the verdicts and refusing the Run; the pick's group before task-1.md, every Reviewer's before the second Checkpoint, and the first judge's before a next-Round decision produces task-2.md
+  PASS  CNF-35  an early Reviewer's group is reaped as that Reviewer exits, while a later one still runs, and every group's grace runs on its own
+  PASS  CNF-18  SIGINT/SIGTERM forwarded, exit 2 'interrupted', nothing survives, run dir intact, for a sleeping Implementer and for the probe before the pick; a second SIGINT kills at once during a call and during a reap
+  PASS  CNF-19  only read-only git subcommands; HEAD and reflog unchanged
+  PASS  CNF-20  Sequence: idle ends 0, blocked ends 1, cap ends 2; fresh sessions; stdout per Run, none for a Run that ended 2
+  PASS  CNF-21  a dirty tree stops a Sequence before the next pick; a lone Run only warns
+  PASS  CNF-24  one probe before the pick and one a Round, after the Implementer and before every Reviewer, argv as AGT-18
+  PASS  CNF-25  six lines, one per Seat; either family at 100% reads unavailable, alone, and a Seat reads its own model
+  PASS  CNF-26  family and session fail-open readings and Round boundaries leave every Seat unknown and the Panel whole
+  PASS  CNF-27  family or session exhaustion: omitted Reviewers recorded in place and all feedback reaches the judge; all down aborts
+  PASS  CNF-28  a Manager's Seat recorded unavailable before the pick: exit 2, no agent spawned, only probe-pick.*, the Seat, model and line named
+  PASS  CNF-29  an Implementer's Seat recorded unavailable before the pick, on either row: exit 2, no agent spawned, the Seat, model and line named
+  PASS  CNF-30  a Manager's Seat recorded unavailable in Round 1 or 2, on either row: the Panel runs, no judge is called, exit 2
+  FAIL  CNF-31   [omitted Implementer preset, session90: probe-pick.md is not unknown unknown unavailable unavailable unknown unknown: 'manager:unknown implementer:unavailable fable:unavailable opus:unavailable astra:unknown sol:unknown '] [omitted Implementer preset, session90: expected one Probe and one pick, no other calls] [omitted Implementer preset, session90: spawn trace is not pick] [omitted Implementer preset, opus: probe-pick.md is not unknown unknown unknown unavailable unknown unknown: 'manager:unknown implementer:unavailable fable:unknown opus:unavailable astra:unknown sol:unknown '] [omitted Implementer preset, opus: expected one Probe and one pick, no other calls] [omitted Implementer preset, opus: spawn trace is not pick]
+  PASS  CNF-32  the pick prompt lists the Reviewer Seats the Probe before the pick read unavailable: opus; fable; fable and opus; none
+  PASS  CNF-33  a default-preset Run of two Rounds ends 0 and both of its judge calls carry the session file's id
+  PASS  CNF-22  (live; by hand once per release — see 06-conformance.md)
+
+31 passed, 2 failed
+failed: CNF-11 CNF-31
+```
+
+`explicit-claude-argv` standard output:
+
+```text
+rloop conformance suite against /tmp/rl-9uu1-final-se96mj7m/explicit-claude-argv/result/bin/rloop
+
+  PASS  CNF-3  295 scenarios replayed
+  PASS  CNF-4  (run with --self-check to exercise)
+  PASS  CNF-5  usage errors exit 2 and spawn nothing; --version/--help exit 0; --max-runs 08 is eight
+  PASS  CNF-6  exit 2, nothing spawned
+  PASS  CNF-7  existing or parentless run dir refused; fresh one created
+  PASS  CNF-8  .rloop/runs/<id>/ created under a repository path holding a space and a tab, self-ignored byte for byte (a pre-existing by-eye .gitignore rewritten), tree clean
+  PASS  CNF-9  exactly DIR-4's names; outputs captured entire; session is a UUID; kept on exit 2; the same names under a repository path holding a space and a tab
+  PASS  CNF-10  RLOOP_* variables, cwd and closed stdin for every role; claude Manager shell ceiling at default and custom timeouts
+  FAIL  CNF-11      [explicit claude implementer (cyclic run dir): argv differs]   [implementer (claude preset, --implementer-model claude-sonnet-5): argv differs]
+  PASS  CNF-12  every prompt is its fixture rendered in one pass; placeholder names, backslash, & and %s in an instruction, {{INSTRUCTION}} in the Run Directory path, and a space and a tab in the repository's and the Run Directory's paths survive
+  PASS  CNF-23  a codex Manager Run of two Rounds ends 0 done; the session file holds the reported thread_id, every judge call carries it, the pick's output is kept entire, and a pick reporting none exits 2
+  PASS  CNF-13  --base ref rendered as its hash and stable across Rounds
+  PASS  CNF-14  stdout is the Finished File on 0/1/3, empty on 2 with or without a Finished File
+  PASS  CNF-15  failure note appended, Round proceeded, and the note survives a straggler of the Reviewer's group
+  PASS  CNF-16  four 2-second Reviewers overlapped
+  PASS  CNF-17  timeouts kill the group, the child that ignores SIGTERM included, and the Run goes on or ends as the role says
+  PASS  CNF-34  a call that exits 0 leaves neither its own process nor anything in its group, for a Manager call, for the Implementer, for every Reviewer of the Panel read from the judge's record and for both probes read from the call that follows each, and the group is gone before the step that is no call: the Implementer's before the Checkpoint that follows it, and each probe's before rloop writes that probe's availability record — and before rloop reads that probe's output, a straggler's usage line reaching the verdicts and refusing the Run; the pick's group before task-1.md, every Reviewer's before the second Checkpoint, and the first judge's before a next-Round decision produces task-2.md
+  PASS  CNF-35  an early Reviewer's group is reaped as that Reviewer exits, while a later one still runs, and every group's grace runs on its own
+  PASS  CNF-18  SIGINT/SIGTERM forwarded, exit 2 'interrupted', nothing survives, run dir intact, for a sleeping Implementer and for the probe before the pick; a second SIGINT kills at once during a call and during a reap
+  PASS  CNF-19  only read-only git subcommands; HEAD and reflog unchanged
+  PASS  CNF-20  Sequence: idle ends 0, blocked ends 1, cap ends 2; fresh sessions; stdout per Run, none for a Run that ended 2
+  PASS  CNF-21  a dirty tree stops a Sequence before the next pick; a lone Run only warns
+  PASS  CNF-24  one probe before the pick and one a Round, after the Implementer and before every Reviewer, argv as AGT-18
+  PASS  CNF-25  six lines, one per Seat; either family at 100% reads unavailable, alone, and a Seat reads its own model
+  PASS  CNF-26  family and session fail-open readings and Round boundaries leave every Seat unknown and the Panel whole
+  PASS  CNF-27  family or session exhaustion: omitted Reviewers recorded in place and all feedback reaches the judge; all down aborts
+  PASS  CNF-28  a Manager's Seat recorded unavailable before the pick: exit 2, no agent spawned, only probe-pick.*, the Seat, model and line named
+  PASS  CNF-29  an Implementer's Seat recorded unavailable before the pick, on either row: exit 2, no agent spawned, the Seat, model and line named
+  PASS  CNF-30  a Manager's Seat recorded unavailable in Round 1 or 2, on either row: the Panel runs, no judge is called, exit 2
+  PASS  CNF-31  family-only off-table reports and fail-open session reports start the Run; codex is session-exempt and a Round records Implementer exhaustion without acting on it
+  PASS  CNF-32  the pick prompt lists the Reviewer Seats the Probe before the pick read unavailable: opus; fable; fable and opus; none
+  PASS  CNF-33  a default-preset Run of two Rounds ends 0 and both of its judge calls carry the session file's id
+  PASS  CNF-22  (live; by hand once per release — see 06-conformance.md)
+
+32 passed, 1 failed
+failed: CNF-11
+```
+
+`split-default` standard output:
+
+```text
+rloop conformance suite against /tmp/rl-9uu1-final-se96mj7m/split-default/result/bin/rloop
+
+  PASS  CNF-3  295 scenarios replayed
+  PASS  CNF-4  (run with --self-check to exercise)
+  PASS  CNF-5  usage errors exit 2 and spawn nothing; --version/--help exit 0; --max-runs 08 is eight
+  PASS  CNF-6  exit 2, nothing spawned
+  PASS  CNF-7  existing or parentless run dir refused; fresh one created
+  PASS  CNF-8  .rloop/runs/<id>/ created under a repository path holding a space and a tab, self-ignored byte for byte (a pre-existing by-eye .gitignore rewritten), tree clean
+  PASS  CNF-9  exactly DIR-4's names; outputs captured entire; session is a UUID; kept on exit 2; the same names under a repository path holding a space and a tab
+  PASS  CNF-10  RLOOP_* variables, cwd and closed stdin for every role; claude Manager shell ceiling at default and custom timeouts
+  PASS  CNF-11  every role's argv is its fixture with the placeholders filled, under both presets of the Manager and the Implementer, a model given to each, and paths holding a space and a tab
+  PASS  CNF-12  every prompt is its fixture rendered in one pass; placeholder names, backslash, & and %s in an instruction, {{INSTRUCTION}} in the Run Directory path, and a space and a tab in the repository's and the Run Directory's paths survive
+  PASS  CNF-23  a codex Manager Run of two Rounds ends 0 done; the session file holds the reported thread_id, every judge call carries it, the pick's output is kept entire, and a pick reporting none exits 2
+  PASS  CNF-13  --base ref rendered as its hash and stable across Rounds
+  PASS  CNF-14  stdout is the Finished File on 0/1/3, empty on 2 with or without a Finished File
+  PASS  CNF-15  failure note appended, Round proceeded, and the note survives a straggler of the Reviewer's group
+  PASS  CNF-16  four 2-second Reviewers overlapped
+  PASS  CNF-17  timeouts kill the group, the child that ignores SIGTERM included, and the Run goes on or ends as the role says
+  PASS  CNF-34  a call that exits 0 leaves neither its own process nor anything in its group, for a Manager call, for the Implementer, for every Reviewer of the Panel read from the judge's record and for both probes read from the call that follows each, and the group is gone before the step that is no call: the Implementer's before the Checkpoint that follows it, and each probe's before rloop writes that probe's availability record — and before rloop reads that probe's output, a straggler's usage line reaching the verdicts and refusing the Run; the pick's group before task-1.md, every Reviewer's before the second Checkpoint, and the first judge's before a next-Round decision produces task-2.md
+  PASS  CNF-35  an early Reviewer's group is reaped as that Reviewer exits, while a later one still runs, and every group's grace runs on its own
+  PASS  CNF-18  SIGINT/SIGTERM forwarded, exit 2 'interrupted', nothing survives, run dir intact, for a sleeping Implementer and for the probe before the pick; a second SIGINT kills at once during a call and during a reap
+  PASS  CNF-19  only read-only git subcommands; HEAD and reflog unchanged
+  PASS  CNF-20  Sequence: idle ends 0, blocked ends 1, cap ends 2; fresh sessions; stdout per Run, none for a Run that ended 2
+  PASS  CNF-21  a dirty tree stops a Sequence before the next pick; a lone Run only warns
+  PASS  CNF-24  one probe before the pick and one a Round, after the Implementer and before every Reviewer, argv as AGT-18
+  PASS  CNF-25  six lines, one per Seat; either family at 100% reads unavailable, alone, and a Seat reads its own model
+  PASS  CNF-26  family and session fail-open readings and Round boundaries leave every Seat unknown and the Panel whole
+  PASS  CNF-27  family or session exhaustion: omitted Reviewers recorded in place and all feedback reaches the judge; all down aborts
+  PASS  CNF-28  a Manager's Seat recorded unavailable before the pick: exit 2, no agent spawned, only probe-pick.*, the Seat, model and line named
+  PASS  CNF-29  an Implementer's Seat recorded unavailable before the pick, on either row: exit 2, no agent spawned, the Seat, model and line named
+  PASS  CNF-30  a Manager's Seat recorded unavailable in Round 1 or 2, on either row: the Panel runs, no judge is called, exit 2
+  FAIL  CNF-31   [omitted Implementer preset, session90: probe-pick.md is not unknown unknown unavailable unavailable unknown unknown: 'manager:unknown implementer:unavailable fable:unavailable opus:unavailable astra:unknown sol:unknown '] [omitted Implementer preset, session90: expected one Probe and one pick, no other calls] [omitted Implementer preset, session90: spawn trace is not pick] [omitted Implementer preset, opus: probe-pick.md is not unknown unknown unknown unavailable unknown unknown: 'manager:unknown implementer:unavailable fable:unknown opus:unavailable astra:unknown sol:unknown '] [omitted Implementer preset, opus: expected one Probe and one pick, no other calls] [omitted Implementer preset, opus: spawn trace is not pick]
+  PASS  CNF-32  the pick prompt lists the Reviewer Seats the Probe before the pick read unavailable: opus; fable; fable and opus; none
+  PASS  CNF-33  a default-preset Run of two Rounds ends 0 and both of its judge calls carry the session file's id
+  PASS  CNF-22  (live; by hand once per release — see 06-conformance.md)
+
+32 passed, 1 failed
+failed: CNF-31
+```
+
+Reconstruction, from this amended Specification working tree: prepare the scratch copies with
+Python (preparation tooling, outside the suite's runtime dependency contract). Set `S` to the
+scratch root printed below. This is the measured mutation recipe, with each replacement required
+to match exactly once:
+
+```python
+from pathlib import Path
+import hashlib, shutil, subprocess, tempfile
+source = Path('/home/user/p/rloop-bash')
+def git(*args):
+    return subprocess.check_output(
+        ['git', '--no-optional-locks', '-C', str(source), *args], text=True).strip()
+assert git('rev-parse', 'HEAD') == 'fe28d7826d6b4f312f0ab46bd7274d653b8a386c'
+assert not git('status', '--porcelain')
+root = Path(tempfile.mkdtemp(prefix='rl-9uu1-final-'))
+original = (source / 'bin/rloop').read_text()
+old = 'auto=0 manager=claude implementer=claude manager_model=claude-opus-5-5 manager_model_given=0'
+new = old.replace('implementer=claude', 'implementer=codex')
+assert original.count(old) == 1
+control = original.replace(old, new)
+mutations = {
+    'control': [],
+    'runtime-claude': [(new, old)],
+    'explicit-claude-argv': [
+        ('claude) cmd=(claude -p "$2" --model "$implementer_model" --effort high --dangerously-skip-permissions) ;;',
+         'claude) cmd=(claude -p "$2" --model "$implementer_model" --effort xhigh --dangerously-skip-permissions) ;;')],
+    'split-default': [
+        ('--implementer) case $2 in claude|codex) implementer=$2 ;;',
+         '--implementer) case $2 in claude|codex) implementer=$2; implementer_given=1 ;;'),
+        ('implementer) model=$implementer_model cli=$implementer ;;',
+         'implementer) model=$implementer_model cli=$implementer; if [ "${implementer_given:-0}" = 0 ]; then cli=claude; [ "$implementer_model_given" = 1 ] || model=claude-opus-5-5; fi ;;')],
+}
+for label, changes in mutations.items():
+    shutil.copytree(source, root / label, symlinks=True,
+                    ignore=shutil.ignore_patterns('.git', '.rloop', 'result', '.lake', '.direnv'))
+    text = control
+    for before, after in changes:
+        assert text.count(before) == 1, (label, before)
+        text = text.replace(before, after)
+    (root / label / 'bin/rloop').write_text(text)
+    subprocess.run(['bash', '-n', str(root / label / 'bin/rloop')], check=True)
+manifest = ''.join(hashlib.sha256(p.read_bytes()).hexdigest() + '  ' + p.as_posix() + '\n'
+                   for p in sorted(Path('conformance').rglob('*')) if p.is_file())
+print('suite:', hashlib.sha256(Path('conformance/run').read_bytes()).hexdigest())
+print('manifest:', hashlib.sha256(manifest.encode()).hexdigest())
+print(root)
+```
+
+For each `label` in the table the measured commands were, with `S` set to the scratch root:
+
+```bash
+start=$(date +%s); build_status=0
+nix build --out-link "$S/$label/result" "$S/$label" >"$S/$label.build.log" 2>&1 || build_status=$?
+build_elapsed=$(( $(date +%s) - start ))
+[ "$build_status" = 0 ] || exit "$build_status"
+sha256sum "$S/$label/result/bin/rloop" >"$S/$label.executable.sha256"
+readlink -f "$S/$label/result/bin/rloop" >"$S/$label.store-path"
+suite_start=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+start=$(date +%s); status=0
+timeout --foreground --kill-after=30s 3600s bash conformance/run "$S/$label/result/bin/rloop" </dev/null >"$S/$label.stdout" 2>"$S/$label.stderr" || status=$?
+elapsed=$(( $(date +%s) - start ))
+suite_end=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+printf 'build exit %s elapsed %ss; suite exit %s elapsed %ss; bound 3600s; %s through %s\n' "$build_status" "$build_elapsed" "$status" "$elapsed" "$suite_start" "$suite_end"
+cat "$S/$label.stdout" "$S/$label.stderr"
+```
+
+The fixture generator `python3 tools/check_fixtures.py --write` exited zero and reported
+`fixtures: 15 (4 prompts, 11 command lines), each its document's block and free of requirement identifiers`;
+`git diff --name-only -- conformance/fixtures` printed nothing. Neither prompt nor argv fixture
+bytes changed. The formal audit above leaves the rendered regions and Scenarios unchanged.
+Workflow inspection found no affected quotation or mutation target in `.github/workflows/gates.yml`;
+the existing line-citation controls still quote unchanged text. The workflow's negative
+controls were not rehearsed; the dev-shell and sandbox gates do not run them.
+
+The exact scratch root `/tmp/rl-9uu1-final-se96mj7m`, its variant copies, result links and capture
+files were deleted after transferring the measured evidence here. The source Implementation
+checkout remains unchanged. No new specification-behavior question was found; acceptance,
+bead closure and the accepted-work commit remain the Manager's.

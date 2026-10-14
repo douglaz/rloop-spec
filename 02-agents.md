@@ -13,7 +13,7 @@ rloop [OPTIONS] [INSTRUCTION]
 
   --auto                       run a Sequence (05-sequence.md) instead of one Run
   --manager claude|codex       which Manager preset the pick and judges use   (default: claude)
-  --implementer claude|codex   which Implementer preset a Round uses          (default: claude)
+  --implementer claude|codex   which Implementer preset a Round uses          (default: codex)
   --manager-model MODEL        the Manager's model                       (default: the preset's, AGT-3)
   --implementer-model MODEL    the Implementer's model                   (default: the preset's, AGT-5)
   --base REF                   the ref Reviewers diff against                  (default: HEAD at start)
@@ -35,6 +35,9 @@ absent, the Manager picks on its own. A long option that takes a value MAY also 
 
 *Amended 2026-10-09 (issue #12, `rl-zyr5`): the default `--reviewer-timeout` is 3600 seconds.
 `F24` records the owner's evidence, cost and rejected alternatives.*
+
+*Amended 2026-10-13 (`rl-9uu1`): omitting `--implementer` selects codex; the selected
+preset's model default remains `AGT-5`'s. `F27` records the owner's evidence and verification.*
 
 **AGT-2** An unknown option, a missing or non-numeric value, a value outside the set a preset
 flag names — `--manager` and `--implementer` each take `claude` or `codex` and nothing else — a

@@ -78,6 +78,8 @@ nothing_survived() {
 }
 # Both Seats on a model RUN-21's table does not name, so no family reading stops the Run on their account.
 off=(--manager-model "$off_table_model" --implementer-model "$off_table_model")
+# Explicit claude Seats for quota witnesses; `off` itself never overrides a caller's preset.
+claude_off=(--implementer claude "${off[@]}")
 # record_is <record file> <label> <verdict of each Seat, in RUN-21's order>: byte for byte, every line
 # ending with a newline, the last included; command substitution could see neither a missing
 # newline nor an extra blank line.
@@ -317,7 +319,7 @@ check_call() { # check_call <record dir> <record tag> <argv fixture> <prompt fix
   [ "$seen" = 1 ] || { prompt_ok=0; prompt_detail="$prompt_detail [$7: prompt differs]"; }
 }
 check_call "$rec" manager-0 "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid" claude-opus-5-5 pick
-check_call "$rec" implementer-1 "$fx/argv/AGT-5.txt" "$fx/prompts/PRM-3.txt" "$sid" claude-opus-5-5 implementer
+check_call "$rec" implementer-1 "$fx/argv/AGT-6.txt" "$fx/prompts/PRM-3.txt" "$sid" gpt-6.1-sol "default implementer"
 check_call "$rec" reviewer-1-fable "$fx/argv/AGT-7.txt" "$fx/prompts/PRM-4.txt" "$sid" x fable
 check_call "$rec" reviewer-1-opus "$fx/argv/AGT-8.txt" "$fx/prompts/PRM-4.txt" "$sid" x opus
 check_call "$rec" reviewer-1-astra "$fx/argv/AGT-10-1.txt" "$fx/prompts/PRM-4.txt" "$sid" x astra
@@ -368,7 +370,7 @@ repo="$(new_repo)"; rec_h="$work/rec-argv-hostile"  # its own rec and sid: CNF-2
 base_hash=$(cd "$repo" && git rev-parse HEAD)
 P_INSTRUCTION='Repair literal {{TASK_FILE}} and {{UNAVAILABLE}} tokens; keep \ & %s and {{ROUND}} as written'
 P_RUN_DIR="$repo/{{INSTRUCTION}}"
-e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec_h" --run-dir "$P_RUN_DIR" "$P_INSTRUCTION")
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec_h" --run-dir "$P_RUN_DIR" --implementer claude "$P_INSTRUCTION")
 sid_h=$(cat "$P_RUN_DIR/session" 2>/dev/null)
 P_TASK_FILE="$P_RUN_DIR/task.md"; P_FINISHED_FILE="$P_RUN_DIR/finished.md"; P_BASE="$base_hash"
 P_ROUND=1; P_MAX_ROUNDS=10; P_IMPLEMENTER_LOG="$P_RUN_DIR/implementer-1.out"; P_DIRTY_AT_START=""; P_UNAVAILABLE=""
@@ -379,7 +381,7 @@ $P_RUN_DIR/feedback-1-sol.md"
 ok=1; detail=""
 [ "$e" = 0 ] || { ok=0; detail="$detail [hostile: exit $e]"; }
 check_call "$rec_h" manager-0 "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid_h" claude-opus-5-5 "pick (hostile instruction, cyclic run dir)"
-check_call "$rec_h" implementer-1 "$fx/argv/AGT-5.txt" "$fx/prompts/PRM-3.txt" "$sid_h" claude-opus-5-5 "implementer (cyclic run dir)"
+check_call "$rec_h" implementer-1 "$fx/argv/AGT-5.txt" "$fx/prompts/PRM-3.txt" "$sid_h" claude-opus-5-5 "explicit claude implementer (cyclic run dir)"
 check_call "$rec_h" manager-1 "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid_h" claude-opus-5-5 "judge (cyclic run dir)"
 argv_hostile_ok=$ok; argv_hostile_detail="$detail"
 # a whitespace Run: the repository's own name holds a space and a tab, and so does the Run
@@ -404,36 +406,41 @@ $P_RUN_DIR/feedback-1-sol.md"
 ok=1; detail=""
 [ "$e" = 0 ] || { ok=0; detail="$detail [whitespace paths: exit $e]"; }
 check_call "$rec_ws" manager-0 "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid_ws" claude-opus-5-5 "pick (whitespace paths)"
-check_call "$rec_ws" implementer-1 "$fx/argv/AGT-5.txt" "$fx/prompts/PRM-3.txt" "$sid_ws" claude-opus-5-5 "implementer (whitespace paths)"
+check_call "$rec_ws" implementer-1 "$fx/argv/AGT-6.txt" "$fx/prompts/PRM-3.txt" "$sid_ws" gpt-6.1-sol "implementer (whitespace paths)"
 check_call "$rec_ws" reviewer-1-fable "$fx/argv/AGT-7.txt" "$fx/prompts/PRM-4.txt" "$sid_ws" x "fable (whitespace paths)"
 check_call "$rec_ws" reviewer-1-opus "$fx/argv/AGT-8.txt" "$fx/prompts/PRM-4.txt" "$sid_ws" x "opus (whitespace paths)"
 check_call "$rec_ws" reviewer-1-astra "$fx/argv/AGT-10-1.txt" "$fx/prompts/PRM-4.txt" "$sid_ws" x "astra (whitespace paths)"
 check_call "$rec_ws" reviewer-1-sol "$fx/argv/AGT-10-2.txt" "$fx/prompts/PRM-4.txt" "$sid_ws" x "sol (whitespace paths)"
 check_call "$rec_ws" manager-1 "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid_ws" claude-opus-5-5 "judge (whitespace paths)"
 argv_ws_ok=$ok; argv_ws_detail="$detail"
-# a fourth Run: the Implementer on a model no Seat defaults to ($off_table_model, scenario-lib.sh);
+# Further Runs: each Implementer preset on a model no Seat defaults to
+# ($off_table_model, scenario-lib.sh);
 # every Seat is asserted, so a flag that moved the Manager's model (the claude preset's default
 # here) or any Reviewer's fixed one is caught. An Implementation that does not accept the flag
-# spawns nothing here (AGT-2), failing CNF-11 and CNF-12, whose snapshot follows this Run
-repo="$(new_repo)"; rec4="$work/rec-argv4"
-base_hash=$(cd "$repo" && git rev-parse HEAD)
-e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec4" --run-dir "$repo/run" --implementer-model "$off_table_model")
-sid4=$(cat "$repo/run/session" 2>/dev/null)  # its own record directory and sid: CNF-23 reads the third Run's
-P_INSTRUCTION=""; P_TASK_FILE="$repo/run/task.md"; P_FINISHED_FILE="$repo/run/finished.md"; P_RUN_DIR="$repo/run"; P_BASE="$base_hash"
-P_ROUND=1; P_MAX_ROUNDS=10; P_IMPLEMENTER_LOG="$repo/run/implementer-1.out"; P_DIRTY_AT_START=""; P_UNAVAILABLE=""
-P_FEEDBACK_FILES="$repo/run/feedback-1-fable.md
+# spawns nothing here (AGT-2), failing CNF-11 and CNF-12, whose snapshot follows these Runs
+ok=1; detail=""
+for preset in default claude; do
+  preset_args=(); argv_fixture=AGT-6
+  if [ "$preset" = claude ]; then preset_args=(--implementer claude); argv_fixture=AGT-5; fi
+  repo="$(new_repo)"; rec4="$work/rec-argv4-$preset"
+  base_hash=$(cd "$repo" && git rev-parse HEAD)
+  e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec4" --run-dir "$repo/run" --implementer-model "$off_table_model" ${preset_args[@]+"${preset_args[@]}"})
+  sid4=$(cat "$repo/run/session" 2>/dev/null)  # its own record directory and sid: CNF-23 reads the third Run's
+  P_INSTRUCTION=""; P_TASK_FILE="$repo/run/task.md"; P_FINISHED_FILE="$repo/run/finished.md"; P_RUN_DIR="$repo/run"; P_BASE="$base_hash"
+  P_ROUND=1; P_MAX_ROUNDS=10; P_IMPLEMENTER_LOG="$repo/run/implementer-1.out"; P_DIRTY_AT_START=""; P_UNAVAILABLE=""
+  P_FEEDBACK_FILES="$repo/run/feedback-1-fable.md
 $repo/run/feedback-1-opus.md
 $repo/run/feedback-1-astra.md
 $repo/run/feedback-1-sol.md"
-ok=1; detail=""
-[ "$e" = 0 ] || { ok=0; detail="$detail [run 4 (implementer on a model no Seat defaults to): exit $e]"; }
-check_call "$rec4" manager-0 "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid4" claude-opus-5-5 "pick (--implementer-model $off_table_model)"
-check_call "$rec4" implementer-1 "$fx/argv/AGT-5.txt" "$fx/prompts/PRM-3.txt" x "$off_table_model" "implementer (--implementer-model $off_table_model)"
-check_call "$rec4" reviewer-1-fable "$fx/argv/AGT-7.txt" "$fx/prompts/PRM-4.txt" "$sid4" x "fable (--implementer-model $off_table_model)"
-check_call "$rec4" reviewer-1-opus "$fx/argv/AGT-8.txt" "$fx/prompts/PRM-4.txt" "$sid4" x "opus (--implementer-model $off_table_model)"
-check_call "$rec4" reviewer-1-astra "$fx/argv/AGT-10-1.txt" "$fx/prompts/PRM-4.txt" "$sid4" x "astra (--implementer-model $off_table_model)"
-check_call "$rec4" reviewer-1-sol "$fx/argv/AGT-10-2.txt" "$fx/prompts/PRM-4.txt" "$sid4" x "sol (--implementer-model $off_table_model)"
-check_call "$rec4" manager-1 "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid4" claude-opus-5-5 "judge (--implementer-model $off_table_model)"
+  [ "$e" = 0 ] || { ok=0; detail="$detail [$preset implementer on a model no Seat defaults to: exit $e]"; }
+  check_call "$rec4" manager-0 "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid4" claude-opus-5-5 "pick ($preset preset, --implementer-model $off_table_model)"
+  check_call "$rec4" implementer-1 "$fx/argv/$argv_fixture.txt" "$fx/prompts/PRM-3.txt" x "$off_table_model" "implementer ($preset preset, --implementer-model $off_table_model)"
+  check_call "$rec4" reviewer-1-fable "$fx/argv/AGT-7.txt" "$fx/prompts/PRM-4.txt" "$sid4" x "fable ($preset preset, --implementer-model $off_table_model)"
+  check_call "$rec4" reviewer-1-opus "$fx/argv/AGT-8.txt" "$fx/prompts/PRM-4.txt" "$sid4" x "opus ($preset preset, --implementer-model $off_table_model)"
+  check_call "$rec4" reviewer-1-astra "$fx/argv/AGT-10-1.txt" "$fx/prompts/PRM-4.txt" "$sid4" x "astra ($preset preset, --implementer-model $off_table_model)"
+  check_call "$rec4" reviewer-1-sol "$fx/argv/AGT-10-2.txt" "$fx/prompts/PRM-4.txt" "$sid4" x "sol ($preset preset, --implementer-model $off_table_model)"
+  check_call "$rec4" manager-1 "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid4" claude-opus-5-5 "judge ($preset preset, --implementer-model $off_table_model)"
+done
 prompts_ok=$prompt_ok; prompts_detail="$prompt_detail"
 if [ "$argv_ok" = 1 ] && [ "$argv2_ok" = 1 ] && [ "$argv3_ok" = 1 ] && [ "$argv_hostile_ok" = 1 ] && [ "$argv_ws_ok" = 1 ] && [ "$ok" = 1 ]; then verdict CNF-11 ok "every role's argv is its fixture with the placeholders filled, under both presets of the Manager and the Implementer, a model given to each, and paths holding a space and a tab"; else verdict CNF-11 fail "$argv_detail $argv2_detail $argv3_detail $argv_hostile_detail $argv_ws_detail $detail"; fi
 if [ "$prompts_ok" = 1 ]; then verdict CNF-12 ok "every prompt is its fixture rendered in one pass; placeholder names, backslash, & and %s in an instruction, {{INSTRUCTION}} in the Run Directory path, and a space and a tab in the repository's and the Run Directory's paths survive"; else verdict CNF-12 fail "$prompts_detail"; fi
@@ -742,7 +749,8 @@ done
 # into the capture DIR-4 gives the Probe `entire and unmodified`. The site is the probe before the
 # pick, because RUN-22 stops the Run on that probe's verdicts: the child writes `Current week
 # (Opus): 100% used`, which RUN-21 reads as unavailable for the opus Seat and so for the Manager's
-# and the Implementer's, whose default model is of that family, and RUN-22 exits 2 naming each. An
+# and the explicitly selected claude Implementer's: both Seats use the claude preset's default model,
+# and RUN-22 exits 2 naming each. An
 # executable that reaps first has that line in the capture it then reads, so probe-pick.md records
 # those three Seats unavailable and the probe before the pick is the only call of the Run; one that
 # reads first sees the capture as its fake left it — the `clear` shape the row pins
@@ -768,7 +776,7 @@ repo="$(new_repo)"; rec="$work/rec-reap-probe-read"
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" \
   RLOOP_FAKE_PROBE_PICK=clear RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=probe \
   RLOOP_FAKE_WRITE_STDOUT="probe:1:$straggler_line" \
-  run_rloop "$repo" "$rec" --run-dir "$repo/run" --kill-after 4)
+  run_rloop "$repo" "$rec" --run-dir "$repo/run" --implementer claude --kill-after 4)
 [ "$e" = 2 ] || { ok=0; detail="$detail [probe read: exit $e, not RUN-22's refusal]"; }
 [ "$(spawn_count "$rec")" = 1 ] || { ok=0; detail="$detail [probe read: $(spawn_count "$rec") calls recorded, not the probe before the pick alone]"; }
 grep -qxF -- "$straggler_line" "$repo/run/probe-pick.out" 2>/dev/null \
@@ -1163,7 +1171,7 @@ if [ "$ok" = 1 ]; then verdict CNF-24 ok "one probe before the pick and one a Ro
 # --- CNF-25: the recorded verdicts --------------------------------------------------------------------
 ok=1; detail=""
 repo="$(new_repo)"; rec="$work/rec-probe-verdict"
-e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=fable RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${off[@]}")
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=fable RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${claude_off[@]}")
 record_is "$repo/run/probe-1.md" "fable row" unknown unknown unavailable unknown unknown unknown
 # The verdict alone is not enough: an Implementation could write it and then abort, or act on it
 # early. RUN-15 removes exactly the Reviewer read `unavailable` and no other, so the Run must
@@ -1184,13 +1192,13 @@ check_run_whole() { # check_run_whole <label> <the unavailable reviewer>
 check_run_whole "fable row" fable
 # The other row of the table, so a rule that hardcodes `fable` cannot pass.
 repo="$(new_repo)"; rec="$work/rec-probe-verdict-opus"
-e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=opus RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${off[@]}")
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=opus RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${claude_off[@]}")
 record_is "$repo/run/probe-1.md" "opus row" unknown unknown unknown unavailable unknown unknown
 check_run_whole "opus row" opus
 # The Implementer's Seat on `fable`'s model: its verdict is read from its own model, not copied from
 # a Reviewer's line, and a Round's verdict on it is recorded and acted on by nothing (RUN-22).
 repo="$(new_repo)"; rec="$work/rec-probe-verdict-seat"
-e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=fable RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager-model "$off_table_model" --implementer-model claude-fable-5-1)
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=fable RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager-model "$off_table_model" --implementer claude --implementer-model claude-fable-5-1)
 record_is "$repo/run/probe-1.md" "Implementer's Seat on the table" unknown unavailable unavailable unknown unknown unknown
 ls "$rec"/*-manager-1.argv >/dev/null 2>&1 || { ok=0; detail="$detail [Implementer's Seat on the table: judge not called]"; }
 check_run_whole "Implementer's Seat on the table" fable
@@ -1213,7 +1221,7 @@ for shape in silent garbage clear aggregate under loose nul fail slow session89 
   written="$shape"; sleep_probe=0; bound=()
   if [ "$shape" = slow ]; then written=fable; sleep_probe=3; bound=(--probe-timeout 1); fi
   if [ "$shape" = session-slow ]; then written=session100; sleep_probe=3; bound=(--probe-timeout 1); fi
-  e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE="$written" RLOOP_FAKE_SLEEP_PROBE="$sleep_probe" RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${off[@]}" ${bound[@]+"${bound[@]}"})
+  e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE="$written" RLOOP_FAKE_SLEEP_PROBE="$sleep_probe" RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${claude_off[@]}" ${bound[@]+"${bound[@]}"})
   [ "$e" = 0 ] || { ok=0; detail="$detail [$shape: exit $e]"; }
   [ -f "$repo/run/finished.md" ] || { ok=0; detail="$detail [$shape: no Finished File]"; }
   ls "$rec"/*-manager-1.argv >/dev/null 2>&1 || { ok=0; detail="$detail [$shape: judge not called]"; }
@@ -1256,7 +1264,7 @@ done
 # Mixed down states: one Reviewer never called and the other three failing is still "every
 # Reviewer of a Panel is down", so RUN-15 aborts. Nothing else exercises the two kinds together.
 repo="$(new_repo)"; rec="$work/rec-omitted-abort"
-e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=fable RLOOP_FAKE_ROUNDS="impl=ok;panel=none;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${off[@]}")
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=fable RLOOP_FAKE_ROUNDS="impl=ok;panel=none;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${claude_off[@]}")
 [ "$e" = 2 ] || { ok=0; detail="$detail [one unavailable plus three failed: exit $e, want 2]"; }
 ls "$rec"/*-manager-1.argv >/dev/null 2>&1 && { ok=0; detail="$detail [judge ran with no survivor]"; }
 [ -f "$repo/run/finished.md" ] && { ok=0; detail="$detail [Finished File written with no survivor]"; }
@@ -1289,17 +1297,17 @@ fable_line='Current week (Fable): 100% used · resets Sep 24, 3pm (UTC)'
 opus_line='Current week (Opus): 100% used · resets Sep 24, 3pm (UTC)'
 ok=1; detail=""
 repo="$(new_repo)"; rec="$work/rec-refuse-manager"
-e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=opus run_rloop "$repo" "$rec" --run-dir "$repo/run")
-refused "default models"
-names "default models" manager implementer claude-opus-5-5 "$opus_line"
-record_is "$repo/run/probe-pick.md" "default models" unavailable unavailable unknown unavailable unknown unknown
+e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=opus run_rloop "$repo" "$rec" --run-dir "$repo/run" --implementer claude)
+refused "claude preset default models"
+names "claude preset default models" manager implementer claude-opus-5-5 "$opus_line"
+record_is "$repo/run/probe-pick.md" "claude preset default models" unavailable unavailable unknown unavailable unknown unknown
 # The table's other row, so a rule that hardcodes `opus` for the Manager's Seat cannot pass.
 repo="$(new_repo)"; rec="$work/rec-refuse-manager-fable"
-e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=fable run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager-model claude-fable-5-1 --implementer-model "$off_table_model")
+e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=fable run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager-model claude-fable-5-1 --implementer claude --implementer-model "$off_table_model")
 refused "claude-fable-5-1"
 names "claude-fable-5-1" manager claude-fable-5-1 "$fable_line"
 record_is "$repo/run/probe-pick.md" "claude-fable-5-1" unavailable unknown unavailable unknown unknown unknown
-# Session refusal: both default Seats, then Manager alone with a codex Implementer.
+# Session refusal: both claude presets at their default models, then Manager alone with a codex Implementer.
 # Leading zeros and 101 also distinguish base ten and the pick's >= 90 rule.
 for shape in session90 session090 session101; do
   for model in claude-opus-5-5 "$off_table_model" gpt-6-astra; do
@@ -1311,10 +1319,10 @@ for shape in session90 session090 session101; do
   done
 done
 repo="$(new_repo)"; rec="$work/rec-session-defaults"
-e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=session90 run_rloop "$repo" "$rec" --run-dir "$repo/run")
-refused "session default Seats"
-names "session default Seats" manager implementer claude-opus-5-5 'Current session: 90% used · resets 6pm (UTC)'
-record_is "$repo/run/probe-pick.md" "session default Seats" unavailable unavailable unavailable unavailable unknown unknown
+e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=session90 run_rloop "$repo" "$rec" --run-dir "$repo/run" --implementer claude)
+refused "session claude preset default models"
+names "session claude preset default models" manager implementer claude-opus-5-5 'Current session: 90% used · resets 6pm (UTC)'
+record_is "$repo/run/probe-pick.md" "session claude preset default models" unavailable unavailable unavailable unavailable unknown unknown
 # A Sequence must stop on the refused first Run, without another Probe or pick.
 repo="$(new_repo)"; rec="$work/rec-session-sequence"
 e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=session90 run_rloop "$repo" "$rec" --auto)
@@ -1324,19 +1332,19 @@ if [ "$ok" = 1 ]; then verdict CNF-28 ok "a Manager's Seat recorded unavailable 
 
 ok=1; detail=""
 repo="$(new_repo)"; rec="$work/rec-refuse-implementer"
-e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=opus run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager-model "$off_table_model")
+e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=opus run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager-model "$off_table_model" --implementer claude)
 refused "Implementer's Seat"
 names "Implementer's Seat" implementer claude-opus-5-5 "$opus_line"
 record_is "$repo/run/probe-pick.md" "Implementer's Seat" unknown unavailable unknown unavailable unknown unknown
 # The table's other row, so a rule that hardcodes `opus` for the Implementer's Seat cannot pass.
 repo="$(new_repo)"; rec="$work/rec-refuse-implementer-fable"
-e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=fable run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager-model "$off_table_model" --implementer-model claude-fable-5-1)
+e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=fable run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager-model "$off_table_model" --implementer claude --implementer-model claude-fable-5-1)
 refused "Implementer's Seat on claude-fable-5-1"
 names "Implementer's Seat on claude-fable-5-1" implementer claude-fable-5-1 "$fable_line"
 record_is "$repo/run/probe-pick.md" "Implementer's Seat on claude-fable-5-1" unknown unavailable unavailable unknown unknown unknown
 for model in claude-opus-5-5 "$off_table_model" gpt-6.1-sol; do
   repo="$(new_repo)"; rec="$work/rec-session-implementer-$model"
-  e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=session90 run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager codex --implementer-model "$model")
+  e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=session90 run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager codex --implementer claude --implementer-model "$model")
   refused "session Implementer $model"
   names "session Implementer $model" implementer "$model" 'Current session: 90% used · resets 6pm (UTC)'
   record_is "$repo/run/probe-pick.md" "session Implementer $model" unknown unavailable unavailable unavailable unknown unknown
@@ -1349,9 +1357,9 @@ if [ "$ok" = 1 ]; then verdict CNF-29 ok "an Implementer's Seat recorded unavail
 ok=1; detail=""
 for row in fable opus; do # the Manager's Seat on each row of RUN-21's table, so a Round's reading cannot hardcode `fable`
   case $row in
-    fable) model=claude-fable-5-1; line=$fable_line; seats=(--manager-model claude-fable-5-1 --implementer-model "$off_table_model")
+    fable) model=claude-fable-5-1; line=$fable_line; seats=(--implementer claude --manager-model claude-fable-5-1 --implementer-model "$off_table_model")
       verdicts=(unavailable unknown unavailable unknown unknown unknown) ;;
-    opus) model=claude-opus-5-5; line=$opus_line; seats=(--implementer-model "$off_table_model")
+    opus) model=claude-opus-5-5; line=$opus_line; seats=(--implementer claude --implementer-model "$off_table_model")
       verdicts=(unavailable unknown unknown unavailable unknown unknown) ;;
   esac
   repo="$(new_repo)"; rec="$work/rec-judge-guard-$row"
@@ -1383,7 +1391,7 @@ done
 for point in afterImplementer afterPanel; do
   for shape in session100 session0100; do
     repo="$(new_repo)"; rec="$work/rec-session-judge-$point-$shape"
-    e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE="$shape" RLOOP_FAKE_INTERFERENCE="1:$point:both" RLOOP_FAKE_INTERFERING_REVIEWER=astra RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=fail" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${off[@]}")
+    e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE="$shape" RLOOP_FAKE_INTERFERENCE="1:$point:both" RLOOP_FAKE_INTERFERING_REVIEWER=astra RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=fail" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${claude_off[@]}")
     [ "$e" = 2 ] && [ ! -s "$rec/stdout" ] && [ ! -e "$repo/run/finished.md" ] \
       || { ok=0; detail="$detail [$point $shape: exit/output/Finished File]"; }
     [ "$(path_count "$rec"/*-probe-1.argv)" = 1 ] && [ "$(path_count "$rec"/*-manager-0.argv)" = 1 ] && [ "$(path_count "$rec"/*-implementer-1.argv)" = 1 ] && [ "$(path_count "$rec"/*-manager-1.argv)" = 0 ] && [ ! -e "$repo/run/manager-judge-1.out" ] \
@@ -1414,7 +1422,7 @@ started() { # started <label>: the Run was not refused; the pick was called and 
 ok=1; detail=""
 for shape in fable both; do
   repo="$(new_repo)"; rec="$work/rec-open-seats-$shape"
-  e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE_PICK="$shape" RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${off[@]}")
+  e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE_PICK="$shape" RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${claude_off[@]}")
   started "$shape, Seats off the table"
   opus_verdict=unknown; [ "$shape" = both ] && opus_verdict=unavailable
   record_is "$repo/run/probe-pick.md" "$shape, Seats off the table" unknown unknown unavailable "$opus_verdict" unknown unknown
@@ -1428,9 +1436,27 @@ for shape in silent garbage aggregate unlisted under loose nul fail slow session
   written="$shape"; sleep_probe=0; bound=()
   if [ "$shape" = slow ]; then written=fable; sleep_probe=3; bound=(--probe-timeout 1); fi
   if [ "$shape" = session-slow ]; then written=session100; sleep_probe=3; bound=(--probe-timeout 1); fi
-  e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE_PICK="$written" RLOOP_FAKE_SLEEP_PROBE="$sleep_probe" RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager-model claude-fable-5-1 --implementer-model claude-fable-5-1 ${bound[@]+"${bound[@]}"})
+  e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE_PICK="$written" RLOOP_FAKE_SLEEP_PROBE="$sleep_probe" RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager-model claude-fable-5-1 --implementer claude --implementer-model claude-fable-5-1 ${bound[@]+"${bound[@]}"})
   started "$shape, Fable overrides"
   record_is "$repo/run/probe-pick.md" "$shape, Fable overrides" unknown unknown unknown unknown unknown unknown
+done
+# Leave both Implementer flags unset: runtime argv and Probe processing must agree on codex.
+# A failed pick and a refused Run both exit 2, so assert the exact record and the pick spawn.
+for shape in session90 opus; do
+  repo="$(new_repo)"; rec="$work/rec-omitted-preset-$shape"
+  label="omitted Implementer preset, $shape"
+  manager_args=(--manager codex); fable_verdict=unavailable
+  if [ "$shape" = opus ]; then
+    manager_args=(--manager-model "$off_table_model"); fable_verdict=unknown
+  fi
+  e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK="$shape" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${manager_args[@]}")
+  [ "$e" = 2 ] || { ok=0; detail="$detail [$label: exit $e, not the failed pick's 2]"; }
+  record_is "$repo/run/probe-pick.md" "$label" unknown unknown "$fable_verdict" unavailable unknown unknown
+  [ "$(path_count "$rec"/*-probe-0.argv)" = 1 ] && [ "$(path_count "$rec"/*-manager-0.argv)" = 1 ] && [ "$(spawn_count "$rec")" = 2 ] \
+    || { ok=0; detail="$detail [$label: expected one Probe and one pick, no other calls]"; }
+  [ "$(observed_trace "$rec")" = pick ] || { ok=0; detail="$detail [$label: spawn trace is not pick]"; }
+  [ ! -s "$rec/stdout" ] && [ ! -e "$repo/run/finished.md" ] \
+    || { ok=0; detail="$detail [$label: failed pick wrote standard output or a Finished File]"; }
 done
 # Preset identity is independent of spelling: pass the claude-looking off-table model to codex.
 repo="$(new_repo)"; rec="$work/rec-session-codex"
@@ -1443,14 +1469,14 @@ done
   || { ok=0; detail="$detail [codex session exemption: wrong spawns]"; }
 # The Round's Implementer verdict remains recorded without affecting the judge.
 repo="$(new_repo)"; rec="$work/rec-session-implementer-round"
-e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=session100 RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager codex --implementer-model "$off_table_model")
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=session100 RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager codex --implementer claude --implementer-model "$off_table_model")
 started "Round Implementer session verdict"
 record_is "$repo/run/probe-1.md" "Round Implementer session verdict" unknown unavailable unavailable unavailable unknown unknown
 [ "$(observed_trace "$rec")" = 'pick,impl1:ok,panel1:all:astra+sol,judge1' ] \
   || { ok=0; detail="$detail [Round Implementer session verdict acted on]"; }
 # A low session cannot erase family exhaustion.
 repo="$(new_repo)"; rec="$work/rec-session-family"
-e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE_PICK=session89-fable RLOOP_FAKE_PROBE=session89-fable RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${off[@]}")
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE_PICK=session89-fable RLOOP_FAKE_PROBE=session89-fable RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${claude_off[@]}")
 started "family beside low session"
 for record in probe-pick probe-1; do
   record_is "$repo/run/$record.md" "family beside low session" unknown unknown unavailable unknown unknown unknown
@@ -1460,7 +1486,8 @@ done
 if [ "$ok" = 1 ]; then verdict CNF-31 ok "family-only off-table reports and fail-open session reports start the Run; codex is session-exempt and a Round records Implementer exhaustion without acting on it"; else verdict CNF-31 fail "$detail"; fi
 
 # --- CNF-32: the unavailable list in the pick prompt ----------------------------------------------------
-# `fable` on the default models (an `Opus` report would refuse them, RUN-22), `opus` alone and both
+# `fable` on the default models (an `Opus` report would refuse the Manager, RUN-22),
+# `opus` alone and both
 # Reviewers with the two Seats' models off the table, and none: either form alone passes a wrong
 # Implementation, and one Seat's Run alone passes one that hardcodes that Seat.
 # Each Run must start (CNF-31's started()); check_call's argv verdict is CNF-11's, so it is dropped.
@@ -1468,10 +1495,10 @@ ok=1; detail=""; prompt_ok=1; prompt_detail=""
 for shape in opus fable both clear; do
   repo="$(new_repo)"; rec="$work/rec-unavailable-$shape"; seats=(); model=claude-opus-5-5
   case $shape in
-    opus) P_UNAVAILABLE="opus"; seats=("${off[@]}"); model="$off_table_model" ;;
+    opus) P_UNAVAILABLE="opus"; seats=("${claude_off[@]}"); model="$off_table_model" ;;
     fable) P_UNAVAILABLE="fable" ;;
     both) P_UNAVAILABLE="fable
-opus"; seats=("${off[@]}"); model="$off_table_model" ;;
+opus"; seats=("${claude_off[@]}"); model="$off_table_model" ;;
     clear) P_UNAVAILABLE="" ;;
   esac
   e=$(RLOOP_FAKE_PICK=ok:done RLOOP_FAKE_PROBE_PICK="$shape" run_rloop "$repo" "$rec" --run-dir "$repo/run" ${seats[@]+"${seats[@]}"})
