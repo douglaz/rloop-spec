@@ -1709,3 +1709,46 @@ The exact scratch root `/tmp/rl-9uu1-final-se96mj7m`, its variant copies, result
 files were deleted after transferring the measured evidence here. The source Implementation
 checkout remains unchanged. No new specification-behavior question was found; acceptance,
 bead closure and the accepted-work commit remain the Manager's.
+
+## F28 — Consultation advisers bypass the codex sandbox (open 2026-10-15)
+
+The owner's decision from issue #13, tracked by `rl-pq3d` (`gh-13`), amends `PRM-1`, `PRM-2`
+and `CNF-22`. The Manager prompts own the adviser command templates and the instruction for
+every adviser's question; their 2026-10-15 notes record how the Consultation remains read-only
+after taking the Reviewers' sandbox bypass. This entry records evidence supplied in `rl-pq3d`
+from issue #13 and the owner's 2026-10-15 reproduction, not experiments by this Run or a live
+Consultation.
+
+Issue #13 reproduced sandbox startup failure on codex-cli `0.162.1` in a Kubernetes pod,
+non-root, with all capabilities dropped and `RuntimeDefault` seccomp. `codex sandbox cat f`
+printed `bwrap: No permissions to create a new namespace, ...`. Asked to `cat` one file and
+`touch` another, `codex exec -s read-only` reported
+`sandbox startup failed ("No permissions to create a new namespace")` for both. With
+`--dangerously-bypass-approvals-and-sandbox`, commands ran normally in that pod.
+
+The owner also reproduced the nix daemon failure on this host on 2026-10-15, using codex-cli
+`0.162.1` in this repository, stdin from `/dev/null`, a 600-second bound and
+`-m gpt-6-astra -c model_reasoning_effort=high`. The question asked the adviser to run
+`nix develop --command true` and reply `EXIT=<its exit status>`, with the first error line
+if it failed:
+
+- Under `-s read-only`, the banner was `sandbox: read-only`; codex exited zero, replying
+  `EXIT=1 error: cannot connect to socket at '/nix/var/nix/daemon-socket/socket': Operation not permitted`.
+- Under `--dangerously-bypass-approvals-and-sandbox`, the banner was
+  `sandbox: danger-full-access`; codex exited zero, replying `EXIT=0`.
+
+A successful CLI exit and a reply can therefore conceal inability to run a needed command.
+The old command did not time out or exit non-zero. The observation changes no answer
+classification: `RUN-20` owns it, including `An answer is a call that completes within its
+bound, exits zero and states a position on the question.`
+
+The cost is that a codex adviser can write to the tree; the question's no-write instruction
+is the protection, within `DIR-9`'s `The threat model is a cooperative model making a mistake`.
+This is the exposure codex Reviewers have had since 2026-09-19, recorded under `AGT-10`.
+The owner rejected the fallback that every adviser must name up front any command it could
+not run. Quorum, availability, bounds, timing, answer classification and settlement policy
+are unchanged.
+
+Still open: no live Consultation has yet run under the new flag. The supplied command probes
+and green document gates are not evidence of a successful live Consultation; `CNF-22` owns
+the live observations.

@@ -454,7 +454,8 @@ evidence are met.
   of them together, a choice settles, and the brief holds the record, with each recorded maximum
   duration at least 600 seconds.
   Every adviser process observed ran its model's command line from `PRM-1`, including the model,
-  effort and read-only flags as stated there.
+  effort and the `--dangerously-skip-permissions` and `--disallowedTools` flags for claude and
+  the `--dangerously-bypass-approvals-and-sandbox` flag for codex as stated there.
 - **Hang.** Under each `--manager` preset, one adviser hangs rather than failing fast. Its call
   is bounded and terminated, the remaining answers decide, and the record holds the chosen
   durations, the bounds and each call's elapsed time.
@@ -473,6 +474,11 @@ missing, so that a missing observation is a stated fact and not an omission.
 
 The Run Directories and the commits are kept as the record. (`AGT-9`, `AGT-17`, `SEQ-8`,
 `SEQ-10`, `RUN-19`, `RUN-20`, `PRM-1`)
+
+*Amended 2026-10-15 (`rl-pq3d`, `gh-13`): Settled now names the permission-bypass and claude
+deny-list flags in the prescribed adviser lines. The model and effort checks and observation
+of the actual adviser processes remain; `F28` records the supplied evidence and the live
+Consultation observation still open.*
 
 **CNF-23** With `--manager codex` a Run that judges `done` ends 0 with that Finished File, the
 `session` file holds the `thread_id` of the `thread.started` event the fake wrote as the pick's
