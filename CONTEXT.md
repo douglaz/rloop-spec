@@ -56,7 +56,7 @@ The **Manager** putting an implementation decision the specifications leave open
 _Avoid_: Design review, second opinion
 
 **Probe**:
-The one call rloop makes before the pick and before each **Round**'s **Panel** to find out which **Seats**' models can answer at all. Not an agent: it gets no prompt, writes no **Feedback File**, and judges nothing. What it is, when it runs and how its output is read are `AGT-18`'s and `RUN-21`'s; what a **Run** does when a **Manager**'s or **Implementer**'s Seat cannot answer is `RUN-22`'s.
+A call rloop makes before the pick, at each **Round**'s **Panel** and judge sites, and on quota re-checks to find out which **Seats**' models can answer at all. Not an agent: it gets no prompt, writes no **Feedback File**, and judges nothing. What it is, when it runs and how its output is read are `AGT-18`'s and `RUN-21`'s; what a **Run** does when a **Manager**'s or **Implementer**'s Seat cannot answer is `RUN-22`'s.
 _Avoid_: Health check, ping, usage check
 
 **Task File**:

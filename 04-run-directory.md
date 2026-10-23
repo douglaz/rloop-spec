@@ -23,7 +23,7 @@ Sequence each Run gets its own directory this way and `--run-dir` is a usage err
 *Amended 2026-09-23 (`rl-exact-bytes-nul-gitignore-pjc`): the rule used to say `containing the
 single line *`, which a check by eye satisfies for a pre-existing file of `*` followed by two
 newlines and for `*` with no newline at all; both are now rewritten. The bytes follow the set's
-convention for the files it writes, as `RUN-21` says of its records: `Every line of either
+convention for the files it writes, as `RUN-21` says of its records: `Every line of every
 record ends with a newline, the last one included`.*
 
 **DIR-3** A Run Directory MUST be used by exactly one Run. There is no flag to reuse one.
@@ -39,26 +39,30 @@ others:
 | `task-<r>.md` | rloop | the brief Round `r` ran against (`DIR-5`) |
 | `finished.md` | the Manager | the call that ends the Run |
 | `manager-pick.out`, `manager-pick.err` | rloop, from the pick's stdout and stderr | the pick |
-| `manager-judge-<r>.out`, `manager-judge-<r>.err` | rloop, from the judge call's stdout and stderr | Round `r` |
+| `manager-judge-<r>.out`, `manager-judge-<r>.err` | rloop, from judge attempt 1's stdout and stderr | Round `r`, retained untouched |
+| `manager-judge-<r>-retry-<k>.out`, `manager-judge-<r>-retry-<k>.err` | rloop, from judge attempt `k+1`'s stdout and stderr | each retry in Round `r`, `k` from 1 |
 | `implementer-<r>.out`, `implementer-<r>.err` | rloop, from the Implementer's stdout and stderr | Round `r` |
 | `feedback-<r>-<reviewer>.md` | rloop, from the Reviewer's stdout, or rloop's own when the Reviewer was not called (`RUN-15`) | Round `r`, one per Reviewer (`fable`, `opus`, `astra`, `sol`) |
 | `reviewer-<r>-<reviewer>.err` | rloop, from the Reviewer's stderr; empty when it was not called | Round `r` |
 | `probe-pick.out`, `probe-pick.err` | rloop, from the availability probe's stdout and stderr | before the pick (`RUN-21`) |
 | `probe-pick.md` | rloop | before the pick: one `<seat>:<verdict>` line per Seat (`RUN-21`) |
-| `probe-<r>.out`, `probe-<r>.err` | rloop, from the availability probe's stdout and stderr | Round `r`, before the Panel (`RUN-21`) |
-| `probe-<r>.md` | rloop | Round `r`: one `<seat>:<verdict>` line per Seat (`RUN-21`) |
+| `probe-<r>-panel-<N>.out`, `probe-<r>-panel-<N>.err`, `probe-<r>-panel-<N>.md` | rloop | every Panel-site check, `N` from 1, captures and verdicts (`RUN-21`) |
+| `probe-<r>-judge-<N>.out`, `probe-<r>-judge-<N>.err`, `probe-<r>-judge-<N>.md` | rloop | every judge-site check, `N` from 1, continuing after cuts (`RUN-24`) |
+| `probe-<r>.out`, `probe-<r>.err`, `probe-<r>.md` | rloop | byte-identical copies of the last Panel-site check's corresponding files (`RUN-21`) |
 | `rejected-<r>-task.md`, `rejected-<r>-finished.md` | rloop | the Checkpoint (`DIR-6`) |
 | `session` | rloop | the pick: the Manager's session id, one line |
 
-Every agent's standard output, and the probe's, goes to its file entire and unmodified; rloop
-MUST NOT interleave its own text into any of them. rloop reads some of them and changes no byte of
-any: under `--manager codex` the pick's standard output carries the Manager's session id, which
-`RUN-16` tells rloop to take from there, and the probe's standard output carries the lines `RUN-21`
-reads. `probe-pick.md` and `probe-<r>.md` are rloop's own writing, not an agent's, as is a Feedback File for a Reviewer that was never called (`RUN-15`).
-*The Implementer's `.out` is what the Manager reads about a failed
-Implementer (`RUN-14`), and `feedback-*.md` is what it reads about the Panel.* *This sentence read
-"entire and unparsed" until 2026-09-20; the word banned a reading that `RUN-16` now requires,
-where what the rule protects is the file's bytes.*
+Every agent's standard output, and the probe's, goes to its file entire and unmodified; rloop MUST
+NOT interleave its own text into any of them. rloop reads some of them and changes no byte of any:
+under `--manager codex` the pick's standard output carries the Manager's session id, which `RUN-16`
+tells rloop to take from there, and the probe's standard output carries the lines `RUN-21` reads;
+the claude judge's standard output carries the cut signature `RUN-24` reads. Each check and attempt
+keeps its table name: nothing is renamed or overwritten by a later check or attempt. `probe-pick.md`
+and every Round-site `.md` record, including `probe-<r>.md`, are rloop's own writing, not an
+agent's, as is a Feedback File for a Reviewer that was never called (`RUN-15`). *The Implementer's
+`.out` is what the Manager reads about a failed Implementer (`RUN-14`), and `feedback-*.md` is what
+it reads about the Panel.* *This sentence read "entire and unparsed" until 2026-09-20; the word
+banned a reading that `RUN-16` now requires, where what the rule protects is the file's bytes.*
 
 A Run refused at the pick (`RUN-22`) MUST leave the Run Directory holding `probe-pick.out`,
 `probe-pick.err` and `probe-pick.md` and nothing else: no `session`, which `RUN-16` writes for a

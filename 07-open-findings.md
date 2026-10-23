@@ -583,8 +583,8 @@ read is an own-process read of the item as well — `nothing_survived` (`conform
 reads `PID` beside `GRANDCHILD` — and no mutant of either Round reddens that half either, for the
 reason its own comment gives: `Every ancestor is gone by then, so neither can be a zombie`
 (`conformance/run:67-68`). Both own-process brackets come with a green group half for one reason:
-the fake writes `GRANDCHILDREN_ALIVE` (`conformance/fakes/agent:121`) before it spawns the child
-that ignores SIGTERM (`:178`), so a call that starts while the probe is still running finds no
+the fake writes `GRANDCHILDREN_ALIVE` (`conformance/fakes/agent:148`) before it spawns the child
+that ignores SIGTERM (`:225`), so a call that starts while the probe is still running finds no
 `GRANDCHILD=` line in the probe's record and has nothing to report. The group half can be green with
 the group alive, and it is the two halves together that caught these mutants.
 
@@ -602,10 +602,10 @@ other.
 
 *The Probe's two boundaries, settled 2026-09-29 (`rl-agt15-probe-record-step-taf`).* They were read
 at the call that follows each, and by then that probe's verdicts are recorded: `RUN-21` has `After
-each call it MUST record for every Seat exactly one verdict`, `before the pick` for the probe before
-the pick and in Round `r` for the Round's. A straggler of the probe's group that raced that record
-was therefore unwitnessed, and the `sol` Reviewer of this finding's Round measured the gap — a
-mutant that writes the availability record while the probe's child is still alive and reaps the
+each check rloop MUST record for every Seat exactly one verdict`, `before the pick` for the probe
+before the pick and in Round `r` for the Round's. A straggler of the probe's group that raced that
+record was therefore unwitnessed, and the `sol` Reviewer of this finding's Round measured the gap —
+a mutant that writes the availability record while the probe's child is still alive and reaps the
 group before the next call starts left `CNF-34` green. The specification owner settled the reading
 in its general form, and `AGT-15`'s `A call is complete only once its process group has been reaped
 that way` replaced the wording that put the reaping before the step that follows the call: rloop
@@ -614,7 +614,7 @@ both of `RUN-21`'s call sites, and `CNF-34` gained a watching straggler at each.
 and the mutant is red. Rebuilt against rloop-bash `18c8807`, gated on `RLOOP_FAKE_WATCH`'s value
 beginning `probe:` — what confines it to the two new Runs, where a gate on the variable merely being
 set would mutate the Checkpoint arm too, whose value is `implementer:rejected-1-task.md`
-(`conformance/run:806`) — and with the wait loop of that executable's `reap` inlined rather than
+(`conformance/run:819`) — and with the wait loop of that executable's `reap` inlined rather than
 reordered so the verdicts still see the status the reaping sets, it gives `[probe-0 watch: the
 probe's child saw probe-pick.md, so its group outlived the call and ran through the record]` and the
 same bracket for `probe-1` and `probe-1.md` as the item's whole detail, with every other verdict
@@ -631,11 +631,11 @@ reading a call's output leaves it no file to find, so a read taken before the re
 after look the same to it. The witness for the read is a straggler that *writes* into the capture
 `DIR-4` has the probe's standard output reach `entire and unmodified` — a line the reader acts on,
 since an inert one changes no verdict — and `CNF-34` gained one Run of it, at the probe before the
-pick (`conformance/run:745-787`). `RUN-22` is what makes the read observable there: it has rloop
+pick (`conformance/run:758-800`). `RUN-22` is what makes the read observable there: it has rloop
 `exit 2 without spawning any agent` on that probe's verdicts, so an executable that derives them
 from bytes the straggler's line has not reached yet calls the pick and runs on. The knob is
 `RLOOP_FAKE_WRITE_STDOUT`, which had only a role and a fixed line and now takes a first-write delay
-and the line with it (`conformance/fakes/agent:67-86`, `:141`, `:172-175`); the row asks for one
+and the line with it (`conformance/fakes/agent:69-88`, `:188`, `:219-222`); the row asks for one
 second and `--kill-after 4`, so an early read is a second short of the line and a reaping one has
 three seconds of the child's writing behind it before it reads.
 
@@ -661,6 +661,9 @@ Still unobserved: every other call's output read — the pick's, the Implementer
 the judge's and the Round's probe's. `RUN-22` gives the probe before the pick an observable no other
 call has. The ordinary `probe-0` own-process read was a separate gap, investigated below and ended
 by the probe sleep that investigation's candidate became.
+
+*Amended 2026-10-22 (`rl-kyhr`): `F29` records the judge output-read demonstrations, on the
+initial attempt and on a retry. The other output-read observations listed above remain open.*
 
 *The ordinary Probe's sleep candidate, declined 2026-10-03
 (`rl-cnf34-probe0-read-fast-fake-8et`) and landed by owner decision the same day
@@ -986,7 +989,7 @@ it on whitespace`.
 one executable that handles newlines does not extend that obligation to other Implementations.
 The suite now collects quoted globs into arrays, filters unmatched patterns, counts files, and
 selects whole paths in glob order. `spawn_count` (`conformance/run:46`) uses that count;
-`record_of` (`conformance/run:619-625`) retains its missing-record guard. Environment checks also
+`record_of` (`conformance/run:625-631`) retains its missing-record guard. Environment checks also
 reject both absent and duplicate records. Sequence directory selection uses the same arrays;
 the fresh-directory comparison keeps full paths as NUL-separated records. PID and timestamp
 reads, fixed-filename listings and existence-only checks are not full-path selections.
@@ -1752,3 +1755,211 @@ are unchanged.
 Still open: no live Consultation has yet run under the new flag. The supplied command probes
 and green document gates are not evidence of a successful live Consultation; `CNF-22` owns
 the live observations.
+
+## F29 — Round quota waits and cut judge retries (open 2026-10-22)
+
+Accepted 2026-10-22 (`rl-kyhr`, issue #14): amend `RUN-5`, `RUN-7`, `RUN-11`, `RUN-21` and `RUN-22`,
+add `RUN-24`, and amend `AGT-1`, `AGT-2`, `AGT-4`, `AGT-14`, `AGT-15`, `DIR-4` and `OVR-1`.
+`ADR-0010` records the decisions and rejected alternatives. The requirements own the behaviour; the
+evidence below records the owner's observations and the Conformance Suite measurements separately.
+
+**Supplied by the owner; not re-measured here.** The host held 1553 Manager call records. Of them,
+16 held only `You've hit your session limit · resets <time>`: 15 judges and one pick, each a
+newline-terminated line of 53 or 54 bytes with empty stderr. The 12 with a unit log all logged
+`Manager call exited 1`. Their session transcripts identified the assistant turn's model as
+`<synthetic>`: the CLI wrote the line. Of the judges, 12 refused 1–2 seconds after spawn, one after
+80 seconds and one after 6053 seconds. That last one was btc-policy-spec `20261021T203414…`: it
+started at 01:18:19 with session usage near 60%, and its next model request was refused at 02:59:12.
+A check before the call cannot see that later refusal.
+
+The supplied stopped Rounds were tetasm 10-11 and 10-21, tau-web-rust 10-15 and fedimint-gateway
+10-21, each at session 100; allowance returned 14 minutes to 2 hours 53 minutes later. The supplied
+end-to-end Runs tetasm 10-15, tetasm 10-21 and tau-web-rust 10-21 each lost the last claude Reviewer
+mid-review and refused the judge's first request. A real near-miss in a tetasm pick's report was `-
+Three reviewers found nothing. The fourth (opus) never ran because it hit the session limit.` On
+claude 2.1.293, the owner measured a second `--session-id <id>` call exiting 1 with `Error: Session
+ID <id> is already in use.`, while `--resume <id>` worked.
+
+**Measured 2026-10-23 UTC, using only the suite's fakes.** The scratch executable's wrapper retains
+diffutils on its PATH. It parses the native whole-second quota options, including base-ten and
+`--flag=value` syntax, with defaults 18000 and 300. Every suite and plant measurement ran alone in a
+scope with `MemoryMax=8G` and `MemorySwapMax=0`; ordinary measurements used `timeout 3600`, and
+the wait-mutant bounds are recorded below.
+
+| artifact | SHA-256 |
+|---|---|
+| `conformance/run` | `f6f64ef458625f10115da302d2de561271a4e565d7409e777f691c336628071a` |
+| `/var/tmp/rl-kyhr-demo/rloop` | `12b2498db4865c22e378dcb8e596649c075681c1f53eea02ac5cdb4fa2d0000c` |
+
+The whole amended suite printed one verdict per item and returned exit 0: `34 passed, 0 failed`,
+elapsed wall clock 301.058 seconds. `conformance/test-panel-trace` also returned exit 0 against that
+executable, including its positive replays and pinned rloop-bash negative controls. The existing
+scenario lines remained byte-identical; the appended wait block is generated from the model. `lake
+exe scenarios --controls` reports `sharedQuota: 3 scenario(s) would fail without it`. The decision
+table and existing theorem statements were unchanged, and fixture regeneration changed no fixture.
+
+Runs with a non-clear scripted Probe, including the Probe before the pick, or a failing claude
+judge pass short `--quota-wait` and `--quota-poll` options at their own call sites; `run_rloop`
+supplies neither. The single-line threshold plant applies the pick threshold at Round sites;
+its unchanged `CNF-26` subset reached the 30-second bound (exit 124, 30.052 seconds).
+The single-line codex-wait plant reads the session line for a codex Manager; its unchanged
+`CNF-27` subset reached the same bound (exit 124, 30.029 seconds). Those subsets were
+cut from the scratch copy taken before the suite edits. Under `timeout 1800`, the whole final
+suite ended red by itself on the threshold plant (exit 1, 290.538 seconds,
+`failed: CNF-3 CNF-26 CNF-30`) and the codex-wait plant (exit 1, 341.723 seconds,
+`failed: CNF-3 CNF-27 CNF-29 CNF-31`). These measurements bound the cost of a defective
+wait; they add no assertion or plant-table row.
+
+The table names each assertion by a stable form and quotes its measured bracket in the last column
+(the scenario item reports a clause). Each row has a different executable and diff; every listed
+plant returned exit 1 on its target assertion.
+The complete FAIL lines, including every bracket, are in that plant's log. The foreground-sleep
+plant also reddens the TERM assertion; the TERM row has its own single-defect plant. The judge-site
+record watch has an independent plant that reorders only that site's verdict and reaping. The
+additional-text plant initially stayed green against a line-only retry-output check; comparison of
+the entire capture closed that gap before the final measurement.
+
+The separation was recomputed from every bracket in the final FAIL lines, normalising runs of
+four or more digits before grouping and retaining singleton plant sets. `round4-separation.json`
+records the result beside `round3-separation.json`. The rows below state every group no measured
+plant separates, including the Reviewer boundary and Checkpoint watches under p101 and the
+own-process and child boundary reads under p112.
+
+| assertion | plant (single defect) | observed bracket or clause |
+|---|---|---|
+| `CNF-30` `[panel-recovery]` | `p001-panel-recovery`: m1: expire before the final paid check. Red together with `[panel-panel-once-each]`; no measured plant separates them (`p001`, `p096`). | `[panel-recovery]` |
+| `CNF-30` `[panel-records]` | `p002-panel-records`: Discard this site's numbered stderr capture. | `[panel-records]` |
+| `CNF-30` `[panel-panel-copy]` | `p003-panel-panel-copy`: Copy an earlier Panel reading. | `[panel-panel-copy]` |
+| `CNF-30` `[panel-final-panel-verdicts]` | `p004-panel-final-panel-verdicts`: Record stale Manager exhaustion in the final panel verdict. | `[panel-final-panel-verdicts]` |
+| `CNF-30` `[panel-final-judge-verdicts]` | `p005-panel-final-judge-verdicts`: Record stale Manager exhaustion in the final judge verdict. | `[panel-final-judge-verdicts]` |
+| `CNF-30` `[panel-first-verdicts]` | `p006-panel-first-verdicts`: Erase Manager exhaustion from the first numbered verdict. | `[panel-first-verdicts]` |
+| `CNF-30` `[panel-first-reading]` | `p007-panel-first-reading`: Replace the raw initial panel capture after parsing it. | `[panel-first-reading]` |
+| `CNF-30` `[judge-recovery]` | `p008-judge-recovery`: Refuse session exhaustion at the judge site without waiting. | `[judge-recovery]` |
+| `CNF-30` `[judge-records]` | `p009-judge-records`: Discard this site's numbered stderr capture. | `[judge-records]` |
+| `CNF-30` `[judge-panel-copy]` | `p010-judge-panel-copy`: Replace the Panel copy with the judge reading. | `[judge-panel-copy]` |
+| `CNF-30` `[judge-final-panel-verdicts]` | `p011-judge-final-panel-verdicts`: Record stale Manager exhaustion in the final panel verdict. | `[judge-final-panel-verdicts]` |
+| `CNF-30` `[judge-final-judge-verdicts]` | `p012-judge-final-judge-verdicts`: Record stale Manager exhaustion in the final judge verdict. | `[judge-final-judge-verdicts]` |
+| `CNF-30` `[judge-first-verdicts]` | `p013-judge-first-verdicts`: Erase Manager exhaustion from the first numbered verdict. | `[judge-first-verdicts]` |
+| `CNF-30` `[judge-first-reading]` | `p014-judge-first-reading`: Replace the raw initial judge capture after parsing it. | `[judge-first-reading]` |
+| `CNF-24` `[all-down-no-judge-check]` | `p015-all-down-no-judge-check`: Run the judge check before the all-down exit. | `[all-down-no-judge-check]` |
+| `CNF-24` `[all-down-records]` | `p016-all-down-records`: Create an unmade judge check's verdict. | `[all-down-records]` |
+| `CNF-30` `[panel-week-opus]` | `p017-panel-week-opus`: Wait on a matching weekly reading at panel (family). | `[panel-week-opus]` |
+| `CNF-30` `[panel-week-session100-opus]` | `p018-panel-week-session100-opus`: Wait on a matching weekly reading at panel (session). | `[panel-week-session100-opus]` |
+| `CNF-30` `[judge-week-opus]` | `p019-judge-week-opus`: Wait on a matching weekly reading at judge (family). | `[judge-week-opus]` |
+| `CNF-30` `[judge-week-session100-opus]` | `p020-judge-week-session100-opus`: Wait on a matching weekly reading at judge (session). | `[judge-week-session100-opus]` |
+| `CNF-30` `[cut-week-opus]` | `p021-cut-week-opus`: Wait on a matching weekly reading at cut (family). | `[cut-week-opus]` |
+| `CNF-30` `[cut-week-session100-opus]` | `p022-cut-week-session100-opus`: Wait on a matching weekly reading at cut (session). | `[cut-week-session100-opus]` |
+| `CNF-30` `[foreign-family-waits]` | `p023-foreign-family-waits`: Treat the Fable family as the Opus Manager's family. | `[foreign-family-waits]` |
+| `CNF-30` `[panel-expiry-count]` | `p024-panel-expiry-count`: Omit the final capped sleep. Red together with `[panel-expiry-no-judge-check]`; no measured plant separates them (`p024`, `p028`). | `[panel-expiry-count]` |
+| `CNF-30` `[panel-expiry-last-line]` | `p025-panel-expiry-last-line`: Quote the first matching reading at panel expiry. | `[panel-expiry-last-line]` |
+| `CNF-30` `[panel-expiry-checkpoint]` | `p026-panel-expiry-checkpoint`: Undo the Checkpoint restoration on panel expiry. | `[panel-expiry-checkpoint]` |
+| `CNF-30` `[panel-expiry-rejected]` | `p027-panel-expiry-rejected`: Discard rejected Finished File on panel expiry. | `[panel-expiry-rejected]` |
+| `CNF-30` `[panel-expiry-no-judge-check]` | `p028-panel-expiry-no-judge-check`: Make a judge-site check after Panel expiry. Red together with `[panel-expiry-count]`; no measured plant separates them (`p024`, `p028`). | `[panel-expiry-no-judge-check]` |
+| `CNF-30` `[judge-expiry-count]` | `p029-judge-expiry-count`: Charge a second poll per judge check. | `[judge-expiry-count]` |
+| `CNF-30` `[judge-expiry-last-line]` | `p030-judge-expiry-last-line`: Quote the first matching reading at judge expiry. | `[judge-expiry-last-line]` |
+| `CNF-30` `[judge-expiry-checkpoint]` | `p031-judge-expiry-checkpoint`: Undo the Checkpoint restoration on judge expiry. | `[judge-expiry-checkpoint]` |
+| `CNF-30` `[judge-expiry-rejected]` | `p032-judge-expiry-rejected`: Discard rejected Finished File on judge expiry. | `[judge-expiry-rejected]` |
+| `CNF-30` `[cut-expiry-count]` | `p033-cut-expiry-count`: Check before the post-cut first sleep. | `[cut-expiry-count]` |
+| `CNF-30` `[cut-expiry-last-line]` | `p034-cut-expiry-last-line`: Quote the first matching reading at cut expiry. | `[cut-expiry-last-line]` |
+| `CNF-30` `[cut-expiry-checkpoint]` | `p035-cut-expiry-checkpoint`: Undo the Checkpoint restoration on cut expiry. | `[cut-expiry-checkpoint]` |
+| `CNF-30` `[cut-expiry-rejected]` | `p036-cut-expiry-rejected`: Discard rejected Finished File on cut expiry. | `[cut-expiry-rejected]` |
+| `CNF-26` `[panel-unknown-clears]` | `p037-panel-unknown-clears`: Keep waiting after a failed panel re-check. | `[panel-unknown-clears]` |
+| `CNF-26` `[judge-unknown-clears]` | `p038-judge-unknown-clears`: Keep waiting after a failed judge re-check. | `[judge-unknown-clears]` |
+| `CNF-26` `[cut-unknown-clears]` | `p039-cut-unknown-clears`: Keep waiting after a failed cut re-check. | `[cut-unknown-clears]` |
+| `CNF-36` `[sleep-first-bound]` | `p040-sleep-first-bound`: Stop after a fixed retry count instead of spending the ledger. | `[sleep-first-bound]` |
+| `CNF-36` `[retry-records]` | `p041-retry-records`: Name retries with attempt numbers instead of retry ordinals. | `[retry-records]` |
+| `CNF-36` `[exhausted-cut-line]` | `p042-exhausted-cut-line`: Omit the cut line when fail-open checks exhaust the budget. | `[exhausted-cut-line]` |
+| `CNF-36` `[shared-panel-and-cuts]` | `p043-shared-panel-and-cuts`: Give each cut a fresh budget after Panel waiting. | `[shared-panel-and-cuts]` |
+| `CNF-36` `[slow-check-not-debited]` | `p044-slow-check-not-debited`: m2: count wall clock instead of requested sleeps. | `[slow-check-not-debited]` |
+| `CNF-36` `[no-budget-no-check]` | `p045-no-budget-no-check`: Make an extra re-check when a cut has no budget left. | `[no-budget-no-check]` |
+| `CNF-36` `[no-budget-cut-line]` | `p046-no-budget-cut-line`: Quote a generic message when the Panel spent the budget. | `[no-budget-cut-line]` |
+| `CNF-36` `[near-limit-ok]` | `p047-near-limit-ok`: Ignore the nonzero-exit guard. | `[near-limit-ok]` |
+| `CNF-36` `[near-limit-err]` | `p048-near-limit-err`: Read stderr as the cut signature. | `[near-limit-err]` |
+| `CNF-36` `[near-nonl]` | `p049-near-nonl`: Accept an unterminated line. | `[near-nonl]` |
+| `CNF-36` `[near-leading]` | `p050-near-leading`: Match the prefix within a line. | `[near-leading]` |
+| `CNF-36` `[near-prefixed]` | `p051-near-prefixed`: Search for a matching line anywhere in output. | `[near-prefixed]` |
+| `CNF-36` `[near-midline]` | `p052-near-midline`: Treat any mention of session limit as a cut. | `[near-midline]` |
+| `CNF-36` `[near-nul]` | `p053-near-nul`: Drop NUL bytes before matching the prefix. | `[near-nul]` |
+| `CNF-36` `[near-trailing]` | `p054-near-trailing`: Use command substitution to test the last byte, losing NUL. | `[near-trailing]` |
+| `CNF-36` `[near-weekly]` | `p055-near-weekly`: Accept any CLI quota-limit prefix (weekly wording is hypothetical). | `[near-weekly]` |
+| `CNF-36` `[near-limit-hang]` | `p056-near-limit-hang`: Ignore the attempt timeout guard. | `[near-limit-hang]` |
+| `CNF-36` `[acted-done]` | `p057-acted-done`: Retry despite a Finished File. | `[acted-done]` |
+| `CNF-36` `[acted-finished-kept]` | `p058-acted-finished-kept`: Delete the failed attempt's Finished File. | `[acted-finished-kept]` |
+| `CNF-36` `[acted-rewrite]` | `p059-acted-rewrite`: Retry despite a rewritten Task File. | `[acted-rewrite]` |
+| `CNF-36` `[acted-task-kept]` | `p060-acted-task-kept`: Restore a failed Manager's Task File from the snapshot. | `[acted-task-kept]` |
+| `CNF-36` `[codex-never-retried]` | `p061-codex-never-retried`: Retry codex quota-looking output. | `[codex-never-retried]` |
+| `CNF-36` `[ordinary-failure]` | `p062-ordinary-failure`: Treat every nonzero exit as a cut. | `[ordinary-failure]` |
+| `CNF-36` `[pick-never-retried]` | `p063-pick-never-retried`: Retry a failed pick. | `[pick-never-retried]` |
+| `CNF-36` `[cut-limit]` | `p064-cut-limit`: A check's status overwrites the attempt's status. | `[cut-limit]` |
+| `CNF-36` `[first-attempt-untouched]` | `p065-first-attempt-untouched`: Truncate attempt 1 on retry. | `[first-attempt-untouched]` |
+| `CNF-36` `[identical-retry-argv]` | `p066-identical-retry-argv`: Re-spawn the check command as the retry. | `[identical-retry-argv]` |
+| `CNF-36` `[retry-output]` | `p067-retry-output`: Interleave progress text into the retry capture. | `[retry-output]` |
+| `CNF-36` `[cut-suffix]` | `p068-cut-suffix`: Parse and require a particular reset suffix. | `[cut-suffix]` |
+| `CNF-36` `[cut-stderr]` | `p069-cut-stderr`: Reject a cut when stderr is nonempty. | `[cut-stderr]` |
+| `CNF-36` `[cut-exit7]` | `p070-cut-exit7`: Only exit 1 can be cut. | `[cut-exit7]` |
+| `CNF-34` `[late-output-not-cut]` | `p071-late-output-not-cut`: Classify cut output before reaping. | `[late-output-not-cut]` |
+| `CNF-34` `[late-output-kept]` | `p072-late-output-kept`: Discard late output after reaping. | `[late-output-kept]` |
+| `CNF-34` `[attempt-reaped-before-check]` | `p073-attempt-reaped-before-check`: Leave the cut attempt's group alive during its check. | `[attempt-reaped-before-check]` |
+| `CNF-34` `[retry-reaped-before-decision]` | `p074-retry-reaped-before-decision`: Do not reap a retry before the next-Round decision. | `[retry-reaped-before-decision]` |
+| `CNF-34` `[recheck-reaped-before-record]` | `p075-recheck-reaped-before-record`: Write a re-check verdict before reaping its group. | `[recheck-reaped-before-record]` |
+| `CNF-36` `[interrupt-INT-long-poll]` | `p076-interrupt-INT-long-poll`: A foreground sleep alone defers signals for the full poll; also reds the TERM row. | `[interrupt-INT-long-poll]` |
+| `CNF-36` `[interrupt-TERM-long-poll]` | `p077-interrupt-TERM-long-poll`: Ignore TERM only during the wait; p076 also reds this assertion. | `[interrupt-TERM-long-poll]` |
+| `CNF-36` `[interrupt-recheck-reaped]` | `p078-interrupt-recheck-reaped`: Defer the signal until the running re-check ends. | `[interrupt-recheck-reaped]` |
+| `CNF-5` `[--quota-wait 0 -> exit 2, <n> spawns]` | `p079-quota-wait-zero`: Accept an invalid quota-wait zero value. | `[--quota-wait 0 -> exit 2, 8 spawns]` |
+| `CNF-5` `[--quota-wait -> exit 2, <n> spawns]` | `p080-quota-wait-missing`: Accept an invalid quota-wait missing value. | `[--quota-wait -> exit 2, 8 spawns]` |
+| `CNF-5` `[--quota-wait nope -> exit 2, <n> spawns]` | `p081-quota-wait-nonnumeric`: Accept an invalid quota-wait nonnumeric value. | `[--quota-wait nope -> exit 2, 8 spawns]` |
+| `CNF-5` `[--quota-poll 0 -> exit 2, <n> spawns]` | `p082-quota-poll-zero`: Accept an invalid quota-poll zero value. | `[--quota-poll 0 -> exit 2, 8 spawns]` |
+| `CNF-5` `[--quota-poll -> exit 2, <n> spawns]` | `p083-quota-poll-missing`: Accept an invalid quota-poll missing value. | `[--quota-poll -> exit 2, 8 spawns]` |
+| `CNF-5` `[--quota-poll nope -> exit 2, <n> spawns]` | `p084-quota-poll-nonnumeric`: Accept an invalid quota-poll nonnumeric value. | `[--quota-poll nope -> exit 2, 8 spawns]` |
+| `CNF-24` `[round 1: <n> probe calls, expected 2]` | `p085-round-1-check-count`: Omit Round 1's judge-site check. | `[round 1: 1 probe calls, expected 2]` |
+| `CNF-24` `[round 1: Panel and judge check chronology]` | `p086-round-1-check-chronology`: Check before the Panel instead of after it in Round 1. | `[round 1: Panel and judge check chronology]` |
+| `CNF-24` `[round 1: panel numbered captures]` | `p087-round-1-panel-captures`: Discard Round 1 panel numbered verdict. | `[round 1: panel numbered captures]` |
+| `CNF-24` `[round 1: judge numbered captures]` | `p088-round-1-judge-captures`: Discard Round 1 judge numbered verdict. | `[round 1: judge numbered captures]` |
+| `CNF-24` `[probe-1 argv is not AGT-18's fixture]` | `p089-round-1-judge-argv`: Append an argument to Round 1's judge check. | `[probe-1 argv is not AGT-18's fixture]` |
+| `CNF-24` `[round 2: <n> probe calls, expected 2]` | `p090-round-2-check-count`: Omit Round 2's judge-site check. | `[round 2: 1 probe calls, expected 2]` |
+| `CNF-24` `[round 2: Panel and judge check chronology]` | `p091-round-2-check-chronology`: Check before the Panel instead of after it in Round 2. | `[round 2: Panel and judge check chronology]` |
+| `CNF-24` `[round 2: panel numbered captures]` | `p092-round-2-panel-captures`: Discard Round 2 panel numbered verdict. | `[round 2: panel numbered captures]` |
+| `CNF-24` `[round 2: judge numbered captures]` | `p093-round-2-judge-captures`: Discard Round 2 judge numbered verdict. | `[round 2: judge numbered captures]` |
+| `CNF-24` `[probe-2 argv is not AGT-18's fixture]` | `p094-round-2-judge-argv`: Append an argument to Round 2's judge check. | `[probe-2 argv is not AGT-18's fixture]` |
+| `CNF-3` `<n> of <total> scenarios differ` | `p095-scenario-shared-budget`: Refill one-second budgets at each cut. | `3 of 4 scenarios differ` |
+| `CNF-30` `[panel-panel-once-each]` | `p096-panel-panel-once-each`: Keep claude Reviewers down after Panel recovery. Red together with `[panel-recovery]`; no measured plant separates them (`p001`, `p096`). | `[panel-panel-once-each]` |
+| `CNF-30` `[judge-panel-once-each]` | `p097-judge-panel-once-each`: Repeat a Reviewer after judge-site recovery. | `[judge-panel-once-each]` |
+| `CNF-24` `[codex-judge-check-order]` | `p098-codex-judge-check-order`: Run the codex Manager judge check before its Reviewers. | `[codex-judge-check-order]` |
+| `CNF-9` `[layout names]` | `p099-layout-names`: Lose a numbered judge verdict under ordinary paths. | `[layout names]` |
+| `CNF-9` `[whitespace layout names]` | `p100-whitespace-layout-names`: Lose a numbered judge verdict under whitespace paths. | `[whitespace layout names]` |
+| `CNF-34` `[reviewer: …-reviewer-1-fable.env GRANDCHILD <pid> alive when …-probe-1.env started]` | `p101-reviewer-before-first-following-call`: Reap Reviewers after the judge check but before the judge. Red together with `[panel astra watch: the Reviewer's child saw rejected-1-task.md, so its group outlived the call and ran through the second Checkpoint]`, `[panel fable watch: the Reviewer's child saw rejected-1-task.md, so its group outlived the call and ran through the second Checkpoint]`, `[panel opus watch: the Reviewer's child saw rejected-1-task.md, so its group outlived the call and ran through the second Checkpoint]`, `[panel sol watch: the Reviewer's child saw rejected-1-task.md, so its group outlived the call and ran through the second Checkpoint]`, `[reviewer: …-reviewer-1-opus.env GRANDCHILD <pid> alive when …-probe-1.env started]`, `[reviewer: …-reviewer-1-astra.env GRANDCHILD <pid> alive when …-probe-1.env started]`, `[reviewer: …-reviewer-1-sol.env GRANDCHILD <pid> alive when …-probe-1.env started]`; no measured plant separates them (`p101`). Reasoning: the second Checkpoint precedes the judge-site Probe, so a Reviewer group alive when that Probe starts was alive through the Checkpoint. | `[reviewer: 005-reviewer-1-fable.env GRANDCHILD 871681 alive when 009-probe-1.env started]` |
+| `CNF-36` `[first-stderr-untouched]` | `p102-first-stderr-untouched`: Truncate the first stderr capture on retry. | `[first-stderr-untouched]` |
+| `CNF-34` `[retry-late-output-not-cut]` | `p103-retry-late-output-not-cut`: Classify a retry before reaping its group. | `[retry-late-output-not-cut]` |
+| `CNF-34` `[retry-late-output-kept]` | `p104-retry-late-output-kept`: Discard a retry's late output after reaping. | `[retry-late-output-kept]` |
+| `CNF-30` `[panel-week-opus-line]` | `p105-panel-week-opus-line`: Quote the pick reading instead of the panel weekly line (family). | `[panel-week-opus-line]` |
+| `CNF-30` `[panel-week-session100-opus-line]` | `p106-panel-week-session100-opus-line`: Quote the pick reading instead of the panel weekly line (session). | `[panel-week-session100-opus-line]` |
+| `CNF-30` `[judge-week-opus-line]` | `p107-judge-week-opus-line`: Quote the pick reading instead of the judge weekly line (family). | `[judge-week-opus-line]` |
+| `CNF-30` `[judge-week-session100-opus-line]` | `p108-judge-week-session100-opus-line`: Quote the pick reading instead of the judge weekly line (session). | `[judge-week-session100-opus-line]` |
+| `CNF-30` `[cut-week-opus-line]` | `p109-cut-week-opus-line`: Quote the pick reading instead of the cut weekly line (family). | `[cut-week-opus-line]` |
+| `CNF-30` `[cut-week-session100-opus-line]` | `p110-cut-week-session100-opus-line`: Quote the pick reading instead of the cut weekly line (session). | `[cut-week-session100-opus-line]` |
+| `CNF-34` `[probe-1-judge-1.md watch: the probe's child saw probe-1-judge-1.md, so its group outlived the call and ran through the record]` | `p111-judge-record-after-reap`: Write only the judge-site check verdict before reaping its group. | `[probe-1-judge-1.md watch: the probe's child saw probe-1-judge-1.md, so its group outlived the call and ran through the record]` |
+| `CNF-34` `[probe-1-judge: …-probe-1.env PID <pid> alive when …-manager-1.env started] [probe-1-judge: …-probe-1.env GRANDCHILD <pid> alive when …-manager-1.env started]` | `p112-judge-probe-before-following-call`: Defer only the judge-site Probe wait and reap until after the judge is spawned. The own-process and child reads were red together; no measured plant separates them. No measured single defect isolated this boundary: p112 also red `[probe-1-judge-1.md watch: the probe's child saw probe-1-judge-1.md, so its group outlived the call and ran through the record]`; p111 red that record watch alone. | `[probe-1-judge: 009-probe-1.env PID 887122 alive when 010-manager-1.env started] [probe-1-judge: 009-probe-1.env GRANDCHILD 887143 alive when 010-manager-1.env started]` |
+
+The judge-site Probe boundary plant defers only that Probe's wait and reap until after the judge
+is spawned; the judge's start record witnesses it.
+
+The evidence directory is `/var/tmp/rl-kyhr-demo/`, a location that may not survive. Each named
+plant under `plants/` has its executable and `.diff`; the table's final logs and exact subset
+scripts are `.round4.log` and `.round4.subset`. `round4-plant-results.json` holds final failure
+lines, hashes and timings, and `round4-separation.json` the recomputed groups. The earlier
+`round3-*` results remain beside them. `round4-green-suite.*` and `round4-panel-trace.*` hold the
+green measurements; `round4-threshold-{before,after}.*` and `round4-codex-wait-{before,after}.*`
+hold the wait-mutant measurements, with their exact `.before.subset` scripts under `plants/`.
+`manifest.json` holds the artifact hashes. `round4-record.py` regenerates this record, and
+`round4-plants.py` reconstructs a disposable suite copy for a repeat. The scratch source copy
+and disposable suite copies used here were removed; no disposable repository or suite copy remains.
+
+The required controls are represented by the long-poll signal plants, the check-status and
+check-command plants, the wall-clock and expiry-first plants, the fresh-cut-budget plant, the
+ordinary-failure plant and the pick-retry plant. No required assertion was dropped for lack of
+backing. The combined session-and-family expiry line remains deliberately unspecified. No live model
+CLI was called.
+
+**Still open:** no live Run has waited yet, and rloop-bash has not caught up. The scratch
+measurements close neither observation. The `F17` writer-branch line-citation advisory and the
+`RUN-16` restatement advisory remain; there is no new advisory or blocking finding.

@@ -66,7 +66,7 @@ run_rloop() {
 # A start or end records membership; without a successful end, that Reviewer failed.
 # No expected roster is used to fill omissions.
 observed_trace() { # observed_trace <record dir>
-  local rec="$1" out=() line role round reviewer outcome pr=-1 i idx
+  local rec="$1" out=() line role round reviewer outcome pr=-1 i idx judges=" "
   # Two parallel indexed arrays rather than one associative array: `CNF-1` promises the suite
   # needs only `bash`, and macOS still ships 3.2, which has no `declare -A`. A Panel is four
   # entries, so the linear lookup costs nothing.
@@ -89,7 +89,9 @@ observed_trace() { # observed_trace <record dir>
     line="${line#*	}"
     role="${line%%:*}"; round="$(echo "$line" | cut -d: -f2)"; outcome="${line##*:}"
     case "$role" in
-      manager) flush_panel; if [ "$round" = 0 ]; then out+=("pick"); else out+=("judge$round"); fi ;;
+      manager) flush_panel; if [ "$round" = 0 ]; then out+=("pick"); else
+        case "$judges" in *" $round "*) ;; *) out+=("judge$round"); judges="$judges$round " ;; esac
+      fi ;;
       implementer) flush_panel; out+=("impl$round:$outcome") ;;
       reviewer) if [ "$pr" != "$round" ]; then flush_panel; pr="$round"; fi
                 reviewer="${line#*:*:}"; reviewer="${reviewer%%:*}"
@@ -137,20 +139,21 @@ seat_preset() { # named Seats run claude; the unnamed default runs codex
 # --- CNF-3: the scenarios ---------------------------------------------------------------------------
 run_scenarios() { # run_scenarios <scenarios file> -> prints "<failures> <total>"
   local file="$1" total=0 bad=0 id max pick rounds interf probe seats exp_exit exp_trace repo rec got_exit got_trace
-  local kv manager_seat implementer_seat pick_probe
+  local kv manager_seat implementer_seat pick_probe quota poll cuts
   while IFS=$'\t' read -r id max pick rounds interf probe seats exp_exit exp_trace; do
     [ "$id" = id ] && continue
     total=$((total + 1))
-    manager_seat=''; implementer_seat=''; pick_probe=clear
+    manager_seat=''; implementer_seat=''; pick_probe=clear; quota=1; poll=1; cuts=''
     for kv in ${seats//;/ }; do
       case $kv in
         manager=*) manager_seat=${kv#*=} ;; implementer=*) implementer_seat=${kv#*=} ;; pick=*) pick_probe=${kv#*=} ;;
+        quota=*) quota=${kv#*=} ;; poll=*) poll=${kv#*=} ;; cuts=*) cuts=${kv#*=} ;;
       esac
     done
     repo="$(new_repo)"; rec="$work/rec-$id"
     got_exit=$(RLOOP_FAKE_PICK="$pick" RLOOP_FAKE_ROUNDS="${rounds/#-/}" RLOOP_FAKE_INTERFERENCE="$interf" \
-      RLOOP_FAKE_PROBE="${probe/#-/}" RLOOP_FAKE_PROBE_PICK="$pick_probe" run_rloop "$repo" "$rec" \
-      --run-dir "$repo/run" --max-rounds "$max" \
+      RLOOP_FAKE_MANAGER_CUT="$cuts" RLOOP_FAKE_PROBE="${probe/#-/}" RLOOP_FAKE_PROBE_PICK="$pick_probe" run_rloop "$repo" "$rec" \
+      --run-dir "$repo/run" --max-rounds "$max" --quota-wait "$quota" --quota-poll "$poll" \
       --manager "$(seat_preset "$manager_seat")" --implementer "$(seat_preset "$implementer_seat")" \
       --manager-model "$(seat_model "$manager_seat")" --implementer-model "$(seat_model "$implementer_seat")")
     got_trace="$(observed_trace "$rec")"

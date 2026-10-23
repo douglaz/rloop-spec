@@ -52,7 +52,9 @@ rule a second time.*
 **RUN-5** The Run MUST begin with exactly one Manager call — the **pick**, unless withheld
 (`RUN-22`) — using `AGT-3`'s command line and `PRM-1`'s prompt, with the caller's instruction, if
 any, rendered into it. The Manager is expected to leave behind a Task File, or a Finished File, or
-both; what rloop does with what it finds is `RUN-11`.
+both; what rloop does with what it finds is `RUN-11`. A call here, in `RUN-7` and in
+`RUN-11` is a logical call; `AGT-14` and `AGT-15` apply to each process attempt. The pick is
+never retried (`RUN-24`).
 
 **RUN-6** After the pick, when the verdict is *next Round*, rloop MUST copy the Task File to
 `task-1.md` (`DIR-5`) and start Round 1.
@@ -64,14 +66,20 @@ both; what rloop does with what it finds is `RUN-11`.
 1. one Implementer call (`AGT-5` or `AGT-6`, `PRM-3`), started fresh — no session is carried from
    any earlier Round or earlier Run;
 2. the Checkpoint (`DIR-6`);
-3. the availability probe (`RUN-21`, `AGT-18`), waited for before the Panel starts;
+3. the Panel-site availability check (`RUN-21`, `AGT-18`) and its wait (`RUN-24`), completed
+   before the Panel starts;
 4. the Panel: a call for every Reviewer `RUN-21` did not record `unavailable` (`AGT-7`–`AGT-10`,
    `PRM-4`), started concurrently and all waited for, and a Feedback File written in place for
    each one that was (`RUN-15`);
 5. the Checkpoint again;
-6. one Manager call — the **judge**, unless withheld (`RUN-22`) — resuming the pick's session
+6. the judge-site availability check and its wait (`RUN-21`, `RUN-24`), unless the Panel-site
+   wait expired or every Reviewer is down (`RUN-15`);
+7. one Manager call — the **judge**, unless withheld (`RUN-22`) — resuming the pick's session
    (`AGT-4`, `PRM-2`);
-7. the decision (`RUN-11`).
+8. the decision (`RUN-11`).
+
+A call cut off by the session limit has not ended until its last attempt has; `RUN-11`'s
+table reads that attempt's exit and the files after it. `RUN-24` owns the retry.
 
 *Fresh Implementers are the design: a brief that only makes sense with the previous Round's
 conversation is a bad brief, and `PRM-2` tells the Manager so.*
@@ -80,15 +88,19 @@ conversation is a bad brief, and `PRM-2` tells the Manager so.*
 finish, and rloop MUST wait for every one of them before the Checkpoint that follows. Each called
 Reviewer's standard output is its Feedback File (`DIR-4`).
 
-**RUN-21** rloop MUST run the availability probe (`AGT-18`) at two call sites: once before the
-pick — after the Run Directory exists (`RUN-4`) and before the pick's Manager call — and once
-immediately before each Round's Panel, each call bounded by `--probe-timeout` (`AGT-1`). After
-each call it MUST record for every Seat exactly one verdict — `unavailable` or `unknown` — in
-`probe-pick.md` before the pick and in `probe-<r>.md` in Round `r` (`DIR-4`), one
-`<seat>:<verdict>` line per Seat in the order `manager`, `implementer`, `fable`, `opus`, `astra`,
-`sol`. Every line of either record ends with a newline, the last one included. The Manager's
-Seat's model is `<manager model>` (`AGT-3`), the Implementer's is `<implementer model>` (`AGT-5`,
-`AGT-6`), and each Reviewer's is the one its command line fixes (`AGT-11`).
+**RUN-21** rloop MUST run the availability probe (`AGT-18`) once before the pick — after the Run
+Directory exists (`RUN-4`) and before the pick's Manager call — and at each Round's Panel and judge
+sites in `RUN-7`'s order, with re-checks as `RUN-24` requires. The judge-site check runs under
+either Manager preset whenever a Reviewer survived and no Panel-site expiry came first. Each check
+is bounded by `--probe-timeout` (`AGT-1`). After each check rloop MUST record for every Seat exactly
+one verdict — `unavailable` or `unknown` — in `probe-pick.md` before the pick and in its numbered
+Round-site record (`DIR-4`), one `<seat>:<verdict>` line per Seat in the order `manager`,
+`implementer`, `fable`, `opus`, `astra`, `sol`. Every line of every record ends with a newline, the
+last one included. The verdicts for the Panel are the last Panel-site check's; rloop copies that
+check's captures and verdicts to `probe-<r>.*`, which `RUN-20` continues to read. A judge-site
+reading never replaces that copy. The Manager's Seat's model is `<manager model>` (`AGT-3`), the
+Implementer's is `<implementer model>` (`AGT-5`, `AGT-6`), and each Reviewer's is the one its
+command line fixes (`AGT-11`).
 
 A Seat is **`unavailable`** only when the probe exited zero within its bound and either of
 these readings establishes exhaustion:
@@ -143,28 +155,72 @@ pick threshold would have refused.*
 `unavailable`, rloop MUST exit 2 without spawning any agent, and MUST write to standard error a
 message naming the Seat — both, when both are — its model, and the reset the probe reported, which
 it names by quoting the probe's matching line verbatim. For a family-line refusal, the message
-SHOULD name the flag that chooses another model,
-`--manager-model` or `--implementer-model` (`AGT-1`). For a session-line refusal, the message
-SHOULD instead name the relevant preset flag, `--manager codex` or `--implementer codex`
-(`AGT-1`), because another claude model shares the same cap. The matching line quoted for a
-session-triggered refusal is the session line, reset text included. rloop MUST refuse immediately,
-without waiting for reset or retrying. *The line is carried, not parsed: the matching prefixes in
-`RUN-21` end at `used`, and `AGT-17` records that the reset's format already drifted once.*
+SHOULD name the flag that chooses another model, `--manager-model` or `--implementer-model`
+(`AGT-1`). For a session-line refusal, the message SHOULD instead name the relevant preset flag,
+`--manager codex` or `--implementer codex` (`AGT-1`), because another claude model shares the same
+cap. The matching line quoted for a session-triggered refusal is the session line, reset text
+included. At the pick rloop MUST refuse immediately, without waiting for reset or retrying. *The
+line is carried, not parsed: the matching prefixes in `RUN-21` end at `used`, and `AGT-17` records
+that the reset's format already drifted once.*
 
-rloop MUST NOT make Round `r`'s judge call when `probe-<r>.md` records the Manager's Seat
-`unavailable`; it MUST exit 2, with the message above for the Manager's Seat. The Round's Panel and
-both Checkpoints still run as `RUN-7` orders — the rule removes only the judge call, and the
-Feedback Files are what a human reads about the Round — and the exit takes the judge's place.
-This precedes `RUN-11` rather than adding a row to it: that requirement decides `After every
-Manager call`, and a call that was never made is not one. `Rloop.decide` and the table it renders
-do not change. A Round's verdict on the Implementer's Seat is recorded and nothing acts on it.
+rloop MUST NOT make Round `r`'s judge call when its Panel-site or judge-site waiting expires before
+its first judge attempt (`RUN-24`); it MUST exit 2 with the message above for the Manager's Seat,
+quoting the matching line from the last check. Expiry before the Panel still runs the Panel and both
+Checkpoints in `RUN-7`'s order, then exits in the judge's place without a judge-site check. Expiry
+at the judge site re-runs no review. The all-down exit is `RUN-15`'s. This precedes `RUN-11` rather
+than adding a row: no judge call was made. A Round's verdict on the Implementer's Seat is recorded
+and nothing acts on it.
 
 *Why a Seat that cannot answer is refused and never filled by another model, and why the Reviewers
 are left to `RUN-15`, is `ADR-0008`'s.* `Rloop.seat_out_refused` proves that a Run so recorded
 before the pick spawns nothing and `Rloop.pick_refusal_off_picks` is each Seat's pick spawned
 without the rule; `Rloop.judged_only_when_manager_answers` proves every judge call is for a Round
-whose probe read the Manager's Seat `unknown`, and `Rloop.manager_out_skips_judge` and
+whose admitting check read the Manager's Seat `unknown`, and `Rloop.manager_out_skips_judge` and
 `Rloop.judge_refusal_off_judges` are the pair for a Manager that runs out in Round 2.
+
+**RUN-24** Each Round MUST have one shared sleep budget of `--quota-wait` seconds for its
+Panel-site check, judge-site check and waits after cut judge attempts. It applies equally to a
+lone Run and each Run in a Sequence. A wait begins only when
+the Manager's Seat is exhausted by the session reading alone, or a judge attempt is cut as below.
+A family reading establishing that Seat's exhaustion expires immediately, including at the first
+check or beside a session reading; a line for another family does not establish that exhaustion.
+A codex Manager never waits for session quota; a table-model family reading can still expire
+immediately. Every Round-site check, including a re-check after a cut, uses the Round threshold
+of `RUN-21`.
+
+A wait MUST sleep the smaller of `--quota-poll` and the remaining budget, debit exactly that
+requested sleep, then check again. It counts no check's time, call's time or late wakeup. Thus a
+check follows even the last paid sleep. A check that no longer reads the Manager out, including a
+failed check reading `unknown`, ends the wait. A still-exhausted reading with no budget left is
+expiry: no zero sleep and no further check. With budget b left at a site's first check and poll
+p, an uninterrupted site always reading session exhaustion makes exactly 1 + ceil(b/p) checks.
+A cut begins with a sleep before any check and makes exactly ceil(b/p) checks if it never clears.
+
+A judge attempt is **cut** only under `--manager claude`, when it exited non-zero before its
+`--manager-timeout`, left no Finished File and left `task.md` byte-identical to `task-<r>.md`,
+and its standard output as bytes is one line whose only newline is its last byte, beginning with
+`You've hit your session limit`. What follows that prefix is carried, never parsed; no byte is
+dropped or mapped before matching. Standard error is not read. A timed-out attempt is never cut.
+Anything else remains a failed Manager call under `RUN-11`. The pick, codex Manager calls,
+Implementer and Reviewers are never retried.
+
+A cut MUST begin the sleep-first wait above using the Round's remaining budget. Once a check no
+longer reads the Manager out, rloop retries the judge with `AGT-4`'s line and `PRM-2` rendered
+again. Every `PRM-6` value is a path or a value fixed for the Round, never file contents, so the
+retry's argument list and prompt are the same bytes. The file guard above leaves the resumed
+Manager in the state that prompt describes. Every retry follows a paid sleep; a Round makes at
+most 1 + ceil(b/p) judge attempts for initial budget b and poll p, over every script of readings
+and cuts, with no retry counter. Timeouts and reaping are per attempt (`AGT-14`, `AGT-15`).
+
+Expiry after a cut MUST end the logical call with its last attempt's non-zero exit, which
+`RUN-11` reads as exit 2. The diagnostic quotes the last check's matching line. When no check in
+that wait read a matching line because the cut found no budget left, it quotes the cut's own line
+and identifies it as the call's output. Other wording remains `RUN-10`'s.
+
+*Added 2026-10-22 (`rl-kyhr`): `ADR-0010` records the decisions; `F29` records supplied evidence
+and the Conformance Suite demonstrations. The budget measures sleeps, so slow checks can extend
+wall time; it is not a deadline. `Rloop.Wait.attempt_bound` and
+`Rloop.Wait.fresh_budget_overruns` are the bound and its absence witness.*
 
 ## What the Manager leaves behind
 
@@ -199,12 +255,13 @@ one place and the outcome from one number.*
 
 ## The decision
 
-**RUN-11** After every Manager call rloop MUST decide by the following table and nothing else,
-reading the columns left to right and stopping at the first that settles it. "Task File vs.
-snapshot" compares `task.md`'s bytes with the snapshot the Manager was given — `task-<r>.md` after
-Round `r`, nothing at the pick — and "cap reached?" is whether the Round just judged is
-`--max-rounds` (at the pick: whether `--max-rounds` is 0). The Finished File wins over a rewritten
-brief: a Manager that wrote both has finished.
+**RUN-11** A call cut off by the session limit has not ended until its last attempt has; this table
+reads that attempt's exit and the files after it (`RUN-24`). After every Manager call rloop MUST
+decide by the following table and nothing else, reading the columns left to right and stopping at
+the first that settles it. "Task File vs. snapshot" compares `task.md`'s bytes with the snapshot the
+Manager was given — `task-<r>.md` after Round `r`, nothing at the pick — and "cap reached?" is
+whether the Round just judged is `--max-rounds` (at the pick: whether `--max-rounds` is 0). The
+Finished File wins over a rewritten brief: a Manager that wrote both has finished.
 
 <!-- formal: Rloop.Render.decisionTable -->
 | call | Manager exit | Finished File first line | Task File vs. snapshot | cap reached? | verdict |

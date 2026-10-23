@@ -127,8 +127,11 @@ For whoever runs an Implementation:
   A session refusal affects every claude model, so choose the codex preset with `--manager codex`
   or `--implementer codex`; for a family refusal, choose another model with `--manager-model` or
   `--implementer-model`. rloop never switches models on its own (`ADR-0008`). A Sequence ends on
-  that exit 2 (`SEQ-6`). A Manager exhausted at a Round's Probe has its judge withheld after the
-  Panel has written its feedback (`RUN-22`).
+  that exit 2 (`SEQ-6`). For a Round, `RUN-24` gives `one shared sleep budget of --quota-wait
+  seconds` for quota waits. After a cut, `Once a check no longer reads the Manager out, rloop
+  retries the judge`. On expiry the Panel's feedback is still written, the judge or its retry is
+  withheld and the Run exits 2 (`RUN-22`, `RUN-24`). The pick keeps `RUN-22`'s rule: `At the pick
+  rloop MUST refuse immediately, without waiting for reset or retrying`.
 - **After a Run that exited 2 there is usually no Finished File**, because the Manager never
   wrote one: the round cap was reached, a Manager call failed or made no decision, no Reviewer of
   a Panel survived, or rloop was interrupted. A Run that exited 2 may still hold one, though

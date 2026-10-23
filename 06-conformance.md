@@ -42,22 +42,23 @@ goes where `DIR-6`'s `move task.md to rejected-<r>-task.md` sends it; on a host 
 
 ## The scenarios
 
-**CNF-3** For every line of `conformance/scenarios.tsv` the suite MUST run the executable in a
-fresh git repository with the line's script loaded into the fakes, `--max-rounds` set to the
-line's cap, and each Seat's preset and model set from the line's `seats` column,
-and assert the exit status equals the line's and the recorded spawns equal the line's
-trace — a Panel compared as the set of the Reviewers rloop called, the rest in order, and a Run
-refused at the pick as no spawn at all. The file is
-what `tools/formal/` enumerates (`ADR-0002`, `tools/check_scenarios.py`). In `seats`, `fable` and
-`opus` select claude with that Reviewer's model; `claude` selects claude with the off-table
-model `claude-sonnet-5`; `codex-fable` and `codex-opus` select codex with the corresponding table
-model; an unnamed Seat selects codex with that same off-table model literal.
-`pick=<shape>` scripts the Probe before the pick; `-` selects codex for both Seats and a clear
-pick Probe. *The preset is independent of model spelling. An off-table claude model still reads
-the session cap, while the codex replay keeps the older family-only scenarios independent of
-Manager and Implementer exhaustion.* This item is the executable form
-of the decision table and the Round: (`RUN-5`, `RUN-6`, `RUN-7`, `RUN-9`,
-`RUN-10`, `RUN-11`, `RUN-12`, `RUN-13`, `RUN-14`, `RUN-15`, `RUN-21`, `RUN-22`, `DIR-5`, `DIR-6`,
+**CNF-3** For every line of `conformance/scenarios.tsv` the suite MUST run the executable in a fresh
+git repository with the line's script loaded into the fakes, `--max-rounds` set to the line's cap,
+`--quota-wait` and `--quota-poll` to short whole-second values (overridden by the wait block's
+`quota` and `poll` fields), the `cuts` field loaded into the fake, and each Seat's preset and model
+set from the line's `seats` column, and assert the exit status equals the line's and the recorded
+spawns equal the line's trace — repeated judge attempts projected to one logical judge token per
+Round, pick tokens never collapsed; a Panel compared as the set of the Reviewers rloop called, the
+rest in order, and a Run refused at the pick as no spawn at all. The file is what `tools/formal/`
+enumerates (`ADR-0002`, `tools/check_scenarios.py`). In `seats`, `fable` and `opus` select claude
+with that Reviewer's model; `claude` selects claude with the off-table model `claude-sonnet-5`;
+`codex-fable` and `codex-opus` select codex with the corresponding table model; an unnamed Seat
+selects codex with that same off-table model literal. `pick=<shape>` scripts the Probe before the
+pick; `-` selects codex for both Seats and a clear pick Probe. *The preset is independent of model
+spelling. An off-table claude model still reads the session cap, while the codex replay keeps the
+older family-only scenarios independent of Manager and Implementer exhaustion.* This item is the
+executable form of the decision table and the Round: (`RUN-5`, `RUN-6`, `RUN-7`, `RUN-9`, `RUN-10`,
+`RUN-11`, `RUN-12`, `RUN-13`, `RUN-14`, `RUN-15`, `RUN-21`, `RUN-22`, `RUN-24`, `DIR-5`, `DIR-6`,
 `DIR-7`, `OVR-1`)
 
 *Amended 2026-10-08 (`rl-8ee8`): the replay encodes preset identity separately from family
@@ -80,7 +81,9 @@ unknown option; `--max-rounds 0`; `--max-rounds x`; `--reviewer-timeout -1`;
 makes who means `--manager codex --manager-model gpt-6-astra`. `--version` and `--help` exit 0
 and spawn nothing. `--auto --max-runs 08` with a Manager fake scripted idle spawns exactly one
 pick and exits 0; with nine scripted done, it stops after exactly eight picks and exits 2.
-(`AGT-1`, `AGT-2`, `SEQ-3`, `SEQ-5`, `SEQ-6`)
+
+The quota-option arms also reject zero, missing and nonnumeric values for each quota option,
+with exit 2, a diagnostic and nothing spawned. (`AGT-1`, `AGT-2`, `SEQ-3`, `SEQ-5`, `SEQ-6`)
 
 **CNF-6** Outside a git working tree the executable exits 2 and spawns nothing. (`RUN-1`)
 
@@ -107,6 +110,8 @@ path hold a space and a tab, and its `--run-dir` a space as well, and leaves tha
 suite makes that path itself rather than reading it out of `TMPDIR`, since an item that sees
 whitespace only when the caller exports it gives a verdict that moves with `TMPDIR`. That arm reads
 what the Run Directory holds afterwards; what the agents were handed is `CNF-11`'s and `CNF-12`'s.
+
+The layout comparisons include the numbered Panel-site and judge-site records, in C locale.
 (`DIR-4`, `RUN-17`, `RUN-23`)
 
 ## What agents receive
@@ -227,39 +232,38 @@ the Run records any of those children among the children alive when it started, 
 the Implementer's own process among the calls alive when it started; and once the executable has
 returned, neither a fake that spawned one nor any of the children is running. Only in this ordinary
 Manager-spawner Run does the pick wait one second after writing its files before exiting; every
-other Run described in this item omits that delay. The same Run with the
-Implementer fake spawning that child instead of the Manager's. The same
-Run with every Reviewer fake spawning it: the judge's record — the first call to start once every Reviewer has exited — carries
-no Reviewer's child among the children alive when it started and no Reviewer's own process among the
-calls alive when it started. The same Run with both of the Run's probes spawning it, each probe
-waiting one second after spawning its child before exiting — a sleep every other Run described in
-this item omits: the pick's
-record carries neither the child nor the own process of the probe before the pick, and each of the
-Panel's four records carries neither the child nor the own process of the Round's probe. Neither of
-those two Runs can pass on absent evidence: a missing record, a missing snapshot line, a missing
-recorded pid and a Panel of other than four records are each red. A further Run of the Implementer's
-shape, the Implementer fake also appending to the Task File and its child polling for
-`rejected-1-task.md` under the Run Directory rather than sleeping: the Run exits 0,
+other Run described in this item omits that delay. The same Run with the Implementer fake spawning
+that child instead of the Manager's. The same Run with every Reviewer fake spawning it: the
+judge-site Probe's record — the first call to start once every Reviewer has exited — carries no
+Reviewer's child among the children alive when it started and no Reviewer's own process among the
+calls alive when it started. The same Run with every Probe spawning it, each Probe waiting one
+second after spawning its child before exiting — a sleep every other Run described in this item
+omits: the pick's record carries neither the child nor the own process of the probe before the pick,
+and each of the Panel's four records carries neither the child nor the own process of the Panel-site
+Probe; the judge's record carries neither the child nor the own process of the judge-site Probe.
+Neither of those two Runs can pass on absent evidence: a missing record, a missing snapshot
+line, a missing recorded pid and a Panel of other than four records are each red. A further Run of
+the Implementer's shape, the Implementer fake also appending to the Task File and its child polling
+for `rejected-1-task.md` under the Run Directory rather than sleeping: the Run exits 0,
 `rejected-1-task.md` is there, the child recorded that it was watching before its fake exited, and
 it never found the file — so the Implementer's group was gone before the Checkpoint that follows its
-call, and not only before the next call. Two Runs more of the probes' shape, one for each of
-`RUN-21`'s call sites, every probe's child polling under the Run Directory rather than sleeping: for
-the record the probe before the pick writes, `probe-pick.md`, and for the record the Round's probe
-writes, `probe-1.md`. In each the Run exits 0, that record is there, the probe whose own record is
-the watched one recorded that it was watching before its fake exited, and its child never found the
-file — so that probe's group was gone before rloop wrote that record, and not only before the next
-call. Neither Run passes on absent evidence either: a missing record, a missing readiness marker, a
-fake that exited before its child published one and a child whose pid is unrecorded or still running
-once the executable has returned are each red. A last Run of the probes' shape, for the read of a
-probe's output rather than for the record: every probe's child writing to the standard output it
-inherited rather than sleeping — one second after its own fake has exited, the line `Current week
-(Opus): 100% used` — with `--implementer claude`, both Seats at the claude preset's default model and
-`--kill-after 4`. The Run exits 2, the probe before the pick is the only
-call it makes, that line is in `probe-pick.out`, `probe-pick.md` records the Manager's Seat, the
-Implementer's and `opus` unavailable and the other three unknown, and the child's pid is recorded
-and not running once the executable has returned — so rloop read that probe's output after reaping
-its group and not before. Nor does that Run pass on absent evidence: a line that never reached the
-capture leaves the read nothing to witness and is red.
+call, and not only before the next call. Further Runs of the probes' shape cover the pick, Panel and
+judge sites, every probe's child polling under the Run Directory rather than sleeping for its own
+record: `probe-pick.md`, `probe-1-panel-1.md` or `probe-1-judge-1.md`. In each the Run exits 0, that
+record is there, the probe whose own record is the watched one recorded that it was watching before
+its fake exited, and its child never found the file — so that probe's group was gone before rloop
+wrote that record, and not only before the next call. No watching Run passes on absent evidence
+either: a missing record, a missing readiness marker, a fake that exited before its child published
+one and a child whose pid is unrecorded or still running once the executable has returned are each
+red. A last Run of the probes' shape, for the read of a probe's output rather than for the record:
+every probe's child writing to the standard output it inherited rather than sleeping — one second
+after its own fake has exited, the line `Current week (Opus): 100% used` — with `--implementer
+claude`, both Seats at the claude preset's default model and `--kill-after 4`. The Run exits 2, the
+probe before the pick is the only call it makes, that line is in `probe-pick.out`, `probe-pick.md`
+records the Manager's Seat, the Implementer's and `opus` unavailable and the other three unknown,
+and the child's pid is recorded and not running once the executable has returned — so rloop read
+that probe's output after reaping its group and not before. Nor does that Run pass on absent
+evidence: a line that never reached the capture leaves the read nothing to witness and is red.
 
 Further watching Runs establish these step boundaries, each with `--kill-after 1`:
 
@@ -286,39 +290,45 @@ after reaping. `F17` records that measured limitation.
 a habit `07-open-findings.md`'s `F16` records: the child of a healthy Implementer writes into the
 working tree through the whole Panel and the Manager's commit. `CNF-17` reads the same record for
 the reaping after a timeout. The pick's and the Implementer's own processes are read from every
-later record, each Reviewer's from the judge's record alone, and each probe's from the call that
-follows it (`RUN-21`, `RUN-7`). What `RUN-8` forecloses is a *sibling* Reviewer's record, having the
-Panel's Reviewers spawned so that `none waits for another to finish`: a Reviewer that finds a
-sibling's process — or a sibling's child — alive has found that working, which is why the judge, the
-call after the whole Panel, is where a Reviewer is read. The Checkpoint starts no call, so no record
-of a later one speaks for that boundary and the straggler is the witness; the appended Task File is
-what makes `DIR-6` `move task.md to rejected-<r>-task.md` there, and the child's recorded readiness
-is what keeps its silence from passing for compliance. Each probe's record starts no call either,
-and `AGT-15`'s `A call is complete only once its process group has been reaped that way` puts it
-after the reaping, so the same straggler witnesses it; `RLOOP_FAKE_WATCH` carries one name, which is
-why the two call sites take a Run each. Each Run reads the watching probe's tag for boundary
-evidence, with an arm-wide `WATCH_NOT_READY=` guard; `watched_nothing`'s comment in `conformance/run`
-owns the scope rationale. What that
+later record, each Reviewer's from the judge-site Probe's record alone, and each Probe's from the
+call that follows it (`RUN-21`, `RUN-7`). What `RUN-8` forecloses is a *sibling* Reviewer's record,
+having the Panel's Reviewers spawned so that `none waits for another to finish`: a Reviewer that
+finds a sibling's process — or a sibling's child — alive has found that working, which is why the
+judge-site Probe, the first call after the whole Panel, is where a Reviewer is read. The Checkpoint
+starts no call, so no record of a later one speaks for that boundary and the straggler is the
+witness; the appended Task File is what makes `DIR-6` `move task.md to rejected-<r>-task.md` there,
+and the child's recorded readiness is what keeps its silence from passing for compliance. Each
+probe's record starts no call either, and `AGT-15`'s `A call is complete only once its process group
+has been reaped that way` puts it after the reaping, so the same straggler witnesses it;
+`RLOOP_FAKE_WATCH=probe:@own` gives each child its own record name. Each site has a Run that reads
+the watching probe's tag and record index for boundary evidence, with an arm-wide `WATCH_NOT_READY=`
+guard; `watched_nothing`'s comment in `conformance/run` owns the scope rationale. What that
 straggler establishes is the record and not the read: `AGT-15` has `rloop MUST read the call's
 output, and do anything else that follows the call` come `only after that`, and a child that never
 finds the record witnesses the second of those and not the first. Reading the output leaves no file
 for a straggler to poll, so the last Run gives the read a straggler that writes where those poll:
-into the capture `DIR-4` has the probe's standard output reach `entire and unmodified`, so that
-an executable which reads before reaping reads bytes that line has not arrived in yet. The probe
-before the pick is that Run's site because `RUN-22` ends the Run on its verdicts — `exit 2 without
-spawning any agent` — which makes a verdict derived from the wrong bytes a Run that calls the pick
-and goes on. Its window has margin at both ends: the child's first write is a second after its own
-fake exits, which a read before the reaping is well inside, and `--kill-after 4` keeps that child
-alive three seconds past that write, which a read after the reaping falls past, the line having
-reached the capture three seconds before that read. The pick's exit delay makes its own process
-observable after its Task File exists, without opening standard input or changing its child; each
-probe's sleep in the probes' ordinary Run does the same for the probe's own process at the call
-that follows it. `F17`
-records the separate own-process and child measurements. The watching Runs use `RUN-6`'s
-`copy the Task File to` `task-1.md`, `RUN-7`'s `the Checkpoint again`, and `DIR-5`'s `After the pick
-and after every judge call whose verdict is *next Round*` as observable steps. `F17` owns the
-remaining limitations.*
-(`AGT-15`, `AGT-16`, `DIR-4`, `DIR-5`, `DIR-6`, `RUN-6`, `RUN-7`, `RUN-8`, `RUN-11`, `RUN-21`, `RUN-22`)
+into the capture `DIR-4` has the probe's standard output reach `entire and unmodified`, so that an
+executable which reads before reaping reads bytes that line has not arrived in yet. The probe before
+the pick is that Run's site because `RUN-22` ends the Run on its verdicts — `exit 2 without spawning
+any agent` — which makes a verdict derived from the wrong bytes a Run that calls the pick and goes
+on. Its window has margin at both ends: the child's first write is a second after its own fake
+exits, which a read before the reaping is well inside, and `--kill-after 4` keeps that child alive
+three seconds past that write, which a read after the reaping falls past, the line having reached
+the capture three seconds before that read. The pick's exit delay makes its own process observable
+after its Task File exists, without opening standard input or changing its child; each probe's sleep
+in the probes' ordinary Run does the same for the probe's own process at the call that follows it.
+`F17` records the separate own-process and child measurements. The watching Runs use `RUN-6`'s `copy
+the Task File to` `task-1.md`, `RUN-7`'s `the Checkpoint again`, and `DIR-5`'s `After the pick and
+after every judge call whose verdict is *next Round*` as observable steps. `F17` owns the remaining
+limitations.*
+
+Further arms put late output in a cut attempt's stdout while its group is reaped: that output stays
+in the original capture, the line is no longer a cut and no retry follows. The output-read boundary
+is driven on attempt 1 and on a retry. An attempt's group is gone before its post-cut check; a
+retried attempt's group is gone before the next-Round snapshot; a re-check's group is gone before
+its own numbered verdict. Readiness and recorded child identities keep absent witnesses red.
+(`AGT-15`, `AGT-16`, `DIR-4`, `DIR-5`, `DIR-6`, `RUN-6`, `RUN-7`, `RUN-8`, `RUN-11`, `RUN-21`,
+`RUN-22`, `RUN-24`)
 
 *Amended 2026-10-08: the probe-output read witness reports Opus exhaustion to refuse the default
 Seats, with the corresponding Reviewer verdict; its timing and absence-of-evidence checks remain.*
@@ -354,7 +364,8 @@ past its own Reviewer's exit and the fourth four. `CNF-34` sees neither, reading
 against `the first call to start once every Reviewer has exited`, by which time every
 delay above has ended. Each bound is its row's grace and a margin, five seconds and four, because
 the claim is that a group goes with its own Reviewer and not that it goes in any particular tenth of
-a second: these rows with `CNF-16` and `CNF-17` are the suite's only clock-measured claims, and a
+a second: these rows, `CNF-16`, `CNF-17` and `CNF-36`'s interruption rows are the suite's
+clock-measured claims, and a
 tight bound is a flaky suite. `--kill-after 5` in the second row rather than 1 is what carries the
 shape it separates from past nine seconds at all, and that margin is not wide at every child: the
 second Reviewer's two graces are ten seconds and clear the bound by one. It is the third child and
@@ -384,9 +395,10 @@ group already empty leaves the bound nothing to measure.
 has the Probe started `in its own process group` as every agent process is: an Implementation that
 runs the Probe by a path of its own, keeping no group for the handler to reach, passes the two
 Implementer Runs and still leaves a straggler behind on a SIGINT during a probe. Reaping a group
-once the call has returned is `CNF-34`'s to witness, at both call sites; registering it with the
-handler is this item's, and the Probe is the role whose call an Implementation is likeliest to write
-inline rather than through the machinery every agent call shares. The call site driven is `RUN-21`'s
+once the call has returned is `CNF-34`'s to witness, at the pick-site, Panel-site and judge-site
+checks; registering it with the handler is this item's, and the Probe is the role whose call an
+Implementation is likeliest to write inline rather than through the machinery every agent call
+shares. The call site driven is `RUN-21`'s
 `once before the pick`, which the fake's one probe-sleep knob already lands on, so the Round's probe
 is never reached and the Run costs no new knob. The probe before the pick is the Run's first call,
 and `RUN-21` has it `after the Run Directory exists`, `RUN-4` owning the creation. Of the probe's
@@ -490,15 +502,20 @@ kept. *The ordinary Run is asserted here and not left to `CNF-11`, which reads t
 and would stay green over a preset that spawns every call correctly and then exits 2.*
 (`RUN-16`, `AGT-3`, `AGT-4`, `DIR-4`)
 
-**CNF-24** The pick runs the probe exactly once, before the pick's Manager call, with
-`RLOOP_ROUND` `0`, `RLOOP_ROLE` `probe`, standard input at end of file and the git toplevel as its
-working directory; `probe-pick.out` holds the probe's bytes and `probe-pick.err` exists. Every
-Round runs the probe exactly once, after that Round's Implementer and before any of its Reviewers
-starts, keeps `probe-<r>.out` byte for byte as the probe wrote it, and leaves a `probe-<r>.err`. A
-Run of two Rounds leaves `probe-pick.*`, `probe-1.*` and `probe-2.*` and no `probe-0.*`: the
-pick's record is named for the pick, not for a Round. Each call's recorded argument list equals
-`conformance/fixtures/argv/AGT-18.txt`. (`RUN-7`, `RUN-21`, `AGT-18`, `AGT-12`, `AGT-13`,
-`DIR-4`, `OVR-2`)
+**CNF-24** The pick runs the probe exactly once, before the pick's Manager call, with `RLOOP_ROUND`
+`0`, `RLOOP_ROLE` `probe`, standard input at end of file and the git toplevel as its working
+directory; `probe-pick.out` holds the probe's bytes and `probe-pick.err` exists. Every ordinary
+Round runs a Panel-site check after its Implementer and before any Reviewer, then a judge-site check
+after every Reviewer and before its judge. The fake's own record ordinals establish this order,
+separately from the executable's record names. Each check keeps its numbered `probe-<r>-panel-1.*`
+or `probe-<r>-judge-1.*` captures and verdicts, with `probe-<r>.*` copying the Panel reading. An
+all-down Panel makes no judge-site check and exits 2 without a judge, leaving only the Panel-site
+numbered record and its copy. A Run of successive Rounds leaves each Round's records and no
+`probe-0.*`: the pick's record is named for the pick, not for a Round. Each call's recorded argument
+list equals `conformance/fixtures/argv/AGT-18.txt`.
+
+The codex Manager arm independently checks the Panel-site and judge-site call order from the
+fake records. (`RUN-7`, `RUN-21`, `AGT-18`, `AGT-12`, `AGT-13`, `DIR-4`, `OVR-2`, `RUN-15`)
 
 **CNF-25** `probe-<r>.md` names every Seat exactly once, in the order `manager`, `implementer`,
 `fable`, `opus`, `astra`, `sol`, each with `unavailable` or `unknown` and nothing else, every line
@@ -537,7 +554,10 @@ exercised too. *These are the fail-open paths and the Round boundary checks for 
 NUL-split line does not begin with `RUN-21`'s prefix,
 however it reads once a byte is dropped. An item that only ever saw a well-formed probe would be a
 green check over a rule nobody tested. `CNF-31` drives these shapes again at
-`the probe before the pick`, and says how the two sets differ.* (`RUN-21`)
+`the probe before the pick`, and says how the two sets differ.*
+
+A failed re-check at each Round site and after a cut ends the wait and the Run finishes. (`RUN-21`,
+`RUN-24`)
 
 *Amended 2026-10-13 (`rl-9uu1`): the fail-open and Round-boundary Runs explicitly select a claude
 Implementer. `F27` records the decision's evidence and verification.*
@@ -643,10 +663,9 @@ record with `implementer`, `fable` and `opus` unavailable and the other Seats un
 family rows and session readings on default and overridden models. `F27` records the decision's
 evidence and verification.*
 
-**CNF-30** With `--implementer claude`, the Manager's model at its default and the Implementer's
-off `RUN-21`'s table, the
-probes before the pick and in Round 1 reporting nothing exhausted, Round 2's reporting
-`Current week (Opus): 100% used`, and Round 1 judged `rewrite`: the executable exits 2;
+**CNF-30** With `--implementer claude`, the Manager's model at its default and the Implementer's off
+`RUN-21`'s table, the probes before the pick and in Round 1 reporting nothing exhausted, Round 2's
+reporting `Current week (Opus): 100% used`, and Round 1 judged `rewrite`: the executable exits 2;
 `manager-judge-1.out` exists and **`manager-judge-2.out` does not**, nor is a Round 2 judge argument
 list recorded; Round 2's Implementer ran and its Panel ran without `opus` — `fable`, `astra` and
 `sol` called, `feedback-2-opus.md` exactly the not-run line; `probe-2.md` reads
@@ -655,15 +674,12 @@ and standard output is empty; and standard error names `manager`, `claude-opus-5
 `Opus` line, reset and all, since `RUN-22` exits `with the message above for the Manager's Seat`,
 which names the reset by `quoting the probe's matching line verbatim`. With Round 1's probe
 reporting `Opus` instead, the Run exits 2 with no `manager-judge-1.out`, and standard error names
-the same three. With `--manager-model claude-fable-5-1` and `Current week (Fable): 100% used` instead,
-both Runs go the same way with `fable` in `opus`'s place, and standard error names `claude-fable-5-1`.
-The withheld judge is scripted to fail. *The missing judge is the assertion: a Run whose judge was
-called and failed also exits 2. The second pair of Runs is there because one row cannot tell a Seat
-read from its own model from a rule that hardcodes `opus`, and a per-Seat or per-site lookup can
-get one Seat's row right and another's wrong.* (`RUN-22`, `RUN-21`, `RUN-7`, `RUN-10`, `DIR-4`)
-
-*Amended 2026-10-08 (`rl-4i7t`): the default Manager now exercises Opus in both Rounds; the Fable pair uses an
-explicit Manager override.*
+the same three. With `--manager-model claude-fable-5-1` and `Current week (Fable): 100% used`
+instead, both Runs go the same way with `fable` in `opus`'s place, and standard error names
+`claude-fable-5-1`. The withheld judge is scripted to fail. *The missing judge is the assertion: a
+Run whose judge was called and failed also exits 2. The second pair of Runs is there because one row
+cannot tell a Seat read from its own model from a rule that hardcodes `opus`, and a per-Seat or
+per-site lookup can get one Seat's row right and another's wrong.*
 
 With `--implementer claude` and both Seats on off-table models, repeat a Round 1 refusal for
 session 100 and 0100.
@@ -675,7 +691,23 @@ is 2 and standard error names the Manager, its model and the session line verbat
 For each reading, separate Runs inject Task File and Finished File Interference after the
 Implementer and after the Panel (using the surviving astra Reviewer). Each leaves the Task File
 equal to its snapshot and both rejected files present, demonstrating both Checkpoints despite the
-withheld judge (`DIR-6`).
+withheld judge.
+
+Further arms recover at either Round site from session 100 to clear: the Panel calls its claude
+Reviewers after recovery, and the judge-site recovery re-runs no review; each Reviewer identity is
+recorded exactly once. Numbered captures keep the initial reading, each site's exact names, final
+byte-exact verdicts and the Panel's byte-identical copy. An Opus Manager waits on session 100 beside
+an exhausted Fable family, since that family does not exhaust its Seat. A matching weekly reading,
+alone or beside session 100, expires at once at either site and in a post-cut wait, quoting the
+matching family line in family-only arms, and either the matching family line or session line when
+both match. Expiry before the Panel still completes it and the Checkpoint and makes no judge-site
+check; expiry at the judge site preserves the Panel copy. The expiry arms use `--quota-wait 5
+--quota-poll 2`, assert exact fake call counts, retained Checkpoint evidence and the last check's
+reset line on stderr, with differing reset text on that last check alone. (`RUN-22`, `RUN-21`,
+`RUN-7`, `RUN-10`, `DIR-4`, `RUN-24`, `DIR-6`)
+
+*Amended 2026-10-08 (`rl-4i7t`): the default Manager now exercises Opus in both Rounds; the Fable pair
+uses an explicit Manager override.*
 
 *Amended 2026-10-13 (`rl-9uu1`): the refusal and Checkpoint Runs explicitly select a claude
 Implementer. `F27` records the decision's evidence and verification.*
@@ -718,14 +750,15 @@ The pick's fail-open arms also include session 89, non-anchored, nonnumeric and 
 text, a failed session-100 Probe and a Probe scripted to print session 100 after its one-second
 bound. Both claude Seats are explicitly on Fable; every Seat is unknown in the exact pick record,
 the pick runs and the Run finishes. With codex Manager and Implementer presets and the same
-claude-looking off-table model literal, session 100 at both call sites leaves those Seats unknown,
-both claude Reviewers unavailable and both codex Reviewers unknown. Assert both exact records
-and the full spawn trace: pick, Implementer, astra and sol, judge. With a codex Manager and an
+claude-looking off-table model literal, session 100 at the pick-site, Panel-site and judge-site
+checks leaves those Seats unknown, both claude Reviewers unavailable and both codex Reviewers
+unknown. Assert the exact pick record and Panel copy, and the full spawn trace: pick,
+Implementer, astra and sol, judge. With a codex Manager and an
 off-table claude Implementer, a Round's session 100 instead records the Implementer unavailable
 but leaves that same spawn trace and successful completion. Finally, session 89 beside an
-exhausted Fable family at both sites leaves both off-table claude Seats unknown, omits only fable
-and still finishes, with both exact records and the complete spawn trace asserted: a low session
-reading cannot erase family exhaustion.
+exhausted Fable family at the pick-site, Panel-site and judge-site checks leaves both off-table
+claude Seats unknown, omits only fable and still finishes, with the exact pick record and Panel
+copy and the complete spawn trace asserted: a low session reading cannot erase family exhaustion.
 
 *Amended 2026-10-13 (`rl-9uu1`): claude fail-open and Round-verdict Runs explicitly select that
 preset; omitted-preset Runs now assert the codex Implementer's Probe verdict and the pick spawn.
@@ -762,6 +795,28 @@ call resumes it`, and a Run that ran one Round, or a reading that found no judge
 failure here rather than a silent pass. *Why this is not left to `CNF-11`, which reads each Run's
 Round 1 judge call alone, is `CNF-23`'s rationale, which holds of either preset.* (`RUN-16`,
 `AGT-4`, `DIR-4`)
+
+**CNF-36** A cut judge attempt waits sleep-first and retries with the same argument list and
+rendered prompt, including the session id, as attempt 1. The original stdout and populated stderr
+captures stay byte-identical, the retry's output has its own `-retry-1` name and is compared in
+full, and exact capture listings assert every numbered check and attempt. With every re-check
+failing open and every attempt cut, the requested-sleep budget alone bounds attempts and checks;
+waits spent before the Panel reduce the remaining retries. A slow check spends no sleep budget.
+Recovery at the final paid check still proceeds. A cut with no remaining budget makes no further
+check and quotes its own output line on stderr.
+
+The cut near-misses are exit zero; stderr only; no final newline; same-line text before the
+prefix; text before the line; the supplied tetasm report; a NUL inside the prefix; a NUL after
+the newline; hypothetical weekly-limit wording; a timed-out attempt that printed the line; and
+a call that wrote a Finished File or rewrote the Task File before printing it. Each keeps the
+ordinary failure outcome with no post-cut check or retry, and leaves any decision files in place.
+A codex Manager is never retried. A cut pick exits 2 after its sole pick with no Round. Positive
+controls carry an arbitrary suffix, ignore stderr and accept a nonzero status other than 1.
+
+During a 25-second poll, SIGINT and SIGTERM sent to the executable's PID produce exit 2 and
+`interrupted` within 3 seconds. A signal during a re-check terminates and reaps that check's group
+before returning exit 2 with `interrupted`, also within 3 seconds. These add clock-measured claims
+to the rows `CNF-35` names. (`RUN-24`, `AGT-4`, `PRM-2`, `PRM-6`, `DIR-4`, `RUN-11`, `AGT-15`)
 
 ## Not testable black-box
 

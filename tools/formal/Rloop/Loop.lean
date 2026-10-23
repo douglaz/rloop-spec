@@ -113,7 +113,8 @@ def decide (g : Guards) (phase : Phase) (prev current : Option Nat) (round maxRo
         else if g.cap && round + 1 > maxRounds then .exit .e2
         else .next
 
-/-- One agent process rloop started, in the order it started them. A `panel` entry is the whole
+/-- One logical call rloop started, in order. A judge entry projects all its process attempts
+to one logical call (`RUN-24`); its result is the terminal attempt's. A `panel` entry is the whole
 Panel: the class of how many of the Reviewers rloop called succeeded, and those Reviewers, which
 run at once and which the Conformance Suite compares as a set (`ADR-0002`). A Reviewer `RUN-21`
 recorded `unavailable` stays a Reviewer of the Panel (`RUN-15`) but is not a process rloop
@@ -211,6 +212,8 @@ def rounds (g : Guards) (b : Behaviour) (maxRounds : Nat) :
     if g.panelAbort && allDown g p called then (.e2, trace.reverse)
     else
       let d := applyInterference g d (b.interference round .afterPanel)
+      -- Projection: availability is the check admitting attempt 1, false on pre-judge expiry.
+      -- Post-cut expiry instead supplies a failed terminal ManagerResult; Wait.lean owns attempts.
       if g.judgeRefusal && !b.seatAvailable round .manager then (.e2, trace.reverse)
       else
       let r := b.judge round

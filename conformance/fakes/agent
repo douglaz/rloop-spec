@@ -25,7 +25,9 @@
 #                            alone, the other three act at once (unset: every Reviewer sleeps)
 #   RLOOP_FAKE_PROBE         what the availability probe writes (default: clear), one shape per
 #                            Round joined by | (a Round past the last named shape writes clear,
-#                            as when unset, since Scenarios.lean's behaviour reads `-` there):
+#                            as when unset, since Scenarios.lean's behaviour reads `-` there;
+#                            a Round's shape may be several joined by `,`, one per probe call of
+#                            that Round, the last repeating, e.g. `clear|session100,clear`):
 #                            clear = aggregate at 67, no family named;
 #                            aggregate = aggregate at 100, no family named; fable / opus = that
 #                            family at 100; both = Fable and Opus each at 100, on separate lines;
@@ -85,6 +87,31 @@
 #                            makes the late read visible, an inert one changing no verdict. A <line>
 #                            may hold colons; nothing past the second one is split
 #   RLOOP_FAKE_DIRTY_AT_DONE 1 = the Manager leaves an untracked file in the tree when it writes done
+#   RLOOP_FAKE_PROBE_SLEEP_CALL <round>:<call> limits the probe sleep to that numbered check
+#   RLOOP_FAKE_MANAGER_CHILD_CALL <round>:<call> limits the Manager child to that attempt
+#   RLOOP_FAKE_PROBE_CHILD_CALL <call> limits a Round Probe's child to that check
+#   RLOOP_FAKE_WATCH probe:@own watches each ordinary check's own numbered verdict
+#   Additional cut shapes: limit-hang prints then exceeds a bound; nul splits the prefix;
+#   trailing adds a NUL after the newline; leading adds same-line prose; suffix and stderr
+#   remain cuts, as does exit7. session100-fable / session100-opus combine both quota readings.
+#   RLOOP_FAKE_MANAGER_CUT   <round>:<n>[:<shape>] entries joined by `,`: the <n>-th Manager call made
+#                            for Round <round> (0 = the pick) is cut off the way claude -p ends a call
+#                            the account's session limit stops. Calls are counted from the record
+#                            directory, so this holds for a lone Run. It writes neither task.md nor
+#                            finished.md (except acted-limit) and nothing else to stdout or stderr.
+#                            Shapes (default limit):
+#                            limit = stdout exactly `You've hit your session limit · resets 4:20am
+#                              (UTC)` and a newline (53 bytes, the bytes on this host's records),
+#                              stderr empty, exit 1;
+#                            limit-ok = the same stdout, exit 0;   limit-err = the line on stderr
+#                              only, stdout empty, exit 1;   nonl = the line without its newline,
+#                              exit 1;   prefixed = `manager output, round <r>` then the line, exit 1;
+#                            midline = `- The fourth (opus) never ran because it hit the session
+#                              limit.` (a real pick's own words, tetasm 2026-10-15), exit 1;
+#                            weekly = `You've hit your weekly limit · resets Oct 27, 7:59pm (UTC)`,
+#                              exit 1 (HYPOTHETICAL wording: never observed on this host);
+#                            acted-limit = the call first does what RLOOP_FAKE_PICK / RLOOP_FAKE_ROUNDS
+#                              script for it (task.md, finished.md), then ends exactly as limit
 #   RLOOP_FAKE_COMMIT        1 = the Implementer commits a file during its call
 #   RLOOP_FAKE_THREAD_ID     the thread_id a codex Manager pick reports (default: …cafe)
 #   RLOOP_FAKE_NO_THREAD_ID  1 = a codex Manager pick reports no thread.started event
@@ -133,11 +160,31 @@ now() { date +%s%N; }
 upper_role=$(echo "$role" | tr a-z A-Z)
 sleep_var="RLOOP_FAKE_SLEEP_$upper_role"
 sleep_for="${!sleep_var:-0}"
+# Optional <round>:<call> selector; call records have already been published.
+if [ "$role" = probe ] && [ -n "${RLOOP_FAKE_PROBE_SLEEP_CALL:-}" ]; then
+  call_no=$(ls "$rec" | grep -c -- "-probe-$round\.argv$")
+  [ "$round:$call_no" = "$RLOOP_FAKE_PROBE_SLEEP_CALL" ] || sleep_for=0
+fi
 if [ "$role" = reviewer ] && [ -n "${RLOOP_FAKE_SLEEP_ONLY:-}" ] && [ "$reviewer" != "$RLOOP_FAKE_SLEEP_ONLY" ]; then sleep_for=0; fi
 
 if [ "${RLOOP_FAKE_IGNORE_TERM:-0}" = 1 ]; then trap '' TERM; else trap 'echo "SIGTERM" >> "$rec/$tag.env"; exit 143' TERM; fi
 gc_ignore_term="${RLOOP_FAKE_GRANDCHILD_IGNORE_TERM:-0}"
+if [ "$role" = probe ] && [ "$round" != 0 ] && [ -n "${RLOOP_FAKE_PROBE_CHILD_CALL:-}" ]; then
+  call_no=$(ls "$rec" | grep -c -- "-probe-$round\.argv$")
+  [ "$call_no" = "$RLOOP_FAKE_PROBE_CHILD_CALL" ] || gc_ignore_term=0
+fi
+if [ "$role" = manager ] && [ -n "${RLOOP_FAKE_MANAGER_CHILD_CALL:-}" ]; then
+  call_no=$(ls "$rec" | grep -c -- "-manager-$round\.argv$")
+  [ "$round:$call_no" = "$RLOOP_FAKE_MANAGER_CHILD_CALL" ] || gc_ignore_term=0
+fi
 watch="${RLOOP_FAKE_WATCH:-}"
+# Each Round-site Probe watches its own ordinal, never an earlier record's copy.
+if [ "$role" = probe ] && [ "${watch#*:}" = '@own' ]; then
+  call_no=$(ls "$rec" | grep -c -- "-probe-$round\.argv$")
+  if [ "$round" = 0 ]; then watch=probe:probe-pick.md
+  elif [ "$call_no" = 1 ]; then watch="probe:probe-$round-panel-1.md"
+  else watch="probe:probe-$round-judge-$((call_no-1)).md"; fi
+fi
 IFS=: read -r ws_role ws_delay ws_line <<< "${RLOOP_FAKE_WRITE_STDOUT:-}"   # <role>[:<seconds>[:<line>]]
 # How long a child lives, and the invariant the items that read one rest on: it outlasts the
 # longest RLOOP_FAKE_SLEEP_<ROLE> any row of conformance/run gives a fake that spawns one, so that a
@@ -223,6 +270,35 @@ interfere() { # interfere <point>
 status=0
 case "$role" in
   manager)
+    cut_shape=''
+    cut_n=$(ls "$rec" | grep -c -- "-manager-$round\.argv$")
+    IFS=, read -r -a cut_entries <<< "${RLOOP_FAKE_MANAGER_CUT:-}"
+    for ce in ${cut_entries[@]+"${cut_entries[@]}"}; do
+      IFS=: read -r ce_r ce_n ce_s <<< "$ce"
+      [ "$ce_r" = "$round" ] && [ "$ce_n" = "$cut_n" ] && cut_shape="${ce_s:-limit}"
+    done
+    limit_line="You've hit your session limit · resets 4:20am (UTC)"
+    if [ -n "$cut_shape" ] && [ "$cut_shape" != acted-limit ]; then
+      case "$cut_shape" in
+        limit) printf '%s\n' "$limit_line"; status=1 ;;
+        limit-hang) printf '%s\n' "$limit_line"; sleep 30; status=1 ;;
+        nul) printf "You've hit your sess\0ion limit · resets 4:20am (UTC)\n"; status=1 ;;
+        trailing) printf '%s\n\0' "$limit_line"; status=1 ;;
+        leading) printf 'Explanation: %s\n' "$limit_line"; status=1 ;;
+        suffix) printf '%s extra text\n' "$limit_line"; status=1 ;;
+        stderr) printf '%s\n' "$limit_line"; echo ignored >&2; status=1 ;;
+        exit7) printf '%s\n' "$limit_line"; status=7 ;;
+        limit-ok) printf '%s\n' "$limit_line"; status=0 ;;
+        limit-err) printf '%s\n' "$limit_line" >&2; status=1 ;;
+        nonl) printf '%s' "$limit_line"; status=1 ;;
+        prefixed) printf 'manager output, round %s\n%s\n' "$round" "$limit_line"; status=1 ;;
+        midline) printf -- '- The fourth (opus) never ran because it hit the session limit.\n'; status=1 ;;
+        weekly) printf "You've hit your weekly limit · resets Oct 27, 7:59pm (UTC)\n"; status=1 ;;
+      esac
+      outcome="cut:$cut_shape"
+      echo "$role:$round:end:$(now):$outcome" >> "$rec/trace"
+      exit "$status"
+    fi
     if [ "$round" = 0 ]; then
       # Standing in for a codex Manager, the pick reports its session id as the first line of
       # standard output, which is where RUN-16 tells rloop to read it (AGT-3's second list).
@@ -249,6 +325,11 @@ case "$role" in
     fi
     if [ "${RLOOP_FAKE_DIRTY_AT_DONE:-0}" = 1 ] && grep -q '^STATUS: done' "$run_dir/finished.md" 2>/dev/null; then
       echo leftover > "$PWD/leftover-from-run-$run.txt"
+    fi
+    if [ "$cut_shape" = acted-limit ]; then
+      printf '%s\n' "$limit_line"; status=1; outcome="cut:acted-limit:$outcome"
+      echo "$role:$round:end:$(now):$outcome" >> "$rec/trace"
+      exit "$status"
     fi
     echo "manager output, round $round"
     ;;
@@ -285,6 +366,12 @@ case "$role" in
       shapes="${RLOOP_FAKE_PROBE:-clear}"
       shape=$(echo "$shapes" | tr '|' '\n' | sed -n "${round}p")
       [ -n "$shape" ] || shape=clear
+      # Per call: a Round's shape may be several joined by `,`, one per probe call of that Round in
+      # call order; a call past the last named one repeats the last. Calls are counted from the
+      # record directory, so this holds for a lone Run (a Sequence's Runs share one directory).
+      n=$(ls "$rec" | grep -c -- "-probe-$round\.argv$")
+      s=$(echo "$shape" | tr ',' '\n' | sed -n "${n}p"); [ -n "$s" ] || s=$(echo "$shape" | tr ',' '\n' | tail -n 1)
+      shape=$s
     fi
     # Session shapes: decimal boundaries and leading zeros, malformed/failing readings, and a
     # low session beside an exhausted family to ensure the two readings are combined.
@@ -294,6 +381,9 @@ case "$role" in
       session89-fable)
                printf 'Current session: 89%% used · resets 6pm (UTC)\n'
                printf 'Current week (Fable): 100%% used · resets Sep 24, 3pm (UTC)\n' ;;
+      session100-fable) printf 'Current session: 100%% used · resets 6pm (UTC)\nCurrent week (Fable): 100%% used · resets Sep 24, 3pm (UTC)\n' ;;
+      session100-opus) printf 'Current session: 100%% used · resets 6pm (UTC)\nCurrent week (Opus): 100%% used · resets Sep 24, 3pm (UTC)\n' ;;
+      session100-late) printf 'Current session: 100%% used · resets 7pm (UTC)\n' ;;
       session-fail) printf 'Current session: 100%% used · resets 6pm (UTC)\n'; status=3 ;;
       session-loose) printf 'I checked and Current session: 100%% used · resets 6pm (UTC)\n' ;;
       session-garbage) printf 'Current session: ninety%% used · resets 6pm (UTC)\n' ;;

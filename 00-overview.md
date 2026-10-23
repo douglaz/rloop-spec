@@ -39,8 +39,10 @@ is written beside the requirement it produced:
 ## Design goals
 
 **OVR-1** rloop MUST act only on what the Manager wrote — the **Task File** and the **Finished
-File** (`01-run-lifecycle.md`) — and on the availability probe's output, which is no agent's work
-and which `RUN-21` alone says how to read. It MUST NOT parse a Reviewer's output, an
+File** (`01-run-lifecycle.md`) — on the availability probe's output (`RUN-21`), on the codex
+pick's `thread_id` (`RUN-16`), and on the recognised standard-output signature of a cut judge
+attempt (`RUN-24`). The cut signature reports the CLI's refusal rather than a Manager judgment;
+matching its bytes does not prove who wrote it. It MUST NOT parse a Reviewer's output, an
 Implementer's output, or any part of the Finished File beyond its first line. *This rule read
 "act only on what the Manager wrote" until 2026-09-21. A quota report is not a judgment an agent
 made, and reading one lets rloop stop paying a Reviewer's timeout for a model that cannot answer;

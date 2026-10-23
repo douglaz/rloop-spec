@@ -294,3 +294,7 @@ S292	1	ok:task	impl=ok;panel=all;judge=done	-	session100	pick=session100	0	pick,
 S293	1	ok:task	impl=ok;panel=all;judge=done	-	session-fail	manager=claude;pick=session-fail	0	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1
 S294	1	ok:task	impl=ok;panel=all;judge=done	-	session-loose	manager=claude;pick=session-loose	0	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1
 S295	1	ok:task	impl=ok;panel=all;judge=done	-	-	manager=fable;implementer=fable;pick=clear	0	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1
+S296	1	ok:task	impl=ok;panel=all;judge=done	-	clear	manager=claude;wait=twice;quota=1;poll=1;cuts=1:1,1:2	2	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1
+S297	1	ok:task	impl=ok;panel=all;judge=done	-	clear	manager=claude;wait=once;quota=1;poll=1;cuts=1:1	0	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1
+S298	1	ok:task	impl=ok;panel=all;judge=done	-	session100,clear	manager=claude;wait=panel;quota=1;poll=1;cuts=1:1	2	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1
+S299	1	ok:task	impl=ok;panel=all;judge=done	-	clear,session100,clear	manager=claude;wait=judge;quota=1;poll=1;cuts=1:1	2	pick,impl1:ok,panel1:all:astra+fable+opus+sol,judge1

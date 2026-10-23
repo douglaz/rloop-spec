@@ -76,10 +76,10 @@ reconsider first.
   model. The record therefore carries one line per Seat, and rloop writes down every verdict it
   acts on. This reopens the byte contract `rl-vcq` already asks about, which is why the two are
   settled together rather than in sequence.
-- **A Manager that runs out mid-Run is caught at the next judge**, from the Probe the Round already
-  runs, instead of after another `--manager-timeout` of silence. `RUN-11` decides
-  `After every Manager call`, so a judge call that was never made is outside its table and the
-  table does not change.
+- **A Manager that runs out mid-Run waits under `RUN-24`.** `ADR-0010` amends this consequence:
+  the Panel-site and judge-site checks wait on session exhaustion, and a recognised cut judge
+  attempt waits and retries. Expiry withholds the judge under `RUN-22`, or ends the logical call
+  under `RUN-24`. `RUN-11`'s table is unchanged.
 
 ## Rejected
 

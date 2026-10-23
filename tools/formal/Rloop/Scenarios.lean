@@ -1,4 +1,4 @@
-import Rloop.Loop
+import Rloop.Wait
 /-! # The Conformance Suite's scenarios (`ADR-0002`)
 
 Every scripted Behaviour over a small alphabet, run through the model with `Guards.all`, emitted
@@ -285,7 +285,7 @@ def seatLines : List Scenario :=
 /-- The scenarios: caps 1 and 2 without interference, then cap 1 with each single interference,
 then each probe script, kept to the lines that reach every Round it scripts a probe for, then the
 Seat scripts. -/
-def all : List Scenario :=
+def existing : List Scenario :=
   scriptsFor {} 1 none "-" ++ scriptsFor {} 2 none "-"
   ++ ([Point.afterImplementer, Point.afterPanel].flatMap fun p =>
       interferenceChoices.flatMap fun (n, i) =>
@@ -293,6 +293,46 @@ def all : List Scenario :=
   ++ (probeScripts.flatMap fun (cap, probes) =>
       (scriptsFor narrowProbe cap none "-" probes).filter (·.rounds.length ≥ probes.length))
   ++ seatLines
+
+/-- Hand-chosen wait scripts, appended so earlier scenario bytes and their numbering stay put.
+`wait` in the seats column selects a script, `quota` and `poll` its native whole-second flags;
+`cuts` scripts the process attempts. The expected exit is projected through the existing Run. -/
+structure WaitCase where
+  name : String
+  script : List Wait.Event
+  probe : String
+  cuts : String
+  budget : Nat := 1
+  poll : Nat := 1
+
+def waitCases : List WaitCase :=
+  [ { name := "twice", script := [.clear, .clear, .cut, .clear, .cut, .clear, .done],
+      probe := "clear", cuts := "1:1,1:2" },
+    { name := "once", script := [.clear, .clear, .cut, .clear, .done],
+      probe := "clear", cuts := "1:1" },
+    { name := "panel", script := [.session, .clear, .clear, .cut, .clear, .done],
+      probe := "session100,clear", cuts := "1:1" },
+    { name := "judge", script := [.clear, .session, .clear, .cut, .clear, .done],
+      probe := "clear,session100,clear", cuts := "1:1" } ]
+
+def waitResult (shared : Bool) (w : WaitCase) : Exit × List Spawn :=
+  let n := Wait.sleeps w.budget w.poll
+  let result := Wait.play shared n w.script .panel n
+  let b := behaviour (managerChoice "task") [roundJudged "done"] none []
+    { manager := .claude none }
+  let b := { b with
+    sessionAvailable := fun k => k == 0 || result.attempts > 0
+    judge := fun _ => {
+      ok := result.done
+      writesFinished := if result.done then some .done else none, writesTask := none } }
+  run Guards.all b 1
+
+def waitLine (i : Nat) (w : WaitCase) : String :=
+  let (e, tr) := waitResult true w
+  String.intercalate "\t"
+    [s!"S{i}", "1", "ok:task", "impl=ok;panel=all;judge=done", "-", w.probe,
+     s!"manager=claude;wait={w.name};quota={w.budget};poll={w.poll};cuts={w.cuts}",
+     exitName e, String.intercalate "," (tr.map Spawn.name)]
 
 /-- The negative control (`ADR-0002`): for each guard, the number of scenario lines whose expected
 exit or trace the model without that guard would get wrong. A guard nobody's line depends on is a
@@ -307,14 +347,15 @@ def controls : List (String × Nat) :=
       ("pickRefusal", { Guards.all with pickRefusal := false }),
       ("judgeRefusal", { Guards.all with judgeRefusal := false }) ]
   (without.map fun (name, g) =>
-    (name, (all.filter fun s =>
+    (name, (existing.filter fun s =>
       let interf := parseInterference s.interference
       let pick := managerChoices.find? (fun (n, _) => pickName n == s.pick) |>.getD ("fail", fun _ => { ok := false, writesFinished := none, writesTask := none })
       run g (behaviour pick s.rounds interf s.probes s.seats) s.maxRounds != (s.exit, s.trace)).length)) ++
-  [("sessionQuota", (all.filter fun s =>
+  [("sessionQuota", (existing.filter fun s =>
       run Guards.all (behaviour (managerChoices.find? (fun (n, _) => pickName n == s.pick)
         |>.getD (managerChoice "fail")) s.rounds (parseInterference s.interference)
-        s.probes s.seats false) s.maxRounds != (s.exit, s.trace)).length)]
+        s.probes s.seats false) s.maxRounds != (s.exit, s.trace)).length),
+    ("sharedQuota", (waitCases.filter fun w => waitResult false w != waitResult true w).length)]
 where
   parseInterference (n : String) : Option (Nat × Point × Interference) :=
     if n == "-" then none else
@@ -326,6 +367,7 @@ where
 
 def tsv : List String :=
   "id\tmax_rounds\tpick\trounds\tinterference\tprobe\tseats\texit\ttrace" ::
-    (all.zipIdx.map fun (s, i) => s.line (i + 1))
+    (existing.zipIdx.map fun (s, i) => s.line (i + 1)) ++
+    (waitCases.zipIdx.map fun (w, i) => waitLine (existing.length + i + 1) w)
 
 end Rloop.Scenarios

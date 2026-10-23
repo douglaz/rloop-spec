@@ -1,10 +1,5 @@
 [
   {
-    "owner": "OVR-1",
-    "sha256": "883d6e5509be3c6579a396775f704cab36f621e1908ffd0d97b1a7331a582ab5",
-    "reason": "Owns the permitted inputs; RUN-21 supplies how to read the Probe output."
-  },
-  {
     "owner": "OVR-2",
     "sha256": "afc35f7a7599971a1d181b691262327e2cce3c46a790095044f0cf10437505ef",
     "reason": "Owns byte-for-byte reproduction; AGT-18 identifies one of the command lines."
@@ -30,16 +25,6 @@
     "reason": "Owns the transition into Round 1; DIR-5 identifies the snapshot operation."
   },
   {
-    "owner": "RUN-21",
-    "sha256": "9d473872c8e3c1dcd030296d039ad5cb0083ec5dfa9fd3986e00f2eb29255ccc",
-    "reason": "Owns Probe timing at both call sites; AGT-18 identifies the command, RUN-4 the Run Directory it follows and AGT-1 the option bounding it."
-  },
-  {
-    "owner": "RUN-21",
-    "sha256": "9188c97133e714ef6ef1495a700be3917d67800814c2df61bc9f9200ed3dd6c2",
-    "reason": "Owns the per-Seat record and its order; DIR-4 identifies the files it is written to."
-  },
-  {
     "owner": "RUN-22",
     "sha256": "2605e3b434784cf1db64c439f58b2c428443126950b0ebd15af2a4e0a4491383",
     "reason": "Owns the refusal at the pick and its message; RUN-21 supplies the record, AGT-1 the flags the message names and AGT-17 why the line is quoted."
@@ -48,16 +33,6 @@
     "owner": "RUN-22",
     "sha256": "d872724943c61028544300509d21083c56b6c475148c11675bb91ebcc14170ad",
     "reason": "Owns model-flag guidance for a family-line refusal; AGT-1 identifies the flags."
-  },
-  {
-    "owner": "RUN-22",
-    "sha256": "72c94f2c458c694de739cfbd1c6c8d24587cf9bc8ddb12992599b6aeae2d69a6",
-    "reason": "Owns withholding the judge call; RUN-7 identifies the Round whose order otherwise stands and RUN-11 the decision it precedes."
-  },
-  {
-    "owner": "RUN-22",
-    "sha256": "b5c40206976b09256c1adf0ac33b0d542064fab39cef51e5d0e9a92aa1313a7c",
-    "reason": "Owns the exit that takes the withheld judge call's place; RUN-7 and RUN-11 identify the Round and the decision it leaves unchanged."
   },
   {
     "owner": "RUN-13",
@@ -85,11 +60,6 @@
     "reason": "Owns the Consultation prerequisite; PRM-1 identifies the adviser command lines."
   },
   {
-    "owner": "AGT-2",
-    "sha256": "ad6176c7ecf4358781d8de1b77d964ba46852e7a7fc8172292786a114ca60cd8",
-    "reason": "Owns usage-error handling; SEQ-3 identifies a forbidden combination, not the handling rule."
-  },
-  {
     "owner": "AGT-11",
     "sha256": "479c4c444d6afe1865abed54b71a9943a5d6ad25e93e53b98467eba2db5677c2",
     "reason": "Owns Panel composition; command identifiers and DIR-4 supply the members and filenames."
@@ -103,11 +73,6 @@
     "owner": "AGT-13",
     "sha256": "1329aef49703a784b04cdba3890057425f077f7a2d3f1a2735a86d9d8d5d2d0c",
     "reason": "Owns working directory, streams and environment; citations identify the Probe and file names."
-  },
-  {
-    "owner": "AGT-14",
-    "sha256": "efd47bc3aa530ee0af8a65d57f965787d705aabd81e0a7e7f8c8f4103622b1a9",
-    "reason": "Owns process timeout bounds; citations identify the Probe and its command-line option."
   },
   {
     "owner": "AGT-15",
@@ -260,11 +225,6 @@
     "reason": "Owns aggregation and framing of Sequence standard output; RUN-10 identifies individual Run output."
   },
   {
-    "owner": "CNF-3",
-    "sha256": "32a59faa1fc2ef40b043890a8455d549f84c9e0766141c29d349edc9a84d7317",
-    "reason": "Owns executable scenario replay and assertions by the suite, the Seat presets and models it passes included; the cited requirements identify the behaviors being tested."
-  },
-  {
     "owner": "CNF-4",
     "sha256": "9f2791d4a3ba3b88b1cce7dfce6be59864e59a4d403e567065e32aacd2b81b8b",
     "reason": "Owns the suite negative control; RUN-11 identifies a failure behavior tested, not the suite self-check duty."
@@ -290,8 +250,88 @@
     "reason": "Owns preset-flag guidance for a session-line refusal; AGT-1 identifies the flags."
   },
   {
+    "owner": "RUN-21",
+    "sha256": "72a18467e0751855284a976dfd79cbf3bdb01f079eeb3614047ddd4e5ff79cd9",
+    "reason": "Owns check timing, per-Seat verdicts and the Panel copy; cited identifiers supply commands, files and wait policy."
+  },
+  {
+    "owner": "RUN-21",
+    "sha256": "543838aac30a1a65fa00a9fa7656665e5a7c185e7fb8e03095ea24ce51cbcd51",
+    "reason": "Owns check timing, per-Seat verdicts and the Panel copy; cited identifiers supply commands, files and wait policy."
+  },
+  {
     "owner": "RUN-22",
-    "sha256": "8c9c7bf664e53bf39238ffee5f5fcfadfd28f973d5dacabd100722cc5467f17f",
-    "reason": "Owns immediate refusal without reset waits or retries; adjacent citations identify the reading and diagnostic rationale."
+    "sha256": "0a6d8f0fce28f8a18acbb89889eedd76c6ce56e31f8b21b45d0361abd8e181e3",
+    "reason": "Owns pick refusal and withholding the judge on Round expiry; cited identifiers supply inputs and sequencing."
+  },
+  {
+    "owner": "RUN-22",
+    "sha256": "df89f7f48d9889697f8bd91a498fc184769682e9d094b7db184b9750304cc689",
+    "reason": "Owns pick refusal and withholding the judge on Round expiry; cited identifiers supply inputs and sequencing."
+  },
+  {
+    "owner": "RUN-24",
+    "sha256": "3eb4e68dbe41187a71443db05fd04183f0015806553c644eb9b34da8616adb33",
+    "reason": "Owns the Round sleep ledger, cut trigger, pacing and terminal result; cited identifiers supply parsing, process limits and prompt bytes."
+  },
+  {
+    "owner": "RUN-24",
+    "sha256": "d4bb02d5a641ccd1bc8e94b65c22294edae46d10ce9b9e1c6a195da9c9ba5052",
+    "reason": "Owns the Round sleep ledger, cut trigger, pacing and terminal result; cited identifiers supply parsing, process limits and prompt bytes."
+  },
+  {
+    "owner": "RUN-24",
+    "sha256": "22de33842bbdca3903777e958ca3b4a07205a6ee997698b51492fbccfe0bc3ad",
+    "reason": "Owns the Round sleep ledger, cut trigger, pacing and terminal result; cited identifiers supply parsing, process limits and prompt bytes."
+  },
+  {
+    "owner": "RUN-11",
+    "sha256": "6412265933c1efa545f3a1444aedb5145b9f52087c2dce527a4f479e85d69344",
+    "reason": "Owns the decision on the terminal attempt of a logical call."
+  },
+  {
+    "owner": "AGT-2",
+    "sha256": "bbe9428e03b4514e8fb9deae4666ffcf73df1e6091ee729cb81de9a97cbe3122",
+    "reason": "Owns usage errors for the duration options; citations identify option definitions and forbidden combinations."
+  },
+  {
+    "owner": "AGT-2",
+    "sha256": "b149b8994f9a346ec6178a2f855293e12648040c9ee082503b0cb3cea0e4859c",
+    "reason": "Owns usage errors for the duration options; citations identify option definitions and forbidden combinations."
+  },
+  {
+    "owner": "AGT-14",
+    "sha256": "41f0d6b51190f035c4eee8af6ea01d4c25d1de4d6eeec7ce9ce51186bbe1a63c",
+    "reason": "Owns per-attempt process timeouts; cited identifiers supply the limits and consume failures."
+  },
+  {
+    "owner": "AGT-15",
+    "sha256": "43ccffbb032521d8eb879a20c43577f4329f672b4dc5df18501482c7a19a94aa",
+    "reason": "Owns per-attempt reaping and interruption, including quota waits; cited identifiers name subsequent steps and retention."
+  },
+  {
+    "owner": "AGT-15",
+    "sha256": "55733b5f870eb341560b1c04193c42c386cf5db3b7e59b33c448fa116e0e7e99",
+    "reason": "Owns per-attempt reaping and interruption, including quota waits; cited identifiers name subsequent steps and retention."
+  },
+  {
+    "owner": "CNF-3",
+    "sha256": "f590b0a0593ea229f0122300659d46a7088835dc9f525617f12d733c73353722",
+    "reason": "Owns scenario replay flags, scripted cuts and projection; citations identify tested requirements."
+  },
+  {
+    "owner": "OVR-1",
+    "sha256": "d619ba4a22e0656adc13a886ce0cf18f55913b247613a1830eecb66774e47e16",
+    "reason": "Owns permitted reads, including the CLI cut signature and codex session id."
+  },
+  {
+    "owner": "RUN-22",
+    "sha256": "abb5bfcfb9036a10eeed2383b2d8531aa0257352651187d6a4a17a203d12f3f9",
+    "reason": "Owns pick refusal and withholding the judge on Round expiry; cited identifiers supply inputs and sequencing."
+  },
+  {
+    "owner": "CNF-34",
+    "sha256": "ef90e8fe1f733b051e4bcf07a7d4204dd78673285afd95f69fba4a66d103ba22",
+    "reason": "Owns the Conformance Suite assertions; cited identifiers identify the requirements demonstrated."
   }
 ]

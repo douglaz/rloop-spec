@@ -24,6 +24,8 @@ rloop [OPTIONS] [INSTRUCTION]
   --implementer-timeout SECONDS  per Implementer call                          (default: 14400)
   --reviewer-timeout SECONDS   per Reviewer call                               (default: 3600)
   --probe-timeout SECONDS      the availability probe's bound (RUN-21)         (default: 60)
+  --quota-wait SECONDS         shared Round sleep budget (RUN-24)              (default: 18000)
+  --quota-poll SECONDS         interval between quota re-checks                (default: 300)
   --kill-after SECONDS         SIGTERM-to-SIGKILL grace                        (default: 10)
   --version                    print the Implementation's version and exit 0
   --help                       print this usage and exit 0
@@ -39,28 +41,27 @@ absent, the Manager picks on its own. A long option that takes a value MAY also 
 *Amended 2026-10-13 (`rl-9uu1`): omitting `--implementer` selects codex; the selected
 preset's model default remains `AGT-5`'s. `F27` records the owner's evidence and verification.*
 
-**AGT-2** An unknown option, a missing or non-numeric value, a value outside the set a preset
-flag names — `--manager` and `--implementer` each take `claude` or `codex` and nothing else — a
-number below 1 for `--max-rounds`, `--max-runs`, a timeout or `--kill-after`, more than one
-`INSTRUCTION`, or a combination `SEQ-3` forbids MUST exit 2 with a message on standard error and
-nothing spawned. A value is missing when its option is the last argument or when the next
-argument begins with `--`; a flag never becomes another flag's value. A number is a string of
-decimal digits read in base ten, so `08` is `8`. A value given with `=` to `--auto`, `--help` or
-`--version`, which take none, is an unknown option. *A usage error found after the first agent
-call has already spent money.*
-*The preset clause is stated here from 2026-09-20 with `--manager`; it was always true of
-`--implementer`, which named its two values in `AGT-1` and nowhere said what a third does.*
-*Every duration's minimum is 1 from 2026-09-24; until then a timeout or `--kill-after` could be
-0. GNU `timeout` documents that value as `a duration of 0 disables the associated timeout`, so a
-zero passed through left a call `AGT-14` says `MUST be bounded by its role's timeout` — and the
-Probe's (`AGT-18`) by `--probe-timeout` — with no bound at all, and `--kill-after 0` never
-reached the SIGKILL.*
-*The missing-value, base-ten and `=` sentences are stated here from 2026-09-24, after a review
-of one Implementation found four invocations spawning agents: `--auto --run-dir ''`, whose empty
-value passed a test of the value rather than of the option's presence; `--implementer-model
---max-rounds 1`, whose Implementer model became `--max-rounds`; `--=x`, rewritten into a `--`
-terminator that `AGT-1` does not define; and `--auto=1`, a Sequence with the instruction `1`.
-`--help=x` and `--version=x` exited 0, and `--max-runs 08` was refused as an octal literal.*
+**AGT-2** An unknown option, a missing or non-numeric value, a value outside the set a preset flag
+names — `--manager` and `--implementer` each take `claude` or `codex` and nothing else — a number
+below 1 for `--max-rounds`, `--max-runs`, a timeout, `--kill-after`, `--quota-wait` or
+`--quota-poll`, more than one `INSTRUCTION`, or a combination `SEQ-3` forbids MUST exit 2 with a
+message on standard error and nothing spawned. A value is missing when its option is the last
+argument or when the next argument begins with `--`; a flag never becomes another flag's value. A
+number is a string of decimal digits read in base ten, so `08` is `8`. A value given with `=` to
+`--auto`, `--help` or `--version`, which take none, is an unknown option. *A usage error found after
+the first agent call has already spent money.* *The preset clause is stated here from 2026-09-20
+with `--manager`; it was always true of `--implementer`, which named its two values in `AGT-1` and
+nowhere said what a third does.* *Every duration's minimum is 1 from 2026-09-24; until then a
+timeout or `--kill-after` could be 0. GNU `timeout` documents that value as `a duration of 0
+disables the associated timeout`, so a zero passed through left a call `AGT-14` says `MUST be
+bounded by its role's timeout` — and the Probe's (`AGT-18`) by `--probe-timeout` — with no bound at
+all, and `--kill-after 0` never reached the SIGKILL.* *The missing-value, base-ten and `=` sentences
+are stated here from 2026-09-24, after a review of one Implementation found four invocations
+spawning agents: `--auto --run-dir ''`, whose empty value passed a test of the value rather than of
+the option's presence; `--implementer-model --max-rounds 1`, whose Implementer model became
+`--max-rounds`; `--=x`, rewritten into a `--` terminator that `AGT-1` does not define; and
+`--auto=1`, a Sequence with the instruction `1`. `--help=x` and `--version=x` exited 0, and
+`--max-runs 08` was refused as an octal literal.*
 
 ## The agent command lines
 
@@ -116,7 +117,8 @@ and with `--manager codex`:
 codex exec resume --dangerously-bypass-approvals-and-sandbox -m <manager model> -c model_reasoning_effort=high <session id> <judge prompt>
 ```
 
-with the pick's `<session id>` either way. *Resuming is what makes the Manager one conversation:
+with the pick's `<session id>` either way. Each retried judge attempt (`RUN-24`) uses this
+same line with the same rendered prompt. *Resuming is what makes the Manager one conversation:
 it judges Round 3 remembering why it wrote Round 2's brief.*
 
 *Amended 2026-10-08 (`rl-4i7t`): the claude judge effort is now `xhigh`, matching the pick.*
@@ -248,26 +250,29 @@ Conformance Suite's fakes read those to find their scripted part, which is what 
 independent of prompt wording and CLI flags (`06-conformance.md`). Claude Code uses
 `BASH_MAX_TIMEOUT_MS` as its Bash tool's timeout ceiling.*
 
-**AGT-14** Every agent call MUST be bounded by its role's timeout, and the **Probe**'s (`AGT-18`)
-by `--probe-timeout` (`AGT-1`). At the limit rloop
-MUST send SIGTERM to that process group, wait `--kill-after` seconds, then send SIGKILL to
-the group, and treat the call as exited non-zero. A timeout is then whatever a failure of that
-role is: judged by the Manager for an Implementer (`RUN-14`), a failure note for a Reviewer
-(`RUN-15`), exit 2 for the Manager (`RUN-11`). *The group, not the PID: both CLIs fork tool
-subprocesses, and a killed parent leaves them orphaned and still writing.*
+**AGT-14** Each process attempt of every agent call MUST be bounded by its role's timeout, and the
+**Probe**'s (`AGT-18`) by `--probe-timeout` (`AGT-1`). At the limit rloop MUST send SIGTERM to that
+process group, wait `--kill-after` seconds, then send SIGKILL to the group, and treat the call as
+exited non-zero. A timeout is then whatever a failure of that role is: judged by the Manager for an
+Implementer (`RUN-14`), a failure note for a Reviewer (`RUN-15`), exit 2 for the Manager (`RUN-11`).
+*The group, not the PID: both CLIs fork tool subprocesses, and a killed parent leaves them orphaned
+and still writing.*
 
 **AGT-15** rloop MUST NOT exit while any agent process it started, or the **Probe** (`AGT-18`), is
-running. After every agent call and every **Probe**, once the process rloop started has exited,
-rloop MUST send SIGTERM to that call's process group, wait up to `--kill-after` seconds for the
-group to empty, then send SIGKILL to what remains. A call is complete only once its process group
-has been reaped that way: rloop MUST read the call's output, and do anything else that follows the
-call — the **Probe**'s record (`RUN-21`) included — only after that. The reaping leaves the call's
-exit status the spawned process's. A group that is already empty costs nothing: the wait ends as
-soon as the group does, where `AGT-14`'s `wait --kill-after seconds` at the limit is the whole
-grace. Reviewers run concurrently (`RUN-8`), so each Reviewer's group is reaped as that Reviewer
-exits. On SIGINT or SIGTERM it MUST send SIGTERM to every live group, wait for them (with
-`--kill-after`, then SIGKILL), and exit 2 with `interrupted` on standard error. A second SIGINT
-during that wait MUST send SIGKILL at once. The Run Directory is left as it is (`RUN-17`).
+running. This applies to every process attempt of a logical call. After every agent call and every
+**Probe**, once the process rloop started has exited, rloop MUST send SIGTERM to that call's process
+group, wait up to `--kill-after` seconds for the group to empty, then send SIGKILL to what remains.
+A call is complete only once its process group has been reaped that way: rloop MUST read the call's
+output, and do anything else that follows the call — the **Probe**'s record (`RUN-21`) included —
+only after that. The reaping leaves the call's exit status the spawned process's. A group that is
+already empty costs nothing: the wait ends as soon as the group does, where `AGT-14`'s `wait
+--kill-after seconds` at the limit is the whole grace. Reviewers run concurrently (`RUN-8`), so each
+Reviewer's group is reaped as that Reviewer exits. On SIGINT or SIGTERM it MUST send SIGTERM to
+every live group, wait for them (with `--kill-after`, then SIGKILL), and exit 2 with `interrupted`
+on standard error. A second SIGINT during that wait MUST send SIGKILL at once. A quota sleep MUST
+NOT defer the signal handler: SIGINT or SIGTERM ends the wait at once; a re-check in progress is
+terminated and reaped by the same rule before exit 2 with `interrupted`. The Run Directory is left
+as it is (`RUN-17`).
 
 *Amended 2026-09-26 (`rl-agt15-normal-exit-stragglers-e6g`): reaping after a call that completes
 normally is new; before it a group was reaped only where the call did not complete — at the limit
