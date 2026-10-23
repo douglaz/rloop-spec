@@ -7,10 +7,13 @@ remaining sleep count, not wall time. The script supplies every reading and atte
 weekly means exhaustion of the Manager's own Seat, and clear includes unknown. Byte recognition
 and process reaping are suite obligations. A cut is already the guarded, within-bound outcome.
 
-The projection into `Behaviour` keeps one logical judge spawn if attempt 1 was admitted, the
-terminal attempt's `ManagerResult`, and the final Panel reading for Reviewer availability.
-Expiry before any attempt projects to an unavailable Manager; expiry after a cut projects to a
-failed terminal attempt. Thus existing Run theorems and `decide` need no changed statements.
+For the complete scripts in `waitCases`, the projection into `Behaviour` keeps one logical judge
+spawn if attempt 1 was admitted and the terminal attempt's `ManagerResult`. It supplies unknown
+Reviewer availability, which agrees with those scripts' final clear Panel checks; it does not
+project arbitrary Panel readings. An exhausted or malformed script, including one ending just
+before an admitted attempt's outcome, contributes no further attempts. Expiry before any recorded
+attempt projects to an unavailable Manager; expiry after a cut projects to a failed terminal
+attempt. Thus existing Run theorems and `decide` need no changed statements.
 -/
 namespace Rloop.Wait
 

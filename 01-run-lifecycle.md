@@ -154,22 +154,26 @@ pick threshold would have refused.*
 **RUN-22** When `probe-pick.md` records the Manager's Seat `unavailable`, or the Implementer's Seat
 `unavailable`, rloop MUST exit 2 without spawning any agent, and MUST write to standard error a
 message naming the Seat — both, when both are — its model, and the reset the probe reported, which
-it names by quoting the probe's matching line verbatim. For a family-line refusal, the message
-SHOULD name the flag that chooses another model, `--manager-model` or `--implementer-model`
-(`AGT-1`). For a session-line refusal, the message SHOULD instead name the relevant preset flag,
-`--manager codex` or `--implementer codex` (`AGT-1`), because another claude model shares the same
-cap. The matching line quoted for a session-triggered refusal is the session line, reset text
-included. At the pick rloop MUST refuse immediately, without waiting for reset or retrying. *The
-line is carried, not parsed: the matching prefixes in `RUN-21` end at `used`, and `AGT-17` records
-that the reset's format already drifted once.*
+it names by quoting verbatim every line that establishes that Seat's exhaustion under `RUN-21` at
+that check, in the order those lines have in the check's standard output. For a family-line refusal,
+the message SHOULD name the flag that chooses another model, `--manager-model` or
+`--implementer-model` (`AGT-1`). For a session-line refusal, the message SHOULD instead name the
+relevant preset flag, `--manager codex` or `--implementer codex` (`AGT-1`), because another claude
+model shares the same cap. At every check, for each Seat the message names, it MUST quote exactly
+the session line when only that reading establishes exhaustion, exactly the Seat's own family line
+when only that reading establishes exhaustion, and both lines in the report's order when both
+readings establish exhaustion; each quoted line includes its reset text. At the pick rloop MUST
+refuse immediately, without waiting for reset or retrying. *The line is carried, not parsed: the
+matching prefixes in `RUN-21` end at `used`, and `AGT-17` records that the reset's format already
+drifted once.*
 
 rloop MUST NOT make Round `r`'s judge call when its Panel-site or judge-site waiting expires before
 its first judge attempt (`RUN-24`); it MUST exit 2 with the message above for the Manager's Seat,
-quoting the matching line from the last check. Expiry before the Panel still runs the Panel and both
-Checkpoints in `RUN-7`'s order, then exits in the judge's place without a judge-site check. Expiry
-at the judge site re-runs no review. The all-down exit is `RUN-15`'s. This precedes `RUN-11` rather
-than adding a row: no judge call was made. A Round's verdict on the Implementer's Seat is recorded
-and nothing acts on it.
+quoting the last check's lines by the same per-Seat rule. Expiry before the Panel still runs the
+Panel and both Checkpoints in `RUN-7`'s order, then exits in the judge's place without a judge-site
+check. Expiry at the judge site re-runs no review. The all-down exit is `RUN-15`'s. This precedes
+`RUN-11` rather than adding a row: no judge call was made. A Round's verdict on the Implementer's
+Seat is recorded and nothing acts on it.
 
 *Why a Seat that cannot answer is refused and never filled by another model, and why the Reviewers
 are left to `RUN-15`, is `ADR-0008`'s.* `Rloop.seat_out_refused` proves that a Run so recorded
@@ -177,6 +181,10 @@ before the pick spawns nothing and `Rloop.pick_refusal_off_picks` is each Seat's
 without the rule; `Rloop.judged_only_when_manager_answers` proves every judge call is for a Round
 whose admitting check read the Manager's Seat `unknown`, and `Rloop.manager_out_skips_judge` and
 `Rloop.judge_refusal_off_judges` are the pair for a Manager that runs out in Round 2.
+
+*Amended 2026-10-23 (`rl-kyhr`): when both readings establish a Seat's exhaustion, quote both lines
+in the report's order at every check. `ADR-0010` records the decision; `F29` records its measured
+Conformance Suite coverage.*
 
 **RUN-24** Each Round MUST have one shared sleep budget of `--quota-wait` seconds for its
 Panel-site check, judge-site check and waits after cut judge attempts. It applies equally to a
@@ -213,8 +221,8 @@ most 1 + ceil(b/p) judge attempts for initial budget b and poll p, over every sc
 and cuts, with no retry counter. Timeouts and reaping are per attempt (`AGT-14`, `AGT-15`).
 
 Expiry after a cut MUST end the logical call with its last attempt's non-zero exit, which
-`RUN-11` reads as exit 2. The diagnostic quotes the last check's matching line. When no check in
-that wait read a matching line because the cut found no budget left, it quotes the cut's own line
+`RUN-11` reads as exit 2. The diagnostic quotes the last check's lines under `RUN-22`. When no check
+in that wait read a matching line because the cut found no budget left, it quotes the cut's own line
 and identifies it as the call's output. Other wording remains `RUN-10`'s.
 
 *Added 2026-10-22 (`rl-kyhr`): `ADR-0010` records the decisions; `F29` records supplied evidence

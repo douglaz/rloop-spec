@@ -632,6 +632,16 @@ The recommended flags are not pass/fail assertions: `RUN-22` states
 that preset's default model, preserving independent Manager refusal coverage. `F27` records the
 decision's evidence and verification.*
 
+With the default codex Implementer and default claude Manager, a pick report with session 100
+followed by Opus 100 refuses only the Manager's Seat: exit 2, no agent call, empty standard output,
+and only the pick captures in the Run Directory. The exact record has only `manager`, `fable` and
+`opus` unavailable. Standard error quotes both full lines, reset text included, in report order,
+comparing their first byte offsets in the whole stream without constraining line layout or
+surrounding text.
+
+*Amended 2026-10-23 (`rl-kyhr`): add the pick refusal with both readings exhausting the Manager's
+Seat, requiring both quoted lines in report order under `RUN-22`.*
+
 **CNF-29** With `--implementer claude`, the Manager's model off `RUN-21`'s table, the
 Implementer's at the claude preset's default and the probe before the pick reporting
 `Current week (Opus): 100% used`, the executable exits 2 with no
@@ -672,14 +682,14 @@ list recorded; Round 2's Implementer ran and its Panel ran without `opus` — `f
 `manager:unavailable` and `opus:unavailable`, every other Seat `unknown`; there is no Finished File
 and standard output is empty; and standard error names `manager`, `claude-opus-5-5` and the probe's
 `Opus` line, reset and all, since `RUN-22` exits `with the message above for the Manager's Seat`,
-which names the reset by `quoting the probe's matching line verbatim`. With Round 1's probe
-reporting `Opus` instead, the Run exits 2 with no `manager-judge-1.out`, and standard error names
-the same three. With `--manager-model claude-fable-5-1` and `Current week (Fable): 100% used`
-instead, both Runs go the same way with `fable` in `opus`'s place, and standard error names
-`claude-fable-5-1`. The withheld judge is scripted to fail. *The missing judge is the assertion: a
-Run whose judge was called and failed also exits 2. The second pair of Runs is there because one row
-cannot tell a Seat read from its own model from a rule that hardcodes `opus`, and a per-Seat or
-per-site lookup can get one Seat's row right and another's wrong.*
+which names the reset by `quoting verbatim every line that establishes that Seat's exhaustion`. With
+Round 1's probe reporting `Opus` instead, the Run exits 2 with no `manager-judge-1.out`, and
+standard error names the same three. With `--manager-model claude-fable-5-1` and `Current week
+(Fable): 100% used` instead, both Runs go the same way with `fable` in `opus`'s place, and standard
+error names `claude-fable-5-1`. The withheld judge is scripted to fail. *The missing judge is the
+assertion: a Run whose judge was called and failed also exits 2. The second pair of Runs is there
+because one row cannot tell a Seat read from its own model from a rule that hardcodes `opus`, and a
+per-Seat or per-site lookup can get one Seat's row right and another's wrong.*
 
 With `--implementer claude` and both Seats on off-table models, repeat a Round 1 refusal for
 session 100 and 0100.
@@ -699,18 +709,24 @@ recorded exactly once. Numbered captures keep the initial reading, each site's e
 byte-exact verdicts and the Panel's byte-identical copy. An Opus Manager waits on session 100 beside
 an exhausted Fable family, since that family does not exhaust its Seat. A matching weekly reading,
 alone or beside session 100, expires at once at either site and in a post-cut wait, quoting the
-matching family line in family-only arms, and either the matching family line or session line when
-both match. Expiry before the Panel still completes it and the Checkpoint and makes no judge-site
-check; expiry at the judge site preserves the Panel copy. The expiry arms use `--quota-wait 5
---quota-poll 2`, assert exact fake call counts, retained Checkpoint evidence and the last check's
-reset line on stderr, with differing reset text on that last check alone. (`RUN-22`, `RUN-21`,
-`RUN-7`, `RUN-10`, `DIR-4`, `RUN-24`, `DIR-6`)
+matching family line in family-only arms, and both full lines, reset text included, in the report's
+order when both match. A separate Panel-site arm reports Opus before session 100 to distinguish
+report order from a fixed order. The first occurrence of each full line in the whole standard error
+is compared by byte offset, allowing either line layout and surrounding text. Expiry before the
+Panel still completes it and the Checkpoint and makes no judge-site check; expiry at the judge site
+preserves the Panel copy. The expiry arms use `--quota-wait 5 --quota-poll 2`, assert exact fake
+call counts, retained Checkpoint evidence and the last check's reset line on stderr, with differing
+reset text on that last check alone. (`RUN-22`, `RUN-21`, `RUN-7`, `RUN-10`, `DIR-4`, `RUN-24`,
+`DIR-6`)
 
 *Amended 2026-10-08 (`rl-4i7t`): the default Manager now exercises Opus in both Rounds; the Fable pair
 uses an explicit Manager override.*
 
 *Amended 2026-10-13 (`rl-9uu1`): the refusal and Checkpoint Runs explicitly select a claude
 Implementer. `F27` records the decision's evidence and verification.*
+
+*Amended 2026-10-23 (`rl-kyhr`): require both quoted lines in report order at the Panel, judge and
+post-cut sites when both readings exhaust the Manager's Seat, including a report with Opus first.*
 
 **CNF-31** With both Seats using claude presets and their models off `RUN-21`'s table and the
 probe before the pick reporting

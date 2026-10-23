@@ -26,7 +26,7 @@
   },
   {
     "owner": "RUN-22",
-    "sha256": "2605e3b434784cf1db64c439f58b2c428443126950b0ebd15af2a4e0a4491383",
+    "sha256": "aa4d917276c6699de9673b128d95766cc0083c3040d7fcb2cad45508b3d7c6d5",
     "reason": "Owns the refusal at the pick and its message; RUN-21 supplies the record, AGT-1 the flags the message names and AGT-17 why the line is quoted."
   },
   {
@@ -266,7 +266,7 @@
   },
   {
     "owner": "RUN-22",
-    "sha256": "df89f7f48d9889697f8bd91a498fc184769682e9d094b7db184b9750304cc689",
+    "sha256": "efbe5caf3647099bca9b2fff7ad65d3b0e3620b4d008c1a49a5344b8de14cdaa",
     "reason": "Owns pick refusal and withholding the judge on Round expiry; cited identifiers supply inputs and sequencing."
   },
   {
@@ -333,5 +333,10 @@
     "owner": "CNF-34",
     "sha256": "ef90e8fe1f733b051e4bcf07a7d4204dd78673285afd95f69fba4a66d103ba22",
     "reason": "Owns the Conformance Suite assertions; cited identifiers identify the requirements demonstrated."
+  },
+  {
+    "owner": "RUN-22",
+    "sha256": "3492885d0d1e34f7d42670ce557e83786303e0649394e83f6c614f160b746e2d",
+    "reason": "Owns the per-Seat quotation rule at every check; RUN-21 supplies the readings that establish exhaustion."
   }
 ]

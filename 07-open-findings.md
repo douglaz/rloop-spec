@@ -583,8 +583,8 @@ read is an own-process read of the item as well — `nothing_survived` (`conform
 reads `PID` beside `GRANDCHILD` — and no mutant of either Round reddens that half either, for the
 reason its own comment gives: `Every ancestor is gone by then, so neither can be a zombie`
 (`conformance/run:67-68`). Both own-process brackets come with a green group half for one reason:
-the fake writes `GRANDCHILDREN_ALIVE` (`conformance/fakes/agent:148`) before it spawns the child
-that ignores SIGTERM (`:225`), so a call that starts while the probe is still running finds no
+the fake writes `GRANDCHILDREN_ALIVE` (`conformance/fakes/agent:150`) before it spawns the child
+that ignores SIGTERM (`:227`), so a call that starts while the probe is still running finds no
 `GRANDCHILD=` line in the probe's record and has nothing to report. The group half can be green with
 the group alive, and it is the two halves together that caught these mutants.
 
@@ -635,7 +635,7 @@ pick (`conformance/run:758-800`). `RUN-22` is what makes the read observable the
 `exit 2 without spawning any agent` on that probe's verdicts, so an executable that derives them
 from bytes the straggler's line has not reached yet calls the pick and runs on. The knob is
 `RLOOP_FAKE_WRITE_STDOUT`, which had only a role and a fixed line and now takes a first-write delay
-and the line with it (`conformance/fakes/agent:69-88`, `:188`, `:219-222`); the row asks for one
+and the line with it (`conformance/fakes/agent:71-90`, `:190`, `:221-224`); the row asks for one
 second and `--kill-after 4`, so an early read is a second short of the line and a reaping one has
 three seconds of the child's writing behind it before it reads.
 
@@ -1963,3 +1963,140 @@ CLI was called.
 **Still open:** no live Run has waited yet, and rloop-bash has not caught up. The scratch
 measurements close neither observation. The `F17` writer-branch line-citation advisory and the
 `RUN-16` restatement advisory remain; there is no new advisory or blocking finding.
+
+**Addendum 2026-10-23: `rl-kyhr` review fixes and the both-lines decision.** The owner's "Both
+lines" decision amends `RUN-22`; `ADR-0010` records the options it set aside. This supersedes the
+earlier dated statement that the combined expiry line was deliberately unspecified. `CNF-28` now
+exercises both readings at the pick, and `CNF-30` exercises them at the Panel, judge and post-cut
+sites, with an Opus-first Panel report distinguishing report order from a fixed order. These arms
+see the combined reading as their site's first exhausted reading: there is no earlier wait progress
+carrying either line. The comparisons use the first byte offset of each full line in the entire
+stderr, including reset text, without requiring adjacency or a particular stderr line layout.
+Single-reading arms are retained.
+
+`CNF-24` now rejects a missing Implementer, judge or Reviewer explicitly and checks every Probe
+environment record in its main and all-down Runs. The leaked fake knobs added by this bead are
+unexported. The permitted documentation correction was used for the formal projection: truncated
+or malformed scripts contribute no further attempts, and `waitResult` supplies unknown Reviewer
+availability, agreeing with the complete `waitCases`' final clear Panel readings. No executable
+Lean declaration or theorem statement changed. Region regeneration left the decision table
+unchanged; scenario regeneration left `conformance/scenarios.tsv` byte-identical. The separate
+controls measurement below still prints `sharedQuota: 3`.
+
+The evidence is under `/var/tmp/rl-kyhr-fix/`, a temporary location that may not survive. The
+scratch executable was copied from the earlier evidence directory and amended in both quoting
+paths: `probe_verdicts` stores both establishing lines per Seat in stdout order, and Round expiry
+preserves that stored value. `rloop.diff` records the change from the earlier executable. No live
+model CLI was called.
+
+Artifact SHA-256 values:
+
+- final `conformance/run`: `bbd65eb75e0d841582d0e8ae2fe2497f7734c668921fffe9903e2abc11d35460`.
+- scratch `rloop`: `86c70ffd5705fa9c4c68828d1f5d36b9e1fe14c7e9dda0141200a9c963b40dda`.
+- initial `conformance/run` snapshot: `1dcd344fa64183f14d8a99c93545e7f3e1b778c54d8a3e69129684ddb1e93bdd`.
+- old `CNF-24` slice: `eee890e4787d3055b7c19ab94abac518f10e5f4fc6ab0973e21a6bd425400696`.
+- fixed `CNF-24` slice: `6c436b3b03b61f62c95d0744f32068cec8010e9fe1a305da7a0f178dd4dfb51e`.
+- initial quotation slice: `fc67238969a5619615aca2c42e33aaebe1dc94e5f04175684ce02d746fe72f23`.
+- final quotation slice: `deeb3c5e47a6846f55b729cbd16c33113edea18324304fdc9b6f458d8933026f`.
+
+Every measured command ran alone in the foreground, with `TMPDIR=/var/tmp/rl-kyhr-fix`, wrapped
+as follows; each log stem below has a `.log` and a `.json` retaining the exact wrapped command,
+exit and elapsed time. Plant executables and their individual `.diff` files are in `plants/`.
+
+```bash
+systemd-run --user --scope --quiet -p MemoryMax=8G -p MemorySwapMax=0 timeout 3600 <command>
+```
+
+Command abbreviations (substitute the exact `EXE` path given in the measurement table):
+
+- `G`: `nix develop --command bash tools/check-all.sh`.
+- `S`: `nix develop --command bash conformance/run /var/tmp/rl-kyhr-fix/rloop`.
+- `B(EXE)`: `nix develop --command bash /var/tmp/rl-kyhr-fix/slice-before/conformance/run /var/tmp/rl-kyhr-fix/EXE`.
+- `F(EXE)`: `nix develop --command bash /var/tmp/rl-kyhr-fix/slice-fixed/conformance/run /var/tmp/rl-kyhr-fix/EXE`.
+- `Q(EXE)`: `nix develop --command bash /var/tmp/rl-kyhr-fix/slice-quotes/conformance/run /var/tmp/rl-kyhr-fix/EXE`.
+- `L`: `nix develop --command bash -c 'cd tools/formal && lake exe scenarios --controls'`.
+
+The `B` and `F` slices include every contribution read by the deferred `CNF-24` verdict: the
+main two-Round Run, all-down and codex-order arms. `B` was cut from `9efbdb6` and used that
+revision's fake; `F` used the amended suite and fake. `Q` includes the new pick arm, every combined
+Round arm and the neighbouring family-only controls. The first `Q` measurements and the first
+full suite included an additional pick Seat/model presence assertion; it was removed to keep new
+stderr checks confined to quoted lines and order. The final measurements use that narrowed suite.
+The initial scripts are retained separately with the hashes above. The removed assertion changed
+none of the measured plant failures.
+
+| log stem | command | exit | elapsed seconds |
+|---|---|---|---|
+| `gates-edit` | `G` | 0 | 127.681 |
+| `green-suite` | `S` | 0 | 294.093 |
+| `cnf24-fixed-green` | `F(rloop)` | 0 | 1.266 |
+| `cnf24-before-green` | `B(rloop)` | 0 | 1.266 |
+| `quotes-green` | `Q(rloop)` | 0 | 5.975 |
+| `missing-implementer-before` | `B(plants/missing-implementer)` | 0 | 1.166 |
+| `missing-implementer-fixed` | `F(plants/missing-implementer)` | 1 | 1.217 |
+| `open-judge-stdin-before` | `B(plants/open-judge-stdin)` | 0 | 4.573 |
+| `open-judge-stdin-fixed` | `F(plants/open-judge-stdin)` | 1 | 4.573 |
+| `session-only` | `Q(plants/session-only)` | 1 | 5.875 |
+| `family-only` | `Q(plants/family-only)` | 1 | 5.978 |
+| `reverse-order` | `Q(plants/reverse-order)` | 1 | 5.925 |
+| `session-first` | `Q(plants/session-first)` | 1 | 5.925 |
+| `pick-session-only` | `Q(plants/pick-session-only)` | 1 | 6.075 |
+| `gates-final-code` | `G` | 0 | 125.777 |
+| `final-green-suite` | `S` | 0 | 291.541 |
+| `final-quotes-green` | `Q(rloop)` | 0 | 5.875 |
+| `final-session-only` | `Q(plants/session-only)` | 1 | 5.875 |
+| `final-family-only` | `Q(plants/family-only)` | 1 | 5.875 |
+| `final-reverse-order` | `Q(plants/reverse-order)` | 1 | 5.876 |
+| `final-session-first` | `Q(plants/session-first)` | 1 | 5.925 |
+| `final-pick-session-only` | `Q(plants/pick-session-only)` | 1 | 5.874 |
+| `formal-controls` | `L` | 0 | 0.415 |
+
+Both full-suite measurements printed `34 passed, 0 failed`. The final run took
+291.541 seconds. Applying the verdict-count command below to each log
+gave one verdict for each item; neither log repeats an item.
+
+```bash
+grep -E '^  (PASS|FAIL)' log | awk '{print $2}' | sed 's|/.*||' | sort | uniq -c
+```
+
+Every observed FAIL bracket is recorded below, including co-reds. The initial and final quotation
+measurements produced the same failures; both conforming quotation slices were green. "Combined
+Round brackets" refers to this exact list in `CNF-30`:
+
+- `[panel-week-session100-opus-line]`
+- `[panel-week-opus-session100-line]`
+- `[judge-week-session100-opus-line]`
+- `[cut-week-session100-opus-line]`
+
+| plant | old slice observation | amended slice observation |
+|---|---|---|
+| `missing-implementer` (skip Round 2's Implementer) | `CNF-24` PASS, exit 0 | `CNF-24` FAIL, exit 1: `[round 2 implementer never spawned]` and `[round 2: Panel and judge check chronology]` |
+| `open-judge-stdin` (judge-site Probe gets a pipe held open without data) | `CNF-24` PASS, exit 0 | `CNF-24` FAIL, exit 1: `[round 1: 009-probe-1.env probe stdin not closed]` and `[round 2: 017-probe-2.env probe stdin not closed]` |
+| `session-only` (quote only the session line when both establish exhaustion) | not measured | `CNF-28` FAIL: `[session and family Manager: quoted lines in report order]`; `CNF-30` FAIL: every combined Round bracket above |
+| `family-only` (quote only the family line when both establish exhaustion) | not measured | `CNF-28` FAIL: `[session and family Manager: quoted lines in report order]`; `CNF-30` FAIL: every combined Round bracket above |
+| `reverse-order` (quote both in reverse report order) | not measured | `CNF-28` FAIL: `[session and family Manager: quoted lines in report order]`; `CNF-30` FAIL: every combined Round bracket above |
+| `session-first` (always put session first) | not measured | `CNF-30` FAIL only at `[panel-week-opus-session100-line]`; `CNF-28` PASS |
+| `pick-session-only` (at the pick, quote only session) | not measured | `CNF-28` FAIL only at `[session and family Manager: quoted lines in report order]`; `CNF-30` PASS |
+
+The stdin plant supplies a live, silent pipe inside the call's process group; inheriting the
+executable's `/dev/null` or supplying a data byte would not separate these slices. It leaves
+`RLOOP_ROUND` unchanged, so the old slice's probe counts still pass.
+
+The disposable support copies `/var/tmp/rl-kyhr-fix/slice-before/`,
+`/var/tmp/rl-kyhr-fix/slice-fixed/` and `/var/tmp/rl-kyhr-fix/slice-quotes/` were removed after
+the measurements. Their exact `.subset` scripts, the executable, plants, diffs, logs and command
+metadata remain. The earlier `/var/tmp/rl-kyhr-demo/` directory's listing, sizes, modes and
+nanosecond mtimes match `demo-before.json` and `demo-after.json`; its executable still hashes
+`12b2498db4865c22e378dcb8e596649c075681c1f53eea02ac5cdb4fa2d0000c`.
+
+The post-edit development gates (`gates-edit` and `gates-final-code`) exited 0 with only the
+existing `RUN-16` restatement and `F17` writer-branch line-citation advisories. The final
+record-inclusive gate and sandbox measurements are retained separately as `gates-final.json` and
+`flake-final.json`, with their commands, exits and elapsed seconds: `G` exited 0 in 128.232 seconds,
+and `nix flake check -L` was a real sandbox build, not a cache hit, exiting 0 in 151.387 seconds.
+The workflow was checked for quotations of the changed diagnostics and matching-line text; no
+negative control quoted them. Shifted fake line citations were re-anchored, without rewording the
+earlier dated evidence.
+
+**Still open:** the earlier live-wait and rloop-bash observations above remain outside this
+review fix. No additional gap was found within the requested parts.

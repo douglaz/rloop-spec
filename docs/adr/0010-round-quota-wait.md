@@ -21,6 +21,18 @@ process group has been reaped that way`: the output is read `only after that`. T
 sleeps share one Round ledger; slow checks extend wall time. Numbered captures preserve every check
 and attempt, while the Panel's copy keeps the Consultation's evidence (`RUN-20`) stable.
 
+## Expiry quotations (2026-10-23)
+
+Amend `RUN-22` for every check and each Seat the message names: when both the session reading
+and that Seat's own family reading establish exhaustion, quote both full lines in their order in
+that check's standard output. A single establishing reading still supplies its single line.
+`CNF-28` exercises the pick; `CNF-30` exercises the Round sites and a post-cut re-check, including
+an Opus-first report. `F29` records the measured controls.
+
+The owner chose "Both lines". Quoting one line alone was set aside because both readings
+establish that Seat's exhaustion. A fixed order was set aside in favour of the report's order.
+The thresholds and the flag-recommendation SHOULDs were left unchanged.
+
 ## Rejected
 
 - Waiting at the pick: a later Run's refusal must still stop a Sequence.
