@@ -1236,6 +1236,12 @@ them off the only observed family line; the refusal protects them only if an Opu
 `RUN-21` states `An absent family line is` `unknown`, `never` `unavailable`. This is the existing
 fail-open design, not a defect to fix in this amendment.
 
+*Amended 2026-10-24 (`rl-e7uq`): the owner moved every Opus line from `xhigh` to `high`: the
+claude Manager's pick and judge (`AGT-3`, `AGT-4`), Reviewer `opus` (`AGT-8`) and the `opus`
+adviser (`PRM-1`, `PRM-2`). The default claude Manager now runs at the effort the sixteen Opus
+Manager Runs above used, so the open question, whether an `xhigh` Opus Manager stays within 3600
+seconds, no longer bears on the default. No new measurement was made for this amendment.*
+
 
 ## F23 — Session quota: owner evidence and threshold cost (2026-10-08)
 

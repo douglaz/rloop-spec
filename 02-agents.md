@@ -73,7 +73,7 @@ argument's extent and are not part of it.
 **AGT-3** The pick MUST be, with `--manager claude`:
 
 ```text
-claude -p <pick prompt> --session-id <session id> --model <manager model> --effort xhigh --dangerously-skip-permissions
+claude -p <pick prompt> --session-id <session id> --model <manager model> --effort high --dangerously-skip-permissions
 ```
 
 and with `--manager codex`:
@@ -90,6 +90,10 @@ rloop writes it to the Run Directory's `session` file (`DIR-4`).
 
 *Amended 2026-10-08 (`rl-4i7t`): the claude default is now `claude-opus-5-5` and its
 pick effort is `xhigh`; the codex preset is unchanged. `F22` records the owner's evidence and limits.*
+
+*Amended 2026-10-24 (`rl-e7uq`): the claude pick effort is now `high`, for the default model and
+for any `--manager-model`; the codex preset is unchanged. The Opus Manager Runs `F22` records
+used `high`.*
 
 *The codex Manager was added 2026-09-20, after the claude account behind `claude-fable-5-1` hit
 its quota mid-Run and a Manager-seat evaluation of `gpt-6-astra` on the `PRM-1` prompt picked a
@@ -108,7 +112,7 @@ cosmetic and a specification that matched one would break on a cosmetic change. 
 **AGT-4** The judge call MUST be, with `--manager claude`:
 
 ```text
-claude -p <judge prompt> --resume <session id> --model <manager model> --effort xhigh --dangerously-skip-permissions
+claude -p <judge prompt> --resume <session id> --model <manager model> --effort high --dangerously-skip-permissions
 ```
 
 and with `--manager codex`:
@@ -122,6 +126,8 @@ same line with the same rendered prompt. *Resuming is what makes the Manager one
 it judges Round 3 remembering why it wrote Round 2's brief.*
 
 *Amended 2026-10-08 (`rl-4i7t`): the claude judge effort is now `xhigh`, matching the pick.*
+
+*Amended 2026-10-24 (`rl-e7uq`): the claude judge effort is now `high`, matching the pick.*
 
 **AGT-5** The Implementer, with `--implementer claude`, MUST be:
 
@@ -169,11 +175,14 @@ claude -p <review prompt> --model claude-fable-5-1 --effort high --dangerously-s
 **AGT-8** Reviewer `opus` MUST be:
 
 ```text
-claude -p <review prompt> --model claude-opus-5-5 --effort xhigh --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
+claude -p <review prompt> --model claude-opus-5-5 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
 ```
 
 *Amended 2026-10-08 (`rl-4i7t`): Reviewer `opus` now uses `claude-opus-5-5`; its roster name,
 `xhigh` effort and other arguments are unchanged.*
+
+*Amended 2026-10-24 (`rl-e7uq`): Reviewer `opus` now runs at `high` effort, like `fable`; its
+model, roster name and other arguments are unchanged.*
 
 **AGT-9** The deny list in `AGT-7` and `AGT-8` is one argument — the quotes above mark it, and
 `Bash(git checkout:*)` holds a space that must not split it. It holds because
