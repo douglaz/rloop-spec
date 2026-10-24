@@ -22,7 +22,7 @@ Do this now:
    - If the task turns on a point the repository's specifications or instructions leave ambiguous or contradictory — two readings that lead to different behaviour — do not choose a reading. That clarification is the specification owner's to make: stop here and write {{FINISHED_FILE}} with `STATUS: blocked`, and below it the document, the passage, the readings, and the clarification you recommend.
    - If the task needs an implementation decision the specifications leave to the implementer — a choice of how, not of what — do not make it alone. Put the question and the options to every adviser — fable, opus, astra and sol — except those this prompt lists below as unable to answer now: skip those, and no other. The four commands, run in this repository, are exactly:
      claude -p "<your question>" --model claude-fable-5-1 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
-     claude -p "<your question>" --model claude-opus-5-5 --effort xhigh --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
+     claude -p "<your question>" --model claude-opus-5-5 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
      codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6-astra -c model_reasoning_effort=high "<your question>"
      codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6.1-sol -c model_reasoning_effort=xhigh "<your question>"
      Include in every adviser's question: "Do not modify the repository: no edits, no commits, no checkout, stash, reset or clean. Running the build or the tests is fine." Reading files is permitted.
@@ -62,6 +62,10 @@ sandbox bypass. The Consultation's read-only behaviour is maintained by the deny
 the question for claude, and by the question alone for codex. `F28` records the supplied
 evidence, cost and live-observation limit.*
 
+*Amended 2026-10-24 (`rl-e7uq`): the `opus` adviser now runs at `high` effort, as Reviewer
+`opus` does (`AGT-8`); its model, the other adviser commands and Consultation policy are
+unchanged.*
+
 ## The Manager's judgment
 
 **PRM-2** The judge prompt MUST be:
@@ -75,7 +79,7 @@ Review the implementation yourself, then read the feedback. Feedback is advice, 
 
 Two kinds of question are not yours to answer alone. If this Round surfaced a point the repository's specifications or instructions leave ambiguous or contradictory — two readings that lead to different behaviour — do not choose a reading: choose A below with `STATUS: blocked`, and put the document, the passage, the readings and the clarification you recommend in the report. If it surfaced an implementation decision the specifications leave to the implementer — a choice of how, not of what — that the next brief must settle, before writing it, put the question and the options to every adviser — fable, opus, astra and sol — except those for which a `REVIEWER NOT RUN` file of this Round shows the model could not answer: skip those, and no other. Nothing earlier in this Run excludes an adviser: call again one that did not answer, or that you skipped, in an earlier Consultation. Run the four commands in this repository exactly as follows:
 claude -p "<your question>" --model claude-fable-5-1 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
-claude -p "<your question>" --model claude-opus-5-5 --effort xhigh --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
+claude -p "<your question>" --model claude-opus-5-5 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
 codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6-astra -c model_reasoning_effort=high "<your question>"
 codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6.1-sol -c model_reasoning_effort=xhigh "<your question>"
 Include in every adviser's question: "Do not modify the repository: no edits, no commits, no checkout, stash, reset or clean. Running the build or the tests is fine." Reading files is permitted.
@@ -110,6 +114,10 @@ What a Reviewer may suggest did not change; what the Manager files did.*
 sandbox bypass. The Consultation's read-only behaviour is maintained by the deny list plus
 the question for claude, and by the question alone for codex. `F28` records the supplied
 evidence, cost and live-observation limit.*
+
+*Amended 2026-10-24 (`rl-e7uq`): the `opus` adviser now runs at `high` effort, as Reviewer
+`opus` does (`AGT-8`); its model, the other adviser commands and Consultation policy are
+unchanged.*
 
 ## The Implementer
 

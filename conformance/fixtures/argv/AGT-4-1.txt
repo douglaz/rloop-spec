@@ -6,5 +6,5 @@ claude
 --model
 <manager model>
 --effort
-xhigh
+high
 --dangerously-skip-permissions
