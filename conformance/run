@@ -1782,7 +1782,20 @@ done
 # CNF-10's inherited-variable Run reaches every role, every judge attempt and every Probe.
 check_inherited_shellopts() {
   local rloop_env=('SHELLOPTS=braceexpand:hashall:interactive-comments')
+  local fakes="$work/fakes-inherited-shellopts" snapshot_env
   local paths=() tag want f value
+  # GNU env expands from the raw environment, before Bash can rebuild SHELLOPTS.
+  # Resolve it on the suite's PATH: /usr/bin/env need not be GNU env on macOS.
+  # env execs Bash, so there is no extra parent, PID or process group. Only this
+  # Run uses the snapshot launcher; the lifecycle items keep their usual fakes.
+  snapshot_env=$(type -P env)
+  case "$snapshot_env" in /*) ;; *) snapshot_env="$PWD/$snapshot_env" ;; esac
+  mkdir -p "$fakes"
+  {
+    printf '#!%s -S RLOOP_FAKE_RAW_SHELLOPTS=${SHELLOPTS} bash\n' "$snapshot_env"
+    tail -n +2 "$here/fakes/agent"
+  } > "$fakes/claude"
+  cp "$fakes/claude" "$fakes/codex"; chmod +x "$fakes/claude" "$fakes/codex"
   quota_case inherited-shellopts clear 1:1 1 1
   ok=${quota_ok[10]}; detail=${quota_detail[10]}
   [ "$e" = 0 ] || { ok=0; detail="$detail [SHELLOPTS: exit $e]"; }
@@ -1799,8 +1812,8 @@ check_inherited_shellopts() {
   for f in "$rec"/*.env; do
     [ -f "$f" ] || continue
     grep -qxF 'SHELLOPTS_EXPORTED=1' "$f" || { ok=0; detail="$detail [$(basename "$f"): SHELLOPTS not exported]"; }
-    value=$(sed -n 's/^SHELLOPTS_VALUE=//p' "$f")
-    [ "$value" = 'braceexpand:hashall:interactive-comments' ] || { ok=0; detail="$detail [$(basename "$f"): SHELLOPTS value '$value']"; }
+    value=$(sed -n 's/^SHELLOPTS_RAW_VALUE=//p' "$f")
+    [ "$value" = 'braceexpand:hashall:interactive-comments' ] || { ok=0; detail="$detail [$(basename "$f"): raw SHELLOPTS value '$value']"; }
   done
   quota_ok[10]=$ok; quota_detail[10]=$detail
 }

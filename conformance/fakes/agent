@@ -234,6 +234,12 @@ case "$startup_shellopts" in
   *) echo 'SHELLOPTS_EXPORTED=0' ;;
 esac >> "$rec/$tag.env"
 printf 'SHELLOPTS_VALUE=%s\n' "$startup_shellopts_value" >> "$rec/$tag.env"
+# CNF-10's special launcher snapshots the raw value with GNU env, before Bash
+# starts. Keep the rebuilt Bash value above for diagnostics. %q makes this one
+# line even for a value containing newlines, which must not compare as unchanged.
+if [ "${RLOOP_FAKE_RAW_SHELLOPTS+x}" = x ]; then
+  printf 'SHELLOPTS_RAW_VALUE=%q\n' "$RLOOP_FAKE_RAW_SHELLOPTS" >> "$rec/$tag.env"
+fi
 
 pick="${RLOOP_FAKE_PICK:-ok:task}"
 if [ -n "${RLOOP_FAKE_RUNS:-}" ] && [ "$run" != unset ]; then

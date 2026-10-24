@@ -2238,3 +2238,237 @@ No cited source line moved, and no earlier dated evidence was reworded or re-anc
 workflow was checked for quotations of changed success messages and mutation sites; none
 required updating. No disposable suite copy was made. The evidence directory may not survive;
 `r2-manifest.json` records final artifact hashes independently of the earlier manifest.
+
+
+**Addendum 2026-10-24: `rl-ypm7` raw SHELLOPTS bytes.** Amend `CNF-10`'s measurement of
+inherited `SHELLOPTS`; its `byte-identical to the supplied value` comparison now reads the bytes
+rloop handed each call before bash starts. No requirement in `00`–`05` changed.
+
+The earlier addendum's sentence “The fake captures both before its own `set -u`” now holds only
+for the export bit, still captured with bash's `declare -p SHELLOPTS`. Bash rebuilds the value
+at startup, so the earlier comparison could accept an empty value or one missing `braceexpand`.
+The earlier `built-shellopts`, `retry-shellopts` and `drop-shellopts` verdict rows are replaced
+by the measured lines below; the old `SHELLOPTS value '…'` brackets read bash's recomputed value.
+The earlier `posix-shim` row's `CNF-10` co-red and the following sentence's claim that the
+inherited-variable co-reds were observed on the final suite bytes also predate the raw comparison.
+The new `posix-shim` measurement below replaces that evidence. Existing dated text stays historical.
+
+Only `CNF-10`'s inherited-`SHELLOPTS` Run makes launcher copies of the committed fake as
+`claude` and `codex`, under its function-local `fakes` directory. The launcher uses the absolute
+path resolved by `type -P env` on the suite's own PATH and this first-line shape:
+
+```text
+#!<env> -S RLOOP_FAKE_RAW_SHELLOPTS=${SHELLOPTS} bash
+```
+
+GNU coreutils `env -S` expands the raw inherited value into the recorder variable before bash
+starts, then replaces itself with bash in the same process. The fake writes the recorder only
+when set, using `printf %q` as `SHELLOPTS_RAW_VALUE=…`; the check compares that escaped text
+exactly, so a trailing newline survives the read through command substitution. The committed
+fake retains `#!/usr/bin/env bash`: generating the special first line at runtime keeps Nix's
+`patchShebangs` from dropping its assignment. Every other Run, including the `CNF-17`, `CNF-18`
+and `CNF-34` items, uses the usual fakes. The export-bit capture still precedes `set -u`.
+No assertion about stderr was added, and all arms still fold into their item's one verdict.
+
+The supplied value is bash's own default. A bash rloop recomputes it to itself, so a rewrite
+that produces exactly those bytes is invisible to this Run, by design. The unchanged rloop-bash
+`cab9e36` executable (`built-shellopts`) going red is expected; catching it up is a separate Run.
+
+SHA-256 on the final measured bytes:
+
+| artifact | SHA-256 |
+|---|---|
+| `conformance/run` | `cadc60e2c6361f1bf0ef34ddffba7bd8d6d1d73503708a7fa69b9bea101144e1` |
+| `conformance/fakes/agent` | `1db478fa61ef653be1a3206eaad266496a9958c07fc51c695be591cfbaaea509` |
+| `/var/tmp/rl-ypm7-fix/plants/conforming` | `88d2e2a91a1a1cedd0f291c8d4d9894a089b30d9e97d1359d08f5584adc55f6e` |
+| `/var/tmp/rl-ypm7-fix/plants/empty-shellopts` | `e672604646225a4160d813862ab19fb412d04128c3a0b17a4e7c82b86144e03c` |
+| `/var/tmp/rl-ypm7-fix/plants/drop-braceexpand` | `70d001f5632cf1263fa18d61126540b276607a3e4e56ee44e46485cc89225bfc` |
+| `/var/tmp/rl-ypm7-fix/plants/built-shellopts` | `5e6fe85d337e490183a483b1dda01870136d91448ab2a1aa211a88a242e99b80` |
+| `/var/tmp/rl-ypm7-fix/plants/drop-shellopts` | `834d4eedb740da6d1fbc4ccb11f32e84ef19699119f0171095aefbc64f561469` |
+| `/var/tmp/rl-ypm7-fix/plants/retry-shellopts` | `00a81be9a09673f8ab8f66a0f6eaed5f51622ce2d488c9bc2521ce0d86942bc6` |
+| `/var/tmp/rl-ypm7-fix/plants/newline-shellopts` | `385db7428bf65b07effe3f50450e0eb318026b96051db5e125862da7aff4bd98` |
+| `/var/tmp/rl-ypm7/plants/posix-shim` | `58611600dcf8ae66f7caf3a443876fd29b7407e19114aa2748da63fd53bc484d` |
+| `/var/tmp/rl-ypm7-fix/sol-fix.diff` | `c46b07a54e0941b40d312e071791b607bd5a70c3618708a76d93463171636d0a` |
+| `/var/tmp/rl-ypm7-fix/launcher-identity.sh` | `5fe0a1156deff159c1a4c49bebd420c451d2cf4b1529de89080635501621462f` |
+
+Every tabulated command ran alone in the foreground, one at a time, with output redirected to
+its log rather than through a pipe, inside its own capped scope:
+
+```bash
+systemd-run --user --scope --quiet -p MemoryMax=8G -p MemorySwapMax=0 timeout 3600 <command>
+```
+
+`TMPDIR=/var/tmp/rloop-units/rloop-spec-1024T1831/tmp` was inherited for these commands.
+`S(EXE)` is `nix develop --command bash conformance/run EXE`;
+`G` is `nix develop --command bash tools/check-all.sh`;
+`I` is `nix develop --command bash /var/tmp/rl-ypm7-fix/launcher-identity.sh`;
+`F` is `nix flake check -L`.
+Each log stem below has `.log` and `.json` files under `/var/tmp/rl-ypm7-fix/`; the records hold
+the exact wrapped command, inherited `TMPDIR`, exit status, elapsed seconds, executable hash
+where applicable, and suite hashes before and after. Those suite hashes stayed unchanged.
+The identity command's stderr is separate, in its `.stderr` file.
+
+| log stem | command | exit | elapsed seconds |
+|---|---|---|---|
+| `raw-2092529-gates-code` | `G` | 0 | 135.178 |
+| `raw-2092529-launcher-identity` | `I` | 0 | 0.998 |
+| `raw-2092529-conforming` | `S(/var/tmp/rl-ypm7-fix/plants/conforming)` | 0 | 339.408 |
+| `raw-2092529-empty-shellopts` | `S(/var/tmp/rl-ypm7-fix/plants/empty-shellopts)` | 1 | 372.276 |
+| `raw-2092529-drop-braceexpand` | `S(/var/tmp/rl-ypm7-fix/plants/drop-braceexpand)` | 1 | 345.415 |
+| `raw-2092529-built-shellopts` | `S(/var/tmp/rl-ypm7-fix/plants/built-shellopts)` | 1 | 353.855 |
+| `raw-2092529-drop-shellopts` | `S(/var/tmp/rl-ypm7-fix/plants/drop-shellopts)` | 1 | 346.185 |
+| `raw-2092529-retry-shellopts` | `S(/var/tmp/rl-ypm7-fix/plants/retry-shellopts)` | 1 | 334.612 |
+| `raw-2092529-newline-shellopts` | `S(/var/tmp/rl-ypm7-fix/plants/newline-shellopts)` | 1 | 325.285 |
+| `raw-2092529-posix-shim` | `S(/var/tmp/rl-ypm7/plants/posix-shim)` | 1 | 320.570 |
+| `raw-2092529-flake-code` | `F` | 0 | 143.079 |
+
+The conforming executable printed `34 passed, 0 failed` and exited 0. The verdict-count command
+below printed the following output, retained in `raw-2092529-verdict-counts.txt`: each item
+appears exactly once. The live item and optional self-check retain their placeholder verdicts;
+neither was exercised by these commands.
+
+```bash
+grep -E '^  (PASS|FAIL)' log | awk '{print $2}' | sed 's|/.*||' | sort | uniq -c
+```
+
+```text
+      1 CNF-10
+      1 CNF-11
+      1 CNF-12
+      1 CNF-13
+      1 CNF-14
+      1 CNF-15
+      1 CNF-16
+      1 CNF-17
+      1 CNF-18
+      1 CNF-19
+      1 CNF-20
+      1 CNF-21
+      1 CNF-22
+      1 CNF-23
+      1 CNF-24
+      1 CNF-25
+      1 CNF-26
+      1 CNF-27
+      1 CNF-28
+      1 CNF-29
+      1 CNF-3
+      1 CNF-30
+      1 CNF-31
+      1 CNF-32
+      1 CNF-33
+      1 CNF-34
+      1 CNF-35
+      1 CNF-36
+      1 CNF-4
+      1 CNF-5
+      1 CNF-6
+      1 CNF-7
+      1 CNF-8
+      1 CNF-9
+```
+
+`empty-shellopts` — complete measured FAIL line(s), totals and failed-item list:
+
+```text
+  FAIL  CNF-10   [001-probe-0.env: raw SHELLOPTS value ''''] [002-manager-0.env: raw SHELLOPTS value ''''] [003-implementer-1.env: raw SHELLOPTS value ''''] [004-probe-1.env: raw SHELLOPTS value ''''] [005-reviewer-1-fable.env: raw SHELLOPTS value ''''] [006-reviewer-1-astra.env: raw SHELLOPTS value ''''] [006-reviewer-1-opus.env: raw SHELLOPTS value ''''] [008-reviewer-1-sol.env: raw SHELLOPTS value ''''] [009-probe-1.env: raw SHELLOPTS value ''''] [010-manager-1.env: raw SHELLOPTS value ''''] [011-probe-1.env: raw SHELLOPTS value ''''] [012-manager-1.env: raw SHELLOPTS value '''']
+33 passed, 1 failed
+failed: CNF-10
+```
+
+`drop-braceexpand` — complete measured FAIL line(s), totals and failed-item list:
+
+```text
+  FAIL  CNF-10   [001-probe-0.env: raw SHELLOPTS value 'hashall:interactive-comments'] [002-manager-0.env: raw SHELLOPTS value 'hashall:interactive-comments'] [003-implementer-1.env: raw SHELLOPTS value 'hashall:interactive-comments'] [004-probe-1.env: raw SHELLOPTS value 'hashall:interactive-comments'] [005-reviewer-1-fable.env: raw SHELLOPTS value 'hashall:interactive-comments'] [005-reviewer-1-opus.env: raw SHELLOPTS value 'hashall:interactive-comments'] [007-reviewer-1-astra.env: raw SHELLOPTS value 'hashall:interactive-comments'] [007-reviewer-1-sol.env: raw SHELLOPTS value 'hashall:interactive-comments'] [009-probe-1.env: raw SHELLOPTS value 'hashall:interactive-comments'] [010-manager-1.env: raw SHELLOPTS value 'hashall:interactive-comments'] [011-probe-1.env: raw SHELLOPTS value 'hashall:interactive-comments'] [012-manager-1.env: raw SHELLOPTS value 'hashall:interactive-comments']
+33 passed, 1 failed
+failed: CNF-10
+```
+
+`built-shellopts` — complete measured FAIL line(s), totals and failed-item list:
+
+```text
+  FAIL  CNF-10   [001-probe-0.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:nounset'] [002-manager-0.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:nounset'] [003-implementer-1.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:nounset'] [004-probe-1.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:nounset'] [005-reviewer-1-fable.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:nounset'] [005-reviewer-1-opus.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:nounset'] [007-reviewer-1-astra.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:nounset'] [007-reviewer-1-sol.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:nounset'] [009-probe-1.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:nounset'] [010-manager-1.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:nounset'] [011-probe-1.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:nounset'] [012-manager-1.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:nounset']
+33 passed, 1 failed
+failed: CNF-10
+```
+
+`drop-shellopts` — complete measured FAIL line(s), totals and failed-item list:
+
+```text
+  FAIL  CNF-10   [001-probe-0.env: SHELLOPTS not exported] [001-probe-0.env: raw SHELLOPTS value ''''] [002-manager-0.env: SHELLOPTS not exported] [002-manager-0.env: raw SHELLOPTS value ''''] [003-implementer-1.env: SHELLOPTS not exported] [003-implementer-1.env: raw SHELLOPTS value ''''] [004-probe-1.env: SHELLOPTS not exported] [004-probe-1.env: raw SHELLOPTS value ''''] [005-reviewer-1-fable.env: SHELLOPTS not exported] [005-reviewer-1-fable.env: raw SHELLOPTS value ''''] [005-reviewer-1-opus.env: SHELLOPTS not exported] [005-reviewer-1-opus.env: raw SHELLOPTS value ''''] [007-reviewer-1-astra.env: SHELLOPTS not exported] [007-reviewer-1-astra.env: raw SHELLOPTS value ''''] [007-reviewer-1-sol.env: SHELLOPTS not exported] [007-reviewer-1-sol.env: raw SHELLOPTS value ''''] [009-probe-1.env: SHELLOPTS not exported] [009-probe-1.env: raw SHELLOPTS value ''''] [010-manager-1.env: SHELLOPTS not exported] [010-manager-1.env: raw SHELLOPTS value ''''] [011-probe-1.env: SHELLOPTS not exported] [011-probe-1.env: raw SHELLOPTS value ''''] [012-manager-1.env: SHELLOPTS not exported] [012-manager-1.env: raw SHELLOPTS value '''']
+33 passed, 1 failed
+failed: CNF-10
+```
+
+`retry-shellopts` — complete measured FAIL line(s), totals and failed-item list:
+
+```text
+  FAIL  CNF-10   [012-manager-1.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix']
+33 passed, 1 failed
+failed: CNF-10
+```
+
+`newline-shellopts` — complete measured FAIL line(s), totals and failed-item list:
+
+```text
+  FAIL  CNF-10   [001-probe-0.env: raw SHELLOPTS value '$'braceexpand:hashall:interactive-comments\n''] [002-manager-0.env: raw SHELLOPTS value '$'braceexpand:hashall:interactive-comments\n''] [003-implementer-1.env: raw SHELLOPTS value '$'braceexpand:hashall:interactive-comments\n''] [004-probe-1.env: raw SHELLOPTS value '$'braceexpand:hashall:interactive-comments\n''] [005-reviewer-1-fable.env: raw SHELLOPTS value '$'braceexpand:hashall:interactive-comments\n''] [005-reviewer-1-opus.env: raw SHELLOPTS value '$'braceexpand:hashall:interactive-comments\n''] [007-reviewer-1-astra.env: raw SHELLOPTS value '$'braceexpand:hashall:interactive-comments\n''] [007-reviewer-1-sol.env: raw SHELLOPTS value '$'braceexpand:hashall:interactive-comments\n''] [009-probe-1.env: raw SHELLOPTS value '$'braceexpand:hashall:interactive-comments\n''] [010-manager-1.env: raw SHELLOPTS value '$'braceexpand:hashall:interactive-comments\n''] [011-probe-1.env: raw SHELLOPTS value '$'braceexpand:hashall:interactive-comments\n''] [012-manager-1.env: raw SHELLOPTS value '$'braceexpand:hashall:interactive-comments\n'']
+33 passed, 1 failed
+failed: CNF-10
+```
+
+`posix-shim` — complete measured FAIL line(s), totals and failed-item list:
+
+```text
+  FAIL  CNF-10   [010-manager-1.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix'] [012-manager-1.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix']
+  FAIL  CNF-36   [invalid-locale] [invalid-locale-retry-out] [invalid-locale-retry-err] [exported-function] [exported-function-retry-out] [exported-function-retry-err]
+32 passed, 2 failed
+failed: CNF-10 CNF-36
+```
+
+`drop-shellopts` now reports both `SHELLOPTS not exported` and the raw empty value for every
+record. The other SHELLOPTS plants each fail only `CNF-10`; `posix-shim`'s complete co-reds
+are quoted above, including `CNF-36`.
+
+The launcher-identity command's complete stdout, copied from its log:
+
+```text
+PASS: raw=bogus\ junk; PID, parent and group preserved
+PASS: raw=''; PID, parent and group preserved
+PASS: raw=hashall:interactive-comments; PID, parent and group preserved
+PASS: raw=braceexpand:hashall:interactive-comments; PID, parent and group preserved
+PASS: raw=$'braceexpand:hashall:interactive-comments\n'; PID, parent and group preserved
+```
+
+Its complete separately captured stderr:
+
+```text
+warning: Git tree '/home/user/p/rloop' is dirty
+bash: line 0: bogus junk: invalid option name
+bash: line 0: interactive-comments
+: invalid option name
+```
+
+All five identity checks passed. The two invalid-option diagnostics were observed, not asserted.
+The dirty-tree warning comes from the `nix develop` wrapper.
+
+The development gate exited 0 with only the pre-existing `RUN-16` restatement advisory and
+`F17` writer-branch line-citation advisory; the unavailable external line citation remains
+unchecked. Its summary was `11 checked, 1 unchecked; 0 blocking, 1 advisory`.
+The `nix flake check -L` measurement exited 0 with a real sandbox build and gate output,
+rather than a cache hit. These gate and sandbox measurements preceded transcription of this
+addendum. Both commands were rerun on the transcribed tree, under the same wrapper:
+`raw-2092529-gates-final` (`G`) exited 0 in 118.72 seconds with the same findings and summary,
+and `raw-2092529-flake-final` (`F`) exited 0 in 132.269 seconds, a real sandbox build that ran
+one flake check. Only this paragraph changed after those reruns.
+
+Workflow inspection used `grep -nF` on `.github/workflows/gates.yml` for `SHELLOPTS value`,
+`SHELLOPTS_VALUE` and `captured before the fake changes its shell options`: each returned 1,
+with no matching line (`raw-2092529-workflow.txt`). `CNF-10`'s success message was not changed.
+No quoting control needed updating. All cited source lines were read with `sed -n`, compared
+against their citing sentences and found unchanged. No earlier dated text was edited or re-anchored.
+
+No scratch suite copy was made. The supplied inputs, including everything under
+`/var/tmp/rl-ypm7/`, stayed read-only; `raw-2092529-inputs.json` retains their initial hashes.
+Only new evidence files were added under `/var/tmp/rl-ypm7-fix/`. Scenarios, fixtures,
+`conformance/scenario-lib.sh`, the formal model and `00`–`05` remain byte-identical to HEAD.
+The Manager's `.beads/issues.jsonl` change is untouched, and this work is left uncommitted.

@@ -128,12 +128,19 @@ Reviewers or Probes. (`AGT-12`, `AGT-13`)
 
 One further Run inherits exported `SHELLOPTS=braceexpand:hashall:interactive-comments`.
 The pick, Implementer, each named Reviewer, both judge attempts (the first cut, then retried),
-and every Probe record that variable exported and byte-identical to the supplied value,
-captured before the fake changes its shell options. Exact per-tag and total argv and environment
+and every Probe record that variable exported and byte-identical to the supplied value.
+A launcher used only for this Run reads the raw value with GNU coreutils `env -S` before bash
+starts; the fake records it with `printf %q` so embedded or trailing newlines survive comparison.
+The export bit comes from bash's `declare -p SHELLOPTS`, captured before the fake changes its shell
+options. Exact per-tag and total argv and environment
 record counts reject missing or extra calls. This Run compares no other inherited variable. (`AGT-13`)
 
 *Amended 2026-10-24 (`rl-ypm7`): add the `SHELLOPTS` Run above. It exercises `AGT-13`'s
 `the environment rloop itself received plus exactly the variables set below, subject to the table's conditions`.*
+
+*Amended 2026-10-24 (`rl-ypm7`): read the inherited value before bash starts and escape its
+record; bash rebuilds `SHELLOPTS` on startup, hiding dropped options and empty values in the
+earlier comparison. The export-bit check is unchanged.*
 
 **CNF-11** For each role the recorded argument list equals the fixture in
 `conformance/fixtures/argv/` with the placeholders filled in: the pick's `<session id>` is the
