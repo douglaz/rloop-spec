@@ -2100,3 +2100,141 @@ earlier dated evidence.
 
 **Still open:** the earlier live-wait and rloop-bash observations above remain outside this
 review fix. No additional gap was found within the requested parts.
+
+
+**Addendum 2026-10-24: `rl-ypm7` inherited SHELLOPTS and positive cut controls.** Amend
+`CNF-10` and `CNF-36` as recorded in `06-conformance.md`. No requirement in `00`–`05`, prompt,
+agent command line, formal declaration, fixture or generated scenario changed. No live model
+CLI was called.
+
+The added `CNF-10` Run exports `SHELLOPTS=braceexpand:hashall:interactive-comments` only to the
+executable. Its records must contain one pick, one Implementer, one of each named Reviewer,
+two judge attempts and four Probes (pick, Panel, judge and post-cut re-check). Per-tag counts
+and totals are checked in both argv and environment records. Every environment record must show
+exported presence and the supplied value. The fake captures both before its own `set -u`;
+bash's default shell variable alone cannot distinguish a dropped export. The judge attempts
+and Round Probes are read individually despite their shared tags. No other inherited variable
+is asserted by the added Run.
+
+The added `CNF-36` controls are (a) own exit 124, (b) own exit 137, (c) each again leaving a silent
+SIGTERM-ignoring child, (d) a plain cut with invalid `LC_ALL=xx_YY.UTF-8`, and (e) a plain cut with
+exported `BASH_FUNC_foo-bar%%=() { :; }`. Each requires exit 0, two recorded judge attempts,
+three Round Probes, the Panel's four calls, both retry captures and first-attempt stdout
+byte-identical by `cmp` to the 53-byte limit line, newline included. Neither stderr's contents
+are asserted for (d) or (e). The straggler controls use `--manager-timeout 5 --kill-after 8`;
+the grace exceeds the timeout by three seconds, separating process exit from the following reap.
+
+`run_rloop` starts the executable directly when its caller supplies no environment assignments,
+including an empty `rloop_env` array. That direct command line is byte-identical to `8663dcd`.
+Only the SHELLOPTS, invalid-locale and exported-function arms supply assignments and use `env`.
+Their `env` resolves on the suite's own PATH, before it installs the executable's restricted
+PATH and `RLOOP_FAKE_RECORD`. `executable_path_needs` and the workflow's mutation sites are unchanged.
+
+The measured path check (`r2-path-check.log` and `.json`) ran the shared launcher with unset and
+empty overrides and an executable at `/var/tmp/rl-ypm7/r2-path-check.hexovcs5/a=b/rloop`:
+both exited 0 and received `--version`. A scoped `R2_MARK=scoped` override at the same path
+exited 127 with `env: ‘--version’: No such file or directory`. The corresponding call was
+`env PATH="$fakes:$private" RLOOP_FAKE_RECORD="$rec" R2_MARK=scoped "$exe" --version`.
+The three environment-specific arms retain this limit for executable paths holding `=`:
+GNU `env` reads that path as another assignment. With an executable path without `=`, the
+same scoped call exited 0 and received the override and restricted PATH even though neither
+restricted directory held `env`. The check's disposable directory was deleted by its exact path.
+
+The conforming scratch is `/var/tmp/rl-ypm7/rloop`, copied with `install -m 755` from
+`/nix/store/rha42c1pvx1xqzallqki8k6w2vxsvpfj-rloop/bin/rloop` (rloop-bash `cab9e36`, wrapped).
+Its only change captures SHELLOPTS and its export state before the wrapper enables nounset,
+removes its automatic export, and restores the captured value at the shared spawn path only
+when it was inherited exported, covering Probes too. The wrapper's PATH remains intact.
+Scratch and plant executables and diffs were reused from the earlier measurements without
+rebuilding them. The unchanged built executable going red on Part 1 is expected; rloop-bash
+catching up is a separate Run and is not this bead's gate.
+
+SHA-256 values on the final measured bytes:
+
+- `/var/tmp/rl-ypm7/rloop`: `88d2e2a91a1a1cedd0f291c8d4d9894a089b30d9e97d1359d08f5584adc55f6e`.
+- `conformance/run`: `5c2b10a923ecf86b46204713b8ff2d8d3170e79078b70efe891e54a627324a46`.
+- `conformance/fakes/agent`: `453220d984e061cb51446e4567be02b6d129f7c4cfd977fcc5ede79d80e10578`.
+- `conformance/scenario-lib.sh`: `531f4a02fad2d38f36be035fd51fd7a5f9b1801970eca8793ef577f6880c7291`.
+- `conformance/scenarios.tsv`: `80149dd3b61527931ea19f5f55a3103be2c5482f834c07b6e5b1d0f494192234`.
+
+Every measurement below used these suite bytes; each command record includes the suite hashes
+and verifies they stayed unchanged during that measurement. The scenario file is byte-identical
+to `8663dcd`. These measurements replace the earlier suite results in this addendum.
+
+Every tabulated command ran alone in the foreground, with output redirected to its log rather
+than through a pipe, and with `TMPDIR=/var/tmp/rl-ypm7/tmp`, inside its own capped scope:
+
+```bash
+systemd-run --user --scope --quiet -p MemoryMax=8G -p MemorySwapMax=0 timeout 3600 <command>
+```
+
+`G` is `nix develop --command bash tools/check-all.sh`.
+`S(EXE)` is `nix develop --command bash conformance/run EXE`.
+`P` is `nix develop --command bash conformance/test-panel-trace /var/tmp/rl-ypm7/rloop`.
+`F` is `nix flake check -L`.
+Each log stem has `.log` and `.json` files under `/var/tmp/rl-ypm7/` holding the complete output,
+exact command, environment scope, exit, elapsed seconds and suite hashes. Plant paths below
+are relative to that evidence directory except for the unchanged store executable.
+
+| log stem | command | exit | elapsed seconds |
+|---|---|---|---|
+| `r2-gates-code` | `G` | 0 | 125.545 |
+| `r2-green-suite` | `S(/var/tmp/rl-ypm7/rloop)` | 0 | 317.111 |
+| `r2-panel-trace` | `P` | 0 | 32.212 |
+| `r2-built-shellopts` | `S(/nix/store/rha42c1pvx1xqzallqki8k6w2vxsvpfj-rloop/bin/rloop)` | 1 | 315.547 |
+| `r2-retry-shellopts` | `S(/var/tmp/rl-ypm7/plants/retry-shellopts)` | 1 | 325.309 |
+| `r2-drop-shellopts` | `S(/var/tmp/rl-ypm7/plants/drop-shellopts)` | 1 | 321.372 |
+| `r2-status-124` | `S(/var/tmp/rl-ypm7/plants/status-124)` | 1 | 369.937 |
+| `r2-status-137` | `S(/var/tmp/rl-ypm7/plants/status-137)` | 1 | 318.465 |
+| `r2-clock-after-reap` | `S(/var/tmp/rl-ypm7/plants/clock-after-reap)` | 1 | 338.616 |
+| `r2-plain-shim` | `S(/var/tmp/rl-ypm7/plants/plain-shim)` | 1 | 332.204 |
+| `r2-posix-shim` | `S(/var/tmp/rl-ypm7/plants/posix-shim)` | 1 | 337.355 |
+| `r2-gates-final` | `G` | 0 | 139.06 |
+| `r2-flake-final` | `F` | 0 | 163.635 |
+
+The scratch printed `34 passed, 0 failed`. The command below printed 34 items, each counted
+once; `r2-verdict-counts.txt` retains the output. The live and optional self-check verdict
+qualifications remain placeholders; neither ran. The executable-backed Panel check exited 0.
+
+```bash
+grep -E '^  (PASS|FAIL)' log | awk '{print $2}' | sed 's|/.*||' | sort | uniq -c
+```
+
+| assertion | plant (single defect) | complete FAIL lines and failed-item list |
+|---|---|---|
+| `CNF-10 inherited value` | `built-shellopts`: Unchanged cab9e36 store executable; every call inherits its added nounset. | `FAIL  CNF-10   [001-probe-0.env: SHELLOPTS value 'braceexpand:hashall:interactive-comments:nounset'] [002-manager-0.env: SHELLOPTS value 'braceexpand:hashall:interactive-comments:nounset'] [003-implementer-1.env: SHELLOPTS value 'braceexpand:hashall:interactive-comments:nounset'] [004-probe-1.env: SHELLOPTS value 'braceexpand:hashall:interactive-comments:nounset'] [005-reviewer-1-fable.env: SHELLOPTS value 'braceexpand:hashall:interactive-comments:nounset'] [006-reviewer-1-opus.env: SHELLOPTS value 'braceexpand:hashall:interactive-comments:nounset'] [007-reviewer-1-astra.env: SHELLOPTS value 'braceexpand:hashall:interactive-comments:nounset'] [007-reviewer-1-sol.env: SHELLOPTS value 'braceexpand:hashall:interactive-comments:nounset'] [009-probe-1.env: SHELLOPTS value 'braceexpand:hashall:interactive-comments:nounset'] [010-manager-1.env: SHELLOPTS value 'braceexpand:hashall:interactive-comments:nounset'] [011-probe-1.env: SHELLOPTS value 'braceexpand:hashall:interactive-comments:nounset'] [012-manager-1.env: SHELLOPTS value 'braceexpand:hashall:interactive-comments:nounset']; failed: CNF-10` |
+| `CNF-10 per-attempt value` | `retry-shellopts`: Only judge attempt 2 appends posix to inherited SHELLOPTS. | `FAIL  CNF-10   [012-manager-1.env: SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix']; failed: CNF-10` |
+| `CNF-10 inherited presence` | `drop-shellopts`: Remove SHELLOPTS from every agent and Probe environment. | `FAIL  CNF-10   [001-probe-0.env: SHELLOPTS not exported] [002-manager-0.env: SHELLOPTS not exported] [003-implementer-1.env: SHELLOPTS not exported] [004-probe-1.env: SHELLOPTS not exported] [005-reviewer-1-fable.env: SHELLOPTS not exported] [006-reviewer-1-opus.env: SHELLOPTS not exported] [007-reviewer-1-astra.env: SHELLOPTS not exported] [007-reviewer-1-sol.env: SHELLOPTS not exported] [009-probe-1.env: SHELLOPTS not exported] [010-manager-1.env: SHELLOPTS not exported] [011-probe-1.env: SHELLOPTS not exported] [012-manager-1.env: SHELLOPTS not exported]; failed: CNF-10` |
+| `CNF-36 own exit 124 (a)` | `status-124`: Read status 124 as timed out without consulting the clock. | `FAIL  CNF-36   [own-exit124] [own-exit124-retry-out] [own-exit124-retry-err] [own-exit124-straggler] [own-exit124-straggler-retry-out] [own-exit124-straggler-retry-err]; failed: CNF-36` |
+| `CNF-36 own exit 137 (b)` | `status-137`: Read status 137 as timed out without consulting the clock. | `FAIL  CNF-36   [own-exit137] [own-exit137-retry-out] [own-exit137-retry-err] [own-exit137-straggler] [own-exit137-straggler-retry-out] [own-exit137-straggler-retry-err]; failed: CNF-36` |
+| `CNF-36 stragglers (c)` | `clock-after-reap`: Stop the timeout clock after the group reap. | `FAIL  CNF-36   [own-exit124-straggler] [own-exit124-straggler-retry-out] [own-exit124-straggler-retry-err] [own-exit137-straggler] [own-exit137-straggler-retry-out] [own-exit137-straggler-retry-err]; failed: CNF-36` |
+| `CNF-36 invalid locale (d)` | `plain-shim`: Plain bash -c exec shim with timeout stderr piped; classify any byte as timed out. | `FAIL  CNF-36   [invalid-locale] [invalid-locale-retry-out] [invalid-locale-retry-err]; failed: CNF-36` |
+| `CNF-36 exported function (e)` | `posix-shim`: The same diagnostic-pipe classifier with the bash --posix exec shim. | `FAIL  CNF-10   [010-manager-1.env: SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix'] [012-manager-1.env: SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix']; FAIL  CNF-36   [invalid-locale] [invalid-locale-retry-out] [invalid-locale-retry-err] [exported-function] [exported-function-retry-out] [exported-function-retry-err]; failed: CNF-10 CNF-36` |
+
+The table includes every co-red. The clock plant reddens both straggler controls together;
+the status-only plants separate the status groups and also redden their corresponding
+straggler control. The plain and POSIX shims' caller-environment and inherited-variable
+co-reds are observed here on the final suite bytes.
+
+The excluded `no-bash` arm remains outside this change. `CNF-2`'s
+`Before the suite runs the executable, it resolves the tools` applies to `bash` in `CNF-1`
+and `executable_path_needs` in `conformance/scenario-lib.sh`; the supplied executable PATH
+therefore includes bash, and no requirement says rloop runs without it. The excluded `bash-env`
+arm remains outside because `DIR-4`'s
+`Every agent's standard output, and the probe's, goes to its file entire and unmodified`
+reads two ways on whether a shell's startup output, printed before that shell execs the
+agent, is the agent's standard output. Exported-function bytes, BASHOPTS, SHLVL, PATH and
+full-environment equality remain unasserted. There is no new question for the owner or
+further gap within the requested scope beyond the measured environment-arm path limit.
+
+
+The final development gate `nix develop --command bash tools/check-all.sh` (`r2-gates-final`)
+exited 0 in 139.06 seconds. Its only findings were the existing `RUN-16`
+restatement advisory, `F17` writer-branch line-citation advisory and unavailable external
+line citation: `11 checked, 1 unchecked; 0 blocking, 1 advisory`.
+The final `nix flake check -L` (`r2-flake-final`) was a real sandbox build, not a cache hit;
+it exited 0 in 163.635 seconds. These measurements preceded copying their results into this paragraph.
+No cited source line moved, and no earlier dated evidence was reworded or re-anchored. The
+workflow was checked for quotations of changed success messages and mutation sites; none
+required updating. No disposable suite copy was made. The evidence directory may not survive;
+`r2-manifest.json` records final artifact hashes independently of the earlier manifest.

@@ -263,7 +263,7 @@ for timeout_case in default custom; do
   [ "$e" = 0 ] || { ok=0; detail="$detail [$timeout_case Manager timeout: exit $e]"; }
   for round in 0 1 2; do check_claude_manager_timeout "manager-$round" "$expected_ms"; done
 done
-if [ "$ok" = 1 ]; then verdict CNF-10 ok "RLOOP_* variables, cwd and closed stdin for every role; claude Manager shell ceiling at default and custom timeouts"; else verdict CNF-10 fail "$detail"; fi
+quota_ok[10]=$ok; quota_detail[10]=$detail
 
 # --- CNF-11 / CNF-12: argv and prompts ---------------------------------------------------------------
 render() { # render <template file> ; placeholders from variables P_*, one pass by PRM-6
@@ -1779,6 +1779,59 @@ for shape in limit suffix stderr exit7; do
   fi
 done
 
+# CNF-10's inherited-variable Run reaches every role, every judge attempt and every Probe.
+check_inherited_shellopts() {
+  local rloop_env=('SHELLOPTS=braceexpand:hashall:interactive-comments')
+  local paths=() tag want f value
+  quota_case inherited-shellopts clear 1:1 1 1
+  ok=${quota_ok[10]}; detail=${quota_detail[10]}
+  [ "$e" = 0 ] || { ok=0; detail="$detail [SHELLOPTS: exit $e]"; }
+  # Check totals as well as each tag, so unexpected roles/Rounds cannot hide extra calls.
+  for ext in argv env; do
+    [ "$(path_count "$rec"/*."$ext")" = 12 ] || { ok=0; detail="$detail [SHELLOPTS: not 12 $ext records]"; }
+    for tag in manager-0 implementer-1 reviewer-1-fable reviewer-1-opus reviewer-1-astra reviewer-1-sol manager-1 probe-0 probe-1; do
+      want=1
+      case $tag in manager-1) want=2 ;; probe-1) want=3 ;; esac
+      matching_paths "$rec"/*-"$tag.$ext"
+      [ "${#paths[@]}" = "$want" ] || { ok=0; detail="$detail [SHELLOPTS $tag: ${#paths[@]} $ext records, want $want]"; }
+    done
+  done
+  for f in "$rec"/*.env; do
+    [ -f "$f" ] || continue
+    grep -qxF 'SHELLOPTS_EXPORTED=1' "$f" || { ok=0; detail="$detail [$(basename "$f"): SHELLOPTS not exported]"; }
+    value=$(sed -n 's/^SHELLOPTS_VALUE=//p' "$f")
+    [ "$value" = 'braceexpand:hashall:interactive-comments' ] || { ok=0; detail="$detail [$(basename "$f"): SHELLOPTS value '$value']"; }
+  done
+  quota_ok[10]=$ok; quota_detail[10]=$detail
+}
+check_inherited_shellopts
+quota_success[10]="RLOOP_* variables, cwd and closed stdin; claude Manager shell ceiling; inherited SHELLOPTS exported unchanged to every call and retry"
+
+# RUN-24: own exits are cuts even when cleanup outlasts the attempt's timeout.
+quota_positive_cut() { # label: no assertion about either stderr's contents
+  quota_assert CNF-36 "$1" quota_outcome 0 2 3 4
+  quota_assert CNF-36 "$1-retry-out" test -f "$repo/run/manager-judge-1-retry-1.out"
+  quota_assert CNF-36 "$1-retry-err" test -f "$repo/run/manager-judge-1-retry-1.err"
+  quota_assert CNF-36 "$1-first-output" cmp -s <(printf '%s\n' "$limit_line") "$repo/run/manager-judge-1.out"
+}
+for status in 124 137; do
+  quota_case "own-exit$status" clear "1:1:exit$status" 1 1
+  quota_positive_cut "own-exit$status"
+  # 5 seconds bounds the fake's short execution; the 8-second reap crosses it with
+  # three seconds of margin, including for Implementations using a whole-second clock.
+  RLOOP_FAKE_MANAGER_CHILD_CALL=1:1 RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=manager \
+    quota_case "own-exit$status-straggler" clear "1:1:exit$status" 1 1 --manager-timeout 5 --kill-after 8
+  quota_positive_cut "own-exit$status-straggler"
+  kill_recorded "$rec"
+done
+quota_env_case() { # assignment label: env affects only the executable, not the suite's shell
+  local rloop_env=("$1") label=$2
+  quota_case "$label" clear 1:1 1 1
+  quota_positive_cut "$label"
+}
+quota_env_case 'LC_ALL=xx_YY.UTF-8' invalid-locale
+quota_env_case 'BASH_FUNC_foo-bar%%=() { :; }' exported-function
+
 # AGT-15, R1: late bytes during reap make the limit line cease to be a cut.
 RLOOP_FAKE_MANAGER_CHILD_CALL=1:1 RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=manager \
   RLOOP_FAKE_WRITE_STDOUT=manager:0.2:late-output quota_case late-output clear 1:1 1 1 --kill-after 1
@@ -1877,7 +1930,7 @@ quota_interrupted_check() {
 quota_assert CNF-36 interrupt-recheck-reaped quota_interrupted_check
 kill_recorded "$rec"
 
-for id in 24 26 30 34 36; do
+for id in 10 24 26 30 34 36; do
   ok=${quota_ok[$id]}; detail=${quota_detail[$id]}
   if [ "$ok" = 1 ]; then verdict "CNF-$id" ok "${quota_success[$id]}"
   else verdict "CNF-$id" fail "$detail"; fi

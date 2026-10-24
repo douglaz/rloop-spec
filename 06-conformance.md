@@ -126,6 +126,15 @@ different Manager model. Missing required records or values and wrong values fai
 The suite makes no assertion about `BASH_MAX_TIMEOUT_MS` for codex Managers, Implementers,
 Reviewers or Probes. (`AGT-12`, `AGT-13`)
 
+One further Run inherits exported `SHELLOPTS=braceexpand:hashall:interactive-comments`.
+The pick, Implementer, each named Reviewer, both judge attempts (the first cut, then retried),
+and every Probe record that variable exported and byte-identical to the supplied value,
+captured before the fake changes its shell options. Exact per-tag and total argv and environment
+record counts reject missing or extra calls. This Run compares no other inherited variable. (`AGT-13`)
+
+*Amended 2026-10-24 (`rl-ypm7`): add the `SHELLOPTS` Run above. It exercises `AGT-13`'s
+`the environment rloop itself received plus exactly the variables set below, subject to the table's conditions`.*
+
 **CNF-11** For each role the recorded argument list equals the fixture in
 `conformance/fixtures/argv/` with the placeholders filled in: the pick's `<session id>` is the
 `session` file's content and each Run's Round 1 judge call, the one read here, carries that same
@@ -827,12 +836,23 @@ the newline; hypothetical weekly-limit wording; a timed-out attempt that printed
 a call that wrote a Finished File or rewrote the Task File before printing it. Each keeps the
 ordinary failure outcome with no post-cut check or retry, and leaves any decision files in place.
 A codex Manager is never retried. A cut pick exits 2 after its sole pick with no Round. Positive
-controls carry an arbitrary suffix, ignore stderr and accept a nonzero status other than 1.
+controls carry an arbitrary suffix, ignore stderr and accept a nonzero status other than 1
+(7, 124 and 137), including own exits 124 and 137 with a silent SIGTERM-ignoring child whose reap
+outlasts the Manager timeout. Plain cuts also retry with an invalid inherited `LC_ALL=xx_YY.UTF-8` and an
+exported `BASH_FUNC_foo-bar%%=() { :; }`. Each added control requires exit 0, two judge attempts,
+both retry captures and the byte-identical first stdout capture; neither stderr's contents are
+asserted in the caller-environment controls.
 
 During a 25-second poll, SIGINT and SIGTERM sent to the executable's PID produce exit 2 and
 `interrupted` within 3 seconds. A signal during a re-check terminates and reaps that check's group
 before returning exit 2 with `interrupted`, also within 3 seconds. These add clock-measured claims
 to the rows `CNF-35` names. (`RUN-24`, `AGT-4`, `PRM-2`, `PRM-6`, `DIR-4`, `RUN-11`, `AGT-15`)
+
+*Amended 2026-10-24 (`rl-ypm7`): add the own-exit, straggler and caller-environment positive
+controls above. `RUN-24` says `A timed-out attempt is never cut` and
+`A cut MUST begin the sleep-first wait above using the Round's remaining budget`;
+`AGT-15` says `The reaping leaves the call's exit status the spawned process's`.
+The straggler controls separate process execution from the following reap.*
 
 ## Not testable black-box
 

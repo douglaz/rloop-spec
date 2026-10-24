@@ -95,7 +95,7 @@
 #   RLOOP_FAKE_WATCH probe:@own watches each ordinary check's own numbered verdict
 #   Additional cut shapes: limit-hang prints then exceeds a bound; nul splits the prefix;
 #   trailing adds a NUL after the newline; leading adds same-line prose; suffix and stderr
-#   remain cuts, as does exit7. session100-fable / session100-opus combine both quota readings.
+#   remain cuts, as do exit7, exit124 and exit137. session100-fable / session100-opus combine both quota readings.
 #   RLOOP_FAKE_MANAGER_CUT   <round>:<n>[:<shape>] entries joined by `,`: the <n>-th Manager call made
 #                            for Round <round> (0 = the pick) is cut off the way claude -p ends a call
 #                            the account's session limit stops. Calls are counted from the record
@@ -122,7 +122,7 @@
 # No knob turns it on: every fake of every Run also carries CALLS_ALIVE=<pids> in its .env record,
 # written before it probes standard input, sleeps, spawns or traces — the previously recorded PID
 # pids other than this call's own, still running when this call started (empty when none).
-set -u
+startup_shellopts=$(declare -p SHELLOPTS); startup_shellopts_value=$SHELLOPTS; set -u
 
 rec="${RLOOP_FAKE_RECORD:?}"
 role="${RLOOP_ROLE:-unset}"
@@ -228,6 +228,13 @@ if { [ "$gc_ignore_term" = 1 ] && [ "$sleep_for" != 0 ]; } || [ "$gc_ignore_term
   fi
 fi
 
+# Capture preceded set -u: bash recomputes SHELLOPTS even when it was not inherited.
+case "$startup_shellopts" in
+  "declare -"*x*" SHELLOPTS="*) echo 'SHELLOPTS_EXPORTED=1' ;;
+  *) echo 'SHELLOPTS_EXPORTED=0' ;;
+esac >> "$rec/$tag.env"
+printf 'SHELLOPTS_VALUE=%s\n' "$startup_shellopts_value" >> "$rec/$tag.env"
+
 pick="${RLOOP_FAKE_PICK:-ok:task}"
 if [ -n "${RLOOP_FAKE_RUNS:-}" ] && [ "$run" != unset ]; then
   IFS=, read -r -a runs <<< "$RLOOP_FAKE_RUNS"
@@ -289,6 +296,8 @@ case "$role" in
         leading) printf 'Explanation: %s\n' "$limit_line"; status=1 ;;
         suffix) printf '%s extra text\n' "$limit_line"; status=1 ;;
         stderr) printf '%s\n' "$limit_line"; echo ignored >&2; status=1 ;;
+        exit124) printf '%s\n' "$limit_line"; status=124 ;;
+        exit137) printf '%s\n' "$limit_line"; status=137 ;;
         exit7) printf '%s\n' "$limit_line"; status=7 ;;
         limit-ok) printf '%s\n' "$limit_line"; status=0 ;;
         limit-err) printf '%s\n' "$limit_line" >&2; status=1 ;;

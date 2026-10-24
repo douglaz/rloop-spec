@@ -51,12 +51,18 @@ restrict_path() {
   [ -z "$skipped" ] || echo "conformance: not on this host, so not on the executable's PATH:$skipped" >&2
 }
 
-# run_rloop <repo> <record dir> [rloop args...] ; environment for the fakes comes from the caller
+# run_rloop <repo> <record dir> [rloop args...] ; caller may scope env assignments in rloop_env[]
 run_rloop() {
   local repo="$1" rec="$2"; shift 2
   mkdir -p "$rec"
+  if [ -n "${rloop_env[*]-}" ]; then
+    # Resolve env on the suite's PATH before it installs the executable's restricted PATH.
+    ( cd "$repo" && env PATH="$fakes:$private" RLOOP_FAKE_RECORD="$rec" "${rloop_env[@]}" "$exe" "$@" </dev/null \
+        >"$rec/stdout" 2>"$rec/stderr" )
+  else
   ( cd "$repo" && PATH="$fakes:$private" RLOOP_FAKE_RECORD="$rec" "$exe" "$@" </dev/null \
       >"$rec/stdout" 2>"$rec/stderr" )
+  fi
   echo $? > "$rec/exit"
   cat "$rec/exit"
 }
