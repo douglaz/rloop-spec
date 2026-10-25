@@ -2495,6 +2495,23 @@ started directly under rloop with no intervening forking program. Other possible
 The measurements below distinguish what the PID arms see from what the full suite sees;
 this list makes no claim to exhaust the ways a shell can escape observation.
 
+*Evidence note 2026-10-25 (`rl-jeo2`).* The retained full-suite matrix used the pre-`rl-e7uq`
+`--effort xhigh` fixtures and matching scratch executables, before PR #16 (`87ad233`) changed
+the relevant fixtures to `high`. Those measurements remain history; the retained commands and
+artifacts are not a current-fixture reproduction of those full-suite totals. The supplied
+measurement on the current fixtures (rebased suite `ef05104`), with the conforming scratch's
+five claude lines changed to `--effort high`, recorded `34 passed, 0 failed`, each item once.
+This Round did not rerun it; F30's existing live-item and optional-self-check qualifications
+still apply, neither newly verified here. FWT is a known false-red limit of the PID checks:
+its wrapper invokes FW-real through `timeout` without `exec`. The false red needs both a
+forking non-shell program above rloop and an rloop that is its agents' direct parent, as
+FW-real is through `setsid`. The measured `D(FWT)` result was
+`FAIL CNF-34 [bash-env: shell 1185841 is fake 1185874 or its parent 1185841]`.
+D is the PID-arm subset, not a full-suite run. The measured CWT control,
+`timeout 600 conforming "$@"` without `exec`, passed D: timeout above an ordinary
+timeout-parenting Implementation alone did not reproduce FWT. The real rloop-bash Nix
+executable inlines its script and passes these PID arms.
+
 **Measured on Linux, using the suite's fakes.** The host's `/bin/sh` link resolves to the
 bash-interactive 5.3.9 store path; outside the Nix shell it reports bash 5.3.9. Inside the
 `nix develop` environment used for these measurements, `/bin/sh` reports bash 5.3.15 and
