@@ -338,5 +338,10 @@
     "owner": "RUN-22",
     "sha256": "3492885d0d1e34f7d42670ce557e83786303e0649394e83f6c614f160b746e2d",
     "reason": "Owns the per-Seat quotation rule at every check; RUN-21 supplies the readings that establish exhaustion."
+  },
+  {
+    "owner": "AGT-16",
+    "sha256": "9e28a6e0c4922ae64a932f1961989fd9093abd50d4ab9c76d731c3af67e939fb",
+    "reason": "Owns how agent processes and the Probe are started; AGT-18 identifies the Probe."
   }
 ]

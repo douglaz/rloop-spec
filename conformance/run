@@ -1781,7 +1781,9 @@ done
 
 # CNF-10's inherited-variable Run reaches every role, every judge attempt and every Probe.
 check_inherited_shellopts() {
-  local rloop_env=('SHELLOPTS=braceexpand:hashall:interactive-comments')
+  local caller_out=$'caller out sentinel\tline\nend\n' expected_out
+  local rloop_env=('SHELLOPTS=braceexpand:hashall:interactive-comments' "out=$caller_out")
+  printf -v expected_out '%q' "$caller_out"
   local fakes="$work/fakes-inherited-shellopts" snapshot_env
   local paths=() tag want f value
   # GNU env expands from the raw environment, before Bash can rebuild SHELLOPTS.
@@ -1812,8 +1814,14 @@ check_inherited_shellopts() {
   for f in "$rec"/*.env; do
     [ -f "$f" ] || continue
     grep -qxF 'SHELLOPTS_EXPORTED=1' "$f" || { ok=0; detail="$detail [$(basename "$f"): SHELLOPTS not exported]"; }
+    grep -q '^SHELLOPTS_RAW_VALUE=' "$f" || { ok=0; detail="$detail [$(basename "$f"): no raw SHELLOPTS record]"; }
     value=$(sed -n 's/^SHELLOPTS_RAW_VALUE=//p' "$f")
     [ "$value" = 'braceexpand:hashall:interactive-comments' ] || { ok=0; detail="$detail [$(basename "$f"): raw SHELLOPTS value '$value']"; }
+  done
+  for f in "$rec"/*.env; do
+    [ -f "$f" ] || continue
+    grep -qxF 'OUT_SET=x' "$f" && grep -qxF "OUT_VALUE=$expected_out" "$f" \
+      || { ok=0; detail="$detail [$(basename "$f"): caller out changed or unset]"; }
   done
   quota_ok[10]=$ok; quota_detail[10]=$detail
 }
@@ -1942,6 +1950,92 @@ quota_interrupted_check() {
 }
 quota_assert CNF-36 interrupt-recheck-reaped quota_interrupted_check
 kill_recorded "$rec"
+
+# CNF-10: the suite itself may have inherited exported SHELLOPTS. Remove it only here.
+check_unexported_shellopts() {
+  local repo rec e f tag want paths=()
+  repo=$(new_repo); rec="$work/rec-unexported-shellopts"; mkdir -p "$rec"
+  ( cd "$repo" && exec env -u SHELLOPTS PATH="$fakes:$private" RLOOP_FAKE_RECORD="$rec" \
+      RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS='impl=ok;panel=all;judge=done' RLOOP_FAKE_MANAGER_CUT='' \
+      "$exe" --run-dir "$repo/run" --quota-wait 1 --quota-poll 1 </dev/null >"$rec/stdout" 2>"$rec/stderr" )
+  e=$?
+  quota_assert CNF-10 "unexported SHELLOPTS: exit $e" test "$e" = 0
+  for ext in argv env; do
+    quota_assert CNF-10 "unexported SHELLOPTS: not 10 $ext records" test "$(path_count "$rec"/*."$ext")" = 10
+    for tag in manager-0 implementer-1 reviewer-1-fable reviewer-1-opus reviewer-1-astra reviewer-1-sol manager-1 probe-0 probe-1; do
+      want=1; [ "$tag" != probe-1 ] || want=2
+      matching_paths "$rec"/*-"$tag.$ext"
+      quota_assert CNF-10 "unexported SHELLOPTS $tag: ${#paths[@]} $ext records, want $want" test "${#paths[@]}" = "$want"
+    done
+  done
+  for f in "$rec"/*.env; do
+    [ -f "$f" ] || continue
+    quota_assert CNF-10 "$(basename "$f"): SHELLOPTS unexpectedly exported or unrecorded" grep -qxF 'SHELLOPTS_EXPORTED=0' "$f"
+  done
+}
+check_unexported_shellopts
+
+# AGT-16: PID identity in two otherwise ordinary one-Round Runs.
+# Isolate both the private PATH and the fakes; other items keep their original launchers.
+check_direct_start() {
+  local direct="$work/direct-start" fakes="$work/fakes-direct-start"
+  local bash_link repo rec e rpid label own grew p q ap aq
+  bash_link=$(readlink "$private/bash")
+  cp -R "$private" "$work/private-direct-start"
+  local private="$work/private-direct-start"
+  mkdir -p "$direct" "$fakes"
+  {
+    printf '#!%s\n' "$BASH"
+    echo 'echo "$$ $PPID" >> "$RLOOP_FAKE_RECORD/agent-pids"'
+    tail -n +2 "$here/fakes/agent"
+  } > "$direct/agent"
+  chmod +x "$direct/agent"
+  ln -s "$direct/agent" "$fakes/claude"; ln -s "$direct/agent" "$fakes/codex"
+  {
+    printf '#!%s\n' "$BASH"
+    echo 'echo "$$ $PPID" >> "$RLOOP_FAKE_RECORD/shell-pids"'
+    printf 'exec "%s" "$@"\n' "$bash_link"
+  } > "$direct/bash-shim"
+  chmod +x "$direct/bash-shim"
+  printf '[ "$0" -ef "%s" ] || echo $$ $PPID >> "$RLOOP_FAKE_RECORD/shell-pids"\n' "$direct/agent" > "$direct/bash-env"
+  for label in no-bash bash-env; do
+    rm -f "$private/bash"
+    local direct_env=()
+    if [ "$label" = no-bash ]; then ln -s "$direct/bash-shim" "$private/bash"
+    else ln -s "$bash_link" "$private/bash"; direct_env=("BASH_ENV=$direct/bash-env"); fi
+    repo=$(new_repo); rec="$direct/rec-$label"; mkdir -p "$rec"
+    # exec preserves the initial PID; supervise this child to completion before reading its log.
+    ( cd "$repo" && exec env ${direct_env[@]+"${direct_env[@]}"} PATH="$fakes:$private" \
+        RLOOP_FAKE_RECORD="$rec" RLOOP_FAKE_PICK=ok:task \
+        RLOOP_FAKE_ROUNDS='impl=ok;panel=all;judge=done' RLOOP_FAKE_MANAGER_CUT='' \
+        "$exe" --run-dir "$repo/run" --quota-wait 1 --quota-poll 1 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
+    rpid=$!; wait "$rpid"; e=$?
+    quota_assert CNF-34 "$label: exit $e" test "$e" = 0
+    quota_assert CNF-34 "$label: missing judge out" test -e "$repo/run/manager-judge-1.out"
+    quota_assert CNF-34 "$label: missing judge err" test -e "$repo/run/manager-judge-1.err"
+    quota_assert CNF-34 "$label: no fake PID record" test -s "$rec/agent-pids"
+    [ -e "$rec/shell-pids" ] && [ -s "$rec/agent-pids" ] || continue
+    # Close over logged shell parents, starting at the PID we launched. This exempts a
+    # wrapper that forks rloop, and also misses a shell directly under rloop (F30).
+    own=" $rpid "; grew=1
+    while [ "$grew" = 1 ]; do
+      grew=0
+      while read -r p q; do
+        case $own in *" $p "*) ;; *" $q "*) own="$own$p "; grew=1 ;; esac
+      done < "$rec/shell-pids"
+    done
+    while read -r p q; do
+      case $own in *" $p "*) continue ;; esac
+      while read -r ap aq; do
+        if [ "$p" = "$ap" ] || [ "$p" = "$aq" ]; then
+          quota_assert CNF-34 "$label: shell $p is fake $ap or its parent $aq" false
+          break
+        fi
+      done < "$rec/agent-pids"
+    done < "$rec/shell-pids"
+  done
+}
+check_direct_start
 
 for id in 10 24 26 30 34 36; do
   ok=${quota_ok[$id]}; detail=${quota_detail[$id]}

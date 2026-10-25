@@ -303,7 +303,15 @@ and that record is what decides which Seats the Panel calls (`RUN-7`). `07-open-
 
 **AGT-16** Each agent process, and the **Probe** (`AGT-18`), MUST be started in its own process group, so that `AGT-14` and
 `AGT-15` reach every descendant. A new session (`setsid`) satisfies this; so does what
-`timeout` does for the command it runs.
+`timeout` does for the command it runs. rloop MUST start each agent process, and the **Probe**
+(`AGT-18`), with no shell in between: any program rloop runs between itself and the command line
+this document gives for it MUST only set what that command runs with, such as its environment,
+session, process group or time bound, and then run the rest of its own arguments as given, as
+`env`, `setsid` and `timeout` do, and MUST NOT interpret a command string or a shell script, or
+read a startup file, as `sh` and `bash` do under any options.
+
+*Amended 2026-10-24 (issue #14, `rl-jeo2`): add the no-shell sentence; `F30` records the
+Conformance Suite measurements and the checks' remaining limits.*
 
 ## The availability probe
 

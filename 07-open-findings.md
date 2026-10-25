@@ -2478,3 +2478,382 @@ No scratch suite copy was made. The supplied inputs, including everything under
 Only new evidence files were added under `/var/tmp/rl-ypm7-fix/`. Scenarios, fixtures,
 `conformance/scenario-lib.sh`, the formal model and `00`–`05` remain byte-identical to HEAD.
 The Manager's `.beads/issues.jsonl` change is untouched, and this work is left uncommitted.
+
+## F30 — Direct agent starts and the PID checks' limits (open 2026-10-24)
+
+Accepted 2026-10-24 (issue #14, `rl-jeo2`): amend `AGT-16` with the owner's approved
+no-shell sentence. `CNF-34` gains the no-bash and bash-env PID arms; `CNF-10` gains
+caller-exported `out` preservation and unexported `SHELLOPTS` preservation checks.
+`AGT-16` owns `with no shell in between`; `AGT-13` owns
+`the environment rloop itself received plus exactly the variables set below, subject to the table's conditions`.
+
+These PID arms narrow the no-bash and bash-env checks excluded in `F29`'s 2026-10-24
+addendum: they compare PID identity alone, make no assertion about standard output, and keep
+bash on `PATH` as a shim in the no-bash arm. Their start-chain exception also admits a shell
+started directly under rloop with no intervening forking program. Other possible misses include
+`--posix` (W3), `/bin/sh` (W4), and stripping `BASH_ENV` before a `"$BASH"` script shim.
+The measurements below distinguish what the PID arms see from what the full suite sees;
+this list makes no claim to exhaust the ways a shell can escape observation.
+
+**Measured on Linux, using the suite's fakes.** The host's `/bin/sh` link resolves to the
+bash-interactive 5.3.9 store path; outside the Nix shell it reports bash 5.3.9. Inside the
+`nix develop` environment used for these measurements, `/bin/sh` reports bash 5.3.15 and
+POSIX mode on. `/bin` is an envfs (FUSE) mount on this host, so what `/bin/sh` runs depends on
+the calling process's environment, which is why the two readings differ. The suite, its
+runtime-generated fake shebangs, the real bash on its private
+`PATH`, and the wrapped executable use bash 5.3.15. `host.log` retains these observations.
+No dash-host result was measured.
+
+| shape | PID-arm result | full-suite failed items on this host |
+|---|---|---|
+| W3: `"$BASH" --posix -c` | both missed it | `CNF-10` |
+| W4: `/bin/sh -c` | both missed it | `CNF-10` |
+| BE-strip: strip `BASH_ENV` before the S2-shaped `"$BASH"` script shim | both missed it | none |
+| SC: shell directly under rloop, before `timeout`, with no intervening forking program | both missed it | none |
+
+W3 and W4's inherited-`SHELLOPTS` records contain the added `:posix`; the full verdict
+lines below identify every co-red. W4's result belongs to this bash-based host. A dash
+`/bin/sh` would not supply bash's `:posix` export in that way; this is an inference, not a
+measurement on dash. BE-strip and SC demonstrate the respective unobserved script start
+and start-chain exception. The exception was re-measured against the narrowed PID arms;
+the inherited-variable Run's `env -S` launcher is not used by either PID arm.
+
+**Artifacts and reproduction.** Evidence is under `/var/tmp/rl-direct-start/`, a scratch
+location that may not survive. The supplied panel directories and `/var/tmp/rl-ypm7/`
+were read-only. `agent-exec.sh` is a copy of the supplied shim. `conforming-source.diff`
+records the scratch corrections: remove the export attribute from `spawn()`'s local `out`
+and from the enclosing Round's local `out` array. The latter otherwise hides the caller's
+export too. The W/S and environment plants' `.diff` files isolate their named changes
+against that corrected scratch; FW and FWES are wrappers around `FW-real`, which replaces `timeout` with
+`setsid` so that rloop is each fake's direct parent. Their wrapper calls rloop without
+execing it. The absolute and env-bash wrapper shebangs both stay green.
+
+| artifact (relative names below are under the evidence directory) | SHA-256 |
+|---|---|
+| `conformance/run` | `217f5a81fd0397e72934dbd98ca49b7b2222ef7b5e673e03b80b5ea5948ecb97` |
+| `conformance/fakes/agent` | `868c5262b535b7ab7fef63e518d02a1ad8ce2a91d92de8577a0af51d9b2ffa21` |
+| `conformance/scenario-lib.sh` | `531f4a02fad2d38f36be035fd51fd7a5f9b1801970eca8793ef577f6880c7291` |
+| `conformance/scenarios.tsv` | `80149dd3b61527931ea19f5f55a3103be2c5482f834c07b6e5b1d0f494192234` |
+| `direct-subset.sh` | `5e22c20d6f6dd159b050f1bb584a82ec99798b15e1b5d654652c915a4b5cb7c5` |
+| `environment-subset.sh` | `bb8ef83b5f10b4bad7974ac8e7eeafa662a1609443bf4b7d6d9849c3e3ab969d` |
+| `conforming` | `bb565a455ca1d7f7b4994b13ba49be09ba18337cd1c2b3ddf498d69d760c6a53` |
+| `W1` | `35dbeab4fe10198730c947b75075653682b0e43f7c73553ced9a1bd9d5d075c3` |
+| `W2` | `2a63bd8f586e641319ee8af1b0b7b8025717abc5a4face79656d18ea494d4f65` |
+| `W3` | `ddab6f5b7274fb4fd321a2a593505aca133dd4abbb773e2e5f85889dd706d88a` |
+| `W4` | `8efaf0ac1649c99b17e341518c24967d1ec6012b8d2a48a14a968b09be88e805` |
+| `W5` | `ebe8865790001360c6fc28995da27998651ddf064f53102f3e587fc0bb4dc2b9` |
+| `W5b` | `f6a23e3769f309cd4e05f1cd3672880eedb1f526e98eaa447eff9c005761b03f` |
+| `helper-path` | `c57b6f4e451e4ed1d6c8847a3d3f0fad7438b3f3f23694d3369920371c1692bf` |
+| `helper-log` | `c7abcff7d4de2776db4453f1bd0e52b1e47095865ebc64528169889e2528646e` |
+| `W6` | `ef870f8e57b4fab0f0939400a5ee4da6ff2c00a0abb699335e25c2e2e4f0c594` |
+| `NB` | `60639873d482011842eb7456bce1aea2e1ee89913d355fbc77e37dd6725dcdda` |
+| `BE` | `eb6c4bd9f84850c38d2de9e12027d23f0f2a503fdb6246c513c9a9de5ae4cd2b` |
+| `S1` | `5816914c65f7736d6f194c33d24d72909bcc6269662b32eb143790167ceeda79` |
+| `S2` | `0a95be924f6c6b70f5894f9f964ab927ec59e47aa75c3d510e0d7d735b5c8032` |
+| `P1` | `e1765b94e63b833fd81db72df29d48bd80723a3abf77af6b3e44e700fee63c9f` |
+| `P2` | `b2c344795fae664d334809f0e2d70b65c22e15af624f58bfc77fa790767df2db` |
+| `ES` | `05790fdfd34ac604df79b36ba4581f9e79be2fe50c14008be53dfd84ccf512e2` |
+| `plant-no-bash` | `7e8b3e30f6a703db68804d7c7c87ada6275efbef6605dd68158884194393a18b` |
+| `plant-bash-env` | `06c4fa02b63556189391e2ff36af85524d83fd33ad11f8a4fa62b2b1b9c5836f` |
+| `BE-strip` | `488977dd69ae6b4ce6d2ef2adbf537e550f55f1ddd685e35b847c8a41dfc968a` |
+| `SC` | `3bd715dd8f7a2f15d322f38a0f7b66dbfb1e2ca5b2a64f30e8ce179e330b4a69` |
+| `export-shellopts` | `3e12936d2e52e939b7b12f91f28b134d8845095e5b1007b8fd57d6571967e2e7` |
+| `out-leak` | `88d2e2a91a1a1cedd0f291c8d4d9894a089b30d9e97d1359d08f5584adc55f6e` |
+| `FW-real` | `863dd3b33fc2339f043db788fce3fa7a96ef890c534647d20aff3a9ea0b101d1` |
+| `FW` | `27c4d3d17e1301527484cac59972be8c3728ced27c2730ba9e4b2bf54a65d07b` |
+| `FWES` | `0079ca7bc1fb23b49e7f752a33346d7506142a173b84a3c3711a3f8a267db334` |
+| `agent-exec.sh` | `2e124b30113dd2abbe684d922c097aa498ce5a8a5f2255a941ff2c1e05d4e196` |
+
+Every matrix command ran alone in the foreground, one at a time, with its output redirected
+to the named log, inside its own capped scope:
+
+```bash
+systemd-run --user --scope --quiet -p MemoryMax=8G -p MemorySwapMax=0 timeout 3600 <command>
+```
+
+`TMPDIR=/var/tmp/rl-direct-start/tmp` was inherited. `S(NAME)` below expands to
+`nix develop --command bash conformance/run /var/tmp/rl-direct-start/NAME` and uses the
+full amended suite. `D(NAME)` expands to
+`nix develop --command bash /var/tmp/rl-direct-start/direct-subset.sh /var/tmp/rl-direct-start/NAME`.
+D extracts the committed PID-arm function unchanged and exercises both of those arms only,
+folded into one `CNF-34` verdict; it does not exercise `CNF-10` or the older process-lifetime
+arms. `E` expands to `nix develop --command bash -c 'export SHELLOPTS; exec bash /var/tmp/rl-direct-start/environment-subset.sh /var/tmp/rl-direct-start/conforming'` and
+exercises the committed inherited-variable and unexported-variable functions, confirming
+that the suite's own exported `SHELLOPTS` does not contaminate the latter Run.
+
+Each log stem has `.log` and `.json` files in the evidence directory. The JSON records
+hold the complete wrapped argv, exit, elapsed seconds, inherited `TMPDIR`, and artifact
+hashes before and after. Suite hashes stayed unchanged. The scratch subsets are deleted
+after measurement; their hashes above identify what was used.
+
+| log stem | command | exit | elapsed seconds | failed items |
+|---|---|---|---|---|
+| `full-conforming` | S(conforming) | 0 | 400.304 | none |
+| `full-W1` | S(W1) | 1 | 327.432 | CNF-34 |
+| `full-W5b` | S(W5b) | 1 | 328.638 | CNF-34 |
+| `full-W6` | S(W6) | 1 | 330.671 | CNF-34 |
+| `full-S1` | S(S1) | 1 | 328.706 | CNF-34 |
+| `full-S2` | S(S2) | 1 | 327.927 | CNF-34 |
+| `full-W2` | S(W2) | 1 | 329.126 | CNF-34 |
+| `full-W5` | S(W5) | 1 | 326.369 | CNF-34 |
+| `full-W3` | S(W3) | 1 | 324.658 | CNF-10 |
+| `full-W4` | S(W4) | 1 | 331.597 | CNF-10 |
+| `full-BE-strip` | S(BE-strip) | 0 | 322.553 | none |
+| `full-SC` | S(SC) | 0 | 358.77 | none |
+| `full-out-leak` | S(out-leak) | 1 | 321.567 | CNF-10 |
+| `full-export-shellopts` | S(export-shellopts) | 1 | 317.702 | CNF-10 |
+| `final-arms-P1` | D(P1) | 0 | 1.196 | none |
+| `final-arms-P2` | D(P2) | 0 | 1.328 | none |
+| `final-arms-ES` | D(ES) | 0 | 1.209 | none |
+| `final-arms-helper-path` | D(helper-path) | 0 | 1.202 | none |
+| `final-arms-helper-log` | D(helper-log) | 0 | 1.132 | none |
+| `final-arms-plant-no-bash` | D(plant-no-bash) | 0 | 1.091 | none |
+| `final-arms-plant-bash-env` | D(plant-bash-env) | 0 | 1.083 | none |
+| `final-arms-NB` | D(NB) | 0 | 1.105 | none |
+| `final-arms-BE` | D(BE) | 0 | 1.185 | none |
+| `final-arms-FW` | D(FW) | 0 | 1.032 | none |
+| `final-arms-FWES` | D(FWES) | 0 | 1.048 | none |
+| `environment-fixed` | E | 0 | 2.392 | none |
+
+The conforming scratch printed `34 passed, 0 failed`. The live item and optional self-check
+retain their placeholder verdicts. The count command and its complete output, retained in
+`verdict-counts.txt`, show each item exactly once:
+
+```bash
+grep -E '^  (PASS|FAIL)' log | awk '{print $2}' | sed 's|/.*||' | sort | uniq -c
+```
+
+```text
+      1 CNF-10
+      1 CNF-11
+      1 CNF-12
+      1 CNF-13
+      1 CNF-14
+      1 CNF-15
+      1 CNF-16
+      1 CNF-17
+      1 CNF-18
+      1 CNF-19
+      1 CNF-20
+      1 CNF-21
+      1 CNF-22
+      1 CNF-23
+      1 CNF-24
+      1 CNF-25
+      1 CNF-26
+      1 CNF-27
+      1 CNF-28
+      1 CNF-29
+      1 CNF-3
+      1 CNF-30
+      1 CNF-31
+      1 CNF-32
+      1 CNF-33
+      1 CNF-34
+      1 CNF-35
+      1 CNF-36
+      1 CNF-4
+      1 CNF-5
+      1 CNF-6
+      1 CNF-7
+      1 CNF-8
+      1 CNF-9
+```
+
+The following are the complete `CNF-10` and `CNF-34` verdict lines and every other
+FAIL line for each full-suite measurement. No capture contents are asserted by the PID arms.
+
+`conforming`:
+
+```text
+  PASS  CNF-10  RLOOP_* variables, cwd and closed stdin; claude Manager shell ceiling; inherited SHELLOPTS exported unchanged to every call and retry
+  PASS  CNF-34  a call that exits 0 leaves neither its own process nor anything in its group, for a Manager call, for the Implementer, for every Reviewer of the Panel read from the judge-site Probe's record, and for the pick-site, Panel-site and judge-site Probes read from the call that follows each, and the group is gone before the step that is no call: the Implementer's before the Checkpoint that follows it, and each probe's before rloop writes that probe's availability record — and before rloop reads that probe's output, a straggler's usage line reaching the verdicts and refusing the Run; the pick's group before task-1.md, every Reviewer's before the second Checkpoint, and the first judge's before a next-Round decision produces task-2.md
+```
+
+`W1`:
+
+```text
+  PASS  CNF-10  RLOOP_* variables, cwd and closed stdin; claude Manager shell ceiling; inherited SHELLOPTS exported unchanged to every call and retry
+  FAIL  CNF-34   [no-bash: shell 1001721 is fake 1001721 or its parent 1001720] [no-bash: shell 1001747 is fake 1001747 or its parent 1001746] [no-bash: shell 1001772 is fake 1001772 or its parent 1001771] [no-bash: shell 1001800 is fake 1001800 or its parent 1001799] [no-bash: shell 1001847 is fake 1001847 or its parent 1001845] [no-bash: shell 1001850 is fake 1001850 or its parent 1001848] [no-bash: shell 1001853 is fake 1001853 or its parent 1001851] [no-bash: shell 1001857 is fake 1001857 or its parent 1001854] [no-bash: shell 1001962 is fake 1001962 or its parent 1001961] [no-bash: shell 1002001 is fake 1002001 or its parent 1002000] [bash-env: shell 1002062 is fake 1002062 or its parent 1002061] [bash-env: shell 1002088 is fake 1002088 or its parent 1002087] [bash-env: shell 1002113 is fake 1002113 or its parent 1002112] [bash-env: shell 1002148 is fake 1002148 or its parent 1002147] [bash-env: shell 1002187 is fake 1002187 or its parent 1002185] [bash-env: shell 1002190 is fake 1002190 or its parent 1002188] [bash-env: shell 1002195 is fake 1002195 or its parent 1002191] [bash-env: shell 1002201 is fake 1002201 or its parent 1002198] [bash-env: shell 1002302 is fake 1002302 or its parent 1002301] [bash-env: shell 1002341 is fake 1002341 or its parent 1002340]
+```
+
+`W5b`:
+
+```text
+  PASS  CNF-10  RLOOP_* variables, cwd and closed stdin; claude Manager shell ceiling; inherited SHELLOPTS exported unchanged to every call and retry
+  FAIL  CNF-34   [bash-env: shell 1227833 is fake 1227834 or its parent 1227833] [bash-env: shell 1227860 is fake 1227861 or its parent 1227860] [bash-env: shell 1227887 is fake 1227888 or its parent 1227887] [bash-env: shell 1227916 is fake 1227917 or its parent 1227916] [bash-env: shell 1227956 is fake 1227959 or its parent 1227956] [bash-env: shell 1227960 is fake 1227963 or its parent 1227960] [bash-env: shell 1227965 is fake 1227971 or its parent 1227965] [bash-env: shell 1227975 is fake 1227981 or its parent 1227975] [bash-env: shell 1228075 is fake 1228076 or its parent 1228075] [bash-env: shell 1228115 is fake 1228116 or its parent 1228115]
+```
+
+`W6`:
+
+```text
+  PASS  CNF-10  RLOOP_* variables, cwd and closed stdin; claude Manager shell ceiling; inherited SHELLOPTS exported unchanged to every call and retry
+  FAIL  CNF-34   [bash-env: shell 1451302 is fake 1451302 or its parent 1451300] [bash-env: shell 1451329 is fake 1451329 or its parent 1451327] [bash-env: shell 1451355 is fake 1451355 or its parent 1451353] [bash-env: shell 1451384 is fake 1451384 or its parent 1451382] [bash-env: shell 1451427 is fake 1451427 or its parent 1451423] [bash-env: shell 1451431 is fake 1451431 or its parent 1451426] [bash-env: shell 1451435 is fake 1451435 or its parent 1451430] [bash-env: shell 1451441 is fake 1451441 or its parent 1451437] [bash-env: shell 1451545 is fake 1451545 or its parent 1451543] [bash-env: shell 1451585 is fake 1451585 or its parent 1451583]
+```
+
+`S1`:
+
+```text
+  PASS  CNF-10  RLOOP_* variables, cwd and closed stdin; claude Manager shell ceiling; inherited SHELLOPTS exported unchanged to every call and retry
+  FAIL  CNF-34   [no-bash: shell 1671694 is fake 1671694 or its parent 1671693] [no-bash: shell 1671720 is fake 1671720 or its parent 1671719] [no-bash: shell 1671745 is fake 1671745 or its parent 1671744] [no-bash: shell 1671773 is fake 1671773 or its parent 1671772] [no-bash: shell 1671812 is fake 1671812 or its parent 1671810] [no-bash: shell 1671815 is fake 1671815 or its parent 1671813] [no-bash: shell 1671818 is fake 1671818 or its parent 1671816] [no-bash: shell 1671825 is fake 1671825 or its parent 1671819] [no-bash: shell 1671927 is fake 1671927 or its parent 1671926] [no-bash: shell 1671966 is fake 1671966 or its parent 1671965] [bash-env: shell 1672045 is fake 1672045 or its parent 1672044] [bash-env: shell 1672091 is fake 1672091 or its parent 1672090] [bash-env: shell 1672116 is fake 1672116 or its parent 1672115] [bash-env: shell 1672144 is fake 1672144 or its parent 1672143] [bash-env: shell 1672184 is fake 1672184 or its parent 1672181] [bash-env: shell 1672186 is fake 1672186 or its parent 1672183] [bash-env: shell 1672190 is fake 1672190 or its parent 1672187] [bash-env: shell 1672199 is fake 1672199 or its parent 1672194] [bash-env: shell 1672298 is fake 1672298 or its parent 1672297] [bash-env: shell 1672337 is fake 1672337 or its parent 1672336]
+```
+
+`S2`:
+
+```text
+  PASS  CNF-10  RLOOP_* variables, cwd and closed stdin; claude Manager shell ceiling; inherited SHELLOPTS exported unchanged to every call and retry
+  FAIL  CNF-34   [bash-env: shell 1891911 is fake 1891911 or its parent 1891910] [bash-env: shell 1891937 is fake 1891937 or its parent 1891936] [bash-env: shell 1891962 is fake 1891962 or its parent 1891961] [bash-env: shell 1891990 is fake 1891990 or its parent 1891989] [bash-env: shell 1892029 is fake 1892029 or its parent 1892027] [bash-env: shell 1892032 is fake 1892032 or its parent 1892030] [bash-env: shell 1892035 is fake 1892035 or its parent 1892033] [bash-env: shell 1892045 is fake 1892045 or its parent 1892036] [bash-env: shell 1892144 is fake 1892144 or its parent 1892143] [bash-env: shell 1892183 is fake 1892183 or its parent 1892182]
+```
+
+`W2`:
+
+```text
+  PASS  CNF-10  RLOOP_* variables, cwd and closed stdin; claude Manager shell ceiling; inherited SHELLOPTS exported unchanged to every call and retry
+  FAIL  CNF-34   [bash-env: shell 2111092 is fake 2111092 or its parent 2111091] [bash-env: shell 2111118 is fake 2111118 or its parent 2111117] [bash-env: shell 2111143 is fake 2111143 or its parent 2111142] [bash-env: shell 2111171 is fake 2111171 or its parent 2111170] [bash-env: shell 2111210 is fake 2111210 or its parent 2111208] [bash-env: shell 2111213 is fake 2111213 or its parent 2111211] [bash-env: shell 2111218 is fake 2111218 or its parent 2111214] [bash-env: shell 2111227 is fake 2111227 or its parent 2111221] [bash-env: shell 2111325 is fake 2111325 or its parent 2111324] [bash-env: shell 2111364 is fake 2111364 or its parent 2111363]
+```
+
+`W5`:
+
+```text
+  PASS  CNF-10  RLOOP_* variables, cwd and closed stdin; claude Manager shell ceiling; inherited SHELLOPTS exported unchanged to every call and retry
+  FAIL  CNF-34   [bash-env: shell 2328219 is fake 2328219 or its parent 2328218] [bash-env: shell 2328245 is fake 2328245 or its parent 2328244] [bash-env: shell 2328270 is fake 2328270 or its parent 2328269] [bash-env: shell 2328298 is fake 2328298 or its parent 2328297] [bash-env: shell 2328338 is fake 2328338 or its parent 2328335] [bash-env: shell 2328340 is fake 2328340 or its parent 2328337] [bash-env: shell 2328343 is fake 2328343 or its parent 2328341] [bash-env: shell 2328353 is fake 2328353 or its parent 2328346] [bash-env: shell 2328453 is fake 2328453 or its parent 2328452] [bash-env: shell 2328492 is fake 2328492 or its parent 2328491]
+```
+
+`W3`:
+
+```text
+  FAIL  CNF-10   [001-probe-0.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix'] [002-manager-0.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix'] [003-implementer-1.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix'] [004-probe-1.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix'] [005-reviewer-1-fable.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix'] [005-reviewer-1-opus.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix'] [006-reviewer-1-astra.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix'] [007-reviewer-1-sol.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix'] [009-probe-1.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix'] [010-manager-1.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix'] [011-probe-1.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix'] [012-manager-1.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix']
+  PASS  CNF-34  a call that exits 0 leaves neither its own process nor anything in its group, for a Manager call, for the Implementer, for every Reviewer of the Panel read from the judge-site Probe's record, and for the pick-site, Panel-site and judge-site Probes read from the call that follows each, and the group is gone before the step that is no call: the Implementer's before the Checkpoint that follows it, and each probe's before rloop writes that probe's availability record — and before rloop reads that probe's output, a straggler's usage line reaching the verdicts and refusing the Run; the pick's group before task-1.md, every Reviewer's before the second Checkpoint, and the first judge's before a next-Round decision produces task-2.md
+```
+
+`W4`:
+
+```text
+  FAIL  CNF-10   [001-probe-0.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix'] [002-manager-0.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix'] [003-implementer-1.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix'] [004-probe-1.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix'] [005-reviewer-1-fable.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix'] [005-reviewer-1-opus.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix'] [006-reviewer-1-astra.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix'] [008-reviewer-1-sol.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix'] [009-probe-1.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix'] [010-manager-1.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix'] [011-probe-1.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix'] [012-manager-1.env: raw SHELLOPTS value 'braceexpand:hashall:interactive-comments:posix']
+  PASS  CNF-34  a call that exits 0 leaves neither its own process nor anything in its group, for a Manager call, for the Implementer, for every Reviewer of the Panel read from the judge-site Probe's record, and for the pick-site, Panel-site and judge-site Probes read from the call that follows each, and the group is gone before the step that is no call: the Implementer's before the Checkpoint that follows it, and each probe's before rloop writes that probe's availability record — and before rloop reads that probe's output, a straggler's usage line reaching the verdicts and refusing the Run; the pick's group before task-1.md, every Reviewer's before the second Checkpoint, and the first judge's before a next-Round decision produces task-2.md
+```
+
+`BE-strip`:
+
+```text
+  PASS  CNF-10  RLOOP_* variables, cwd and closed stdin; claude Manager shell ceiling; inherited SHELLOPTS exported unchanged to every call and retry
+  PASS  CNF-34  a call that exits 0 leaves neither its own process nor anything in its group, for a Manager call, for the Implementer, for every Reviewer of the Panel read from the judge-site Probe's record, and for the pick-site, Panel-site and judge-site Probes read from the call that follows each, and the group is gone before the step that is no call: the Implementer's before the Checkpoint that follows it, and each probe's before rloop writes that probe's availability record — and before rloop reads that probe's output, a straggler's usage line reaching the verdicts and refusing the Run; the pick's group before task-1.md, every Reviewer's before the second Checkpoint, and the first judge's before a next-Round decision produces task-2.md
+```
+
+`SC`:
+
+```text
+  PASS  CNF-10  RLOOP_* variables, cwd and closed stdin; claude Manager shell ceiling; inherited SHELLOPTS exported unchanged to every call and retry
+  PASS  CNF-34  a call that exits 0 leaves neither its own process nor anything in its group, for a Manager call, for the Implementer, for every Reviewer of the Panel read from the judge-site Probe's record, and for the pick-site, Panel-site and judge-site Probes read from the call that follows each, and the group is gone before the step that is no call: the Implementer's before the Checkpoint that follows it, and each probe's before rloop writes that probe's availability record — and before rloop reads that probe's output, a straggler's usage line reaching the verdicts and refusing the Run; the pick's group before task-1.md, every Reviewer's before the second Checkpoint, and the first judge's before a next-Round decision produces task-2.md
+```
+
+`out-leak`:
+
+```text
+  FAIL  CNF-10   [001-probe-0.env: caller out changed or unset] [002-manager-0.env: caller out changed or unset] [003-implementer-1.env: caller out changed or unset] [004-probe-1.env: caller out changed or unset] [005-reviewer-1-fable.env: caller out changed or unset] [005-reviewer-1-opus.env: caller out changed or unset] [006-reviewer-1-astra.env: caller out changed or unset] [007-reviewer-1-sol.env: caller out changed or unset] [009-probe-1.env: caller out changed or unset] [010-manager-1.env: caller out changed or unset] [011-probe-1.env: caller out changed or unset] [012-manager-1.env: caller out changed or unset]
+  PASS  CNF-34  a call that exits 0 leaves neither its own process nor anything in its group, for a Manager call, for the Implementer, for every Reviewer of the Panel read from the judge-site Probe's record, and for the pick-site, Panel-site and judge-site Probes read from the call that follows each, and the group is gone before the step that is no call: the Implementer's before the Checkpoint that follows it, and each probe's before rloop writes that probe's availability record — and before rloop reads that probe's output, a straggler's usage line reaching the verdicts and refusing the Run; the pick's group before task-1.md, every Reviewer's before the second Checkpoint, and the first judge's before a next-Round decision produces task-2.md
+```
+
+`export-shellopts`:
+
+```text
+  FAIL  CNF-10   [001-probe-0.env: SHELLOPTS unexpectedly exported or unrecorded] [002-manager-0.env: SHELLOPTS unexpectedly exported or unrecorded] [003-implementer-1.env: SHELLOPTS unexpectedly exported or unrecorded] [004-probe-1.env: SHELLOPTS unexpectedly exported or unrecorded] [005-reviewer-1-fable.env: SHELLOPTS unexpectedly exported or unrecorded] [005-reviewer-1-opus.env: SHELLOPTS unexpectedly exported or unrecorded] [006-reviewer-1-astra.env: SHELLOPTS unexpectedly exported or unrecorded] [007-reviewer-1-sol.env: SHELLOPTS unexpectedly exported or unrecorded] [009-probe-1.env: SHELLOPTS unexpectedly exported or unrecorded] [010-manager-1.env: SHELLOPTS unexpectedly exported or unrecorded]
+  PASS  CNF-34  a call that exits 0 leaves neither its own process nor anything in its group, for a Manager call, for the Implementer, for every Reviewer of the Panel read from the judge-site Probe's record, and for the pick-site, Panel-site and judge-site Probes read from the call that follows each, and the group is gone before the step that is no call: the Implementer's before the Checkpoint that follows it, and each probe's before rloop writes that probe's availability record — and before rloop reads that probe's output, a straggler's usage line reaching the verdicts and refusing the Run; the pick's group before task-1.md, every Reviewer's before the second Checkpoint, and the first judge's before a next-Round decision produces task-2.md
+```
+
+The PID-arm-only measurements below have no `CNF-10` verdict because that item was
+not exercised. Each arm logged every fake call; both arms passed for each listed build.
+
+`P1`:
+
+```text
+  no-bash: 10 fake starts, 1 shell starts
+  bash-env: 10 fake starts, 2 shell starts
+  PASS  CNF-34  no-bash and bash-env PID arms
+```
+
+`P2`:
+
+```text
+  no-bash: 10 fake starts, 18 shell starts
+  bash-env: 10 fake starts, 19 shell starts
+  PASS  CNF-34  no-bash and bash-env PID arms
+```
+
+`ES`:
+
+```text
+  no-bash: 10 fake starts, 1 shell starts
+  bash-env: 10 fake starts, 1 shell starts
+  PASS  CNF-34  no-bash and bash-env PID arms
+```
+
+`helper-path`:
+
+```text
+  no-bash: 10 fake starts, 1 shell starts
+  bash-env: 10 fake starts, 2 shell starts
+  PASS  CNF-34  no-bash and bash-env PID arms
+```
+
+`helper-log`:
+
+```text
+  no-bash: 10 fake starts, 0 shell starts
+  bash-env: 10 fake starts, 2 shell starts
+  PASS  CNF-34  no-bash and bash-env PID arms
+```
+
+`plant-no-bash`:
+
+```text
+  no-bash: 10 fake starts, 0 shell starts
+  bash-env: 10 fake starts, 1 shell starts
+  PASS  CNF-34  no-bash and bash-env PID arms
+```
+
+`plant-bash-env`:
+
+```text
+  no-bash: 10 fake starts, 0 shell starts
+  bash-env: 10 fake starts, 2 shell starts
+  PASS  CNF-34  no-bash and bash-env PID arms
+```
+
+`NB`:
+
+```text
+  no-bash: 10 fake starts, 1 shell starts
+  bash-env: 10 fake starts, 2 shell starts
+  PASS  CNF-34  no-bash and bash-env PID arms
+```
+
+`BE`:
+
+```text
+  no-bash: 10 fake starts, 0 shell starts
+  bash-env: 10 fake starts, 11 shell starts
+  PASS  CNF-34  no-bash and bash-env PID arms
+```
+
+`FW`:
+
+```text
+  no-bash: 10 fake starts, 0 shell starts
+  bash-env: 10 fake starts, 2 shell starts
+  PASS  CNF-34  no-bash and bash-env PID arms
+```
+
+`FWES`:
+
+```text
+  no-bash: 10 fake starts, 1 shell starts
+  bash-env: 10 fake starts, 2 shell starts
+  PASS  CNF-34  no-bash and bash-env PID arms
+```
+
+`out-leak` is the supplied `/var/tmp/rl-ypm7/rloop` copied unchanged; it isolates the
+caller-exported `out` defect. `export-shellopts` adds `export SHELLOPTS` after options are
+set in the corrected scratch and isolates the absent-export defect. Their full-suite
+verdicts and any co-reds are recorded above. The PID arms make no check that `BASH_ENV`
+itself reaches a call unchanged; BE-strip's result records that remaining limit.

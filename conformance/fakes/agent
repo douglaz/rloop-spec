@@ -122,7 +122,7 @@
 # No knob turns it on: every fake of every Run also carries CALLS_ALIVE=<pids> in its .env record,
 # written before it probes standard input, sleeps, spawns or traces — the previously recorded PID
 # pids other than this call's own, still running when this call started (empty when none).
-startup_shellopts=$(declare -p SHELLOPTS); startup_shellopts_value=$SHELLOPTS; set -u
+startup_out_set=${out+x}; startup_out=${out-}; startup_shellopts=$(declare -p SHELLOPTS); startup_shellopts_value=$SHELLOPTS; set -u
 
 rec="${RLOOP_FAKE_RECORD:?}"
 role="${RLOOP_ROLE:-unset}"
@@ -240,6 +240,9 @@ printf 'SHELLOPTS_VALUE=%s\n' "$startup_shellopts_value" >> "$rec/$tag.env"
 if [ "${RLOOP_FAKE_RAW_SHELLOPTS+x}" = x ]; then
   printf 'SHELLOPTS_RAW_VALUE=%q\n' "$RLOOP_FAKE_RAW_SHELLOPTS" >> "$rec/$tag.env"
 fi
+
+# Capture out before any fake assignment; %q preserves its exact bytes, including newlines.
+printf 'OUT_SET=%s\nOUT_VALUE=%q\n' "$startup_out_set" "$startup_out" >> "$rec/$tag.env"
 
 pick="${RLOOP_FAKE_PICK:-ok:task}"
 if [ -n "${RLOOP_FAKE_RUNS:-}" ] && [ "$run" != unset ]; then

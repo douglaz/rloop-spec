@@ -133,7 +133,19 @@ A launcher used only for this Run reads the raw value with GNU coreutils `env -S
 starts; the fake records it with `printf %q` so embedded or trailing newlines survive comparison.
 The export bit comes from bash's `declare -p SHELLOPTS`, captured before the fake changes its shell
 options. Exact per-tag and total argv and environment
-record counts reject missing or extra calls. This Run compares no other inherited variable. (`AGT-13`)
+record counts reject missing or extra calls. This Run also inherits exported `out`, set to a
+sentinel containing a tab and newlines: every call, each judge attempt and every Probe included,
+records it set and byte-identical before the fake assigns any variable. An unset or changed `out`
+fails. Only these inherited variables are compared in this Run. (`AGT-13`)
+
+A separate one-Round Run, the pick writing a Task File, the Implementer and all four Reviewers
+succeeding and the judge writing `STATUS: done`, starts rloop with `SHELLOPTS` removed from its
+environment. Every call, the Probes included, records `SHELLOPTS_EXPORTED=0`. A nonzero Run exit,
+a missing or extra call, a missing export-bit record or an exported `SHELLOPTS` fails. These arms
+exercise `AGT-13`'s `the environment rloop itself received plus exactly the variables set below, subject to the table's conditions`: neither `out` nor `SHELLOPTS` appears in that table.
+
+*Amended 2026-10-24 (`rl-jeo2`): add caller-exported `out` preservation to the inherited-variable
+Run and the separate Run checking that an unexported `SHELLOPTS` stays unexported.*
 
 *Amended 2026-10-24 (`rl-ypm7`): add the `SHELLOPTS` Run above. It exercises `AGT-13`'s
 `the environment rloop itself received plus exactly the variables set below, subject to the table's conditions`.*
@@ -345,6 +357,22 @@ retried attempt's group is gone before the next-Round snapshot; a re-check's gro
 its own numbered verdict. Readiness and recorded child identities keep absent witnesses red.
 (`AGT-15`, `AGT-16`, `DIR-4`, `DIR-5`, `DIR-6`, `RUN-6`, `RUN-7`, `RUN-8`, `RUN-11`, `RUN-21`,
 `RUN-22`, `RUN-24`)
+
+Two further one-Round Runs exercise `AGT-16`'s `with no shell in between`: the pick writes a
+Task File, the Implementer and all four Reviewers succeed and the judge writes `STATUS: done`.
+In the no-bash Run, `bash` remains on the executable's private `PATH` as a shim that records its
+PID and parent PID before execing the real bash. In the bash-env Run, real bash is on `PATH` and
+`BASH_ENV` names a file recording the same identities except when the fake itself starts.
+Each fake uses a runtime-generated absolute-bash shebang and records its own PID and parent PID,
+including every Probe. Each Run exits 0 and leaves `manager-judge-1.out` and
+`manager-judge-1.err`; their existence alone is checked. An absent fake PID record fails.
+Starting at the executable's launched PID, every logged shell whose parent is already in that
+chain joins it. Outside this start chain, a logged shell PID equal to a fake's PID or parent PID
+fails the item. The checks compare only process identities; they assert no capture contents.
+`F30` records the start-chain exception and the measured limits.
+
+*Amended 2026-10-24 (`rl-jeo2`): add the no-bash and bash-env PID checks above to this item's
+single verdict.*
 
 *Amended 2026-10-08: the probe-output read witness reports Opus exhaustion to refuse the default
 Seats, with the corresponding Reviewer verdict; its timing and absence-of-evidence checks remain.*
