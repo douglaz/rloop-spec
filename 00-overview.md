@@ -4,11 +4,11 @@
 
 rloop drives one task through a git repository with three kinds of agent: a **Manager** that picks
 the task, briefs the others and judges the result; disposable **Implementers** that build what the
-brief says; and a **Panel** of four disposable **Reviewers**, each a different model, that read the
+brief says; and a **Panel** of five disposable **Reviewers**, each a different model, that read the
 result against the brief. The Manager is the only agent whose conversation survives the whole
 **Run**, and the only one whose judgment rloop acts on: rloop never reads what a Reviewer wrote,
 and never decides anything an agent could decide. `CONTEXT.md` holds the vocabulary; this document
-holds what rloop is for and what it is not.
+holds what rloop is for and what it is not. Operator prerequisites are in `README.md`, *Using rloop*.
 
 This repository is the **Specification**. It holds no Implementation. Implementations
 (`rloop-bash`, `rloop-rust`, …) live in their own repositories, pin this one as a git submodule at
@@ -69,7 +69,7 @@ nothing else. The Manager commits accepted work (`SEQ-8`, `ADR-0004`).
   (`SEQ-9`).
 - **No defence against a hostile agent.** The Checkpoint repairs a cooperative model's mistake and
   the threat model says so (`DIR-8`, `ADR-0003`).
-- **No configurability of the Panel or the prompts at run time.** The Panel is the four Reviewers
+- **No configurability of the Panel or the prompts at run time.** The Panel is the five Reviewers
   `02-agents.md` names; changing it is a change to this Specification.
 
 ## How much to trust this

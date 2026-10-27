@@ -71,7 +71,7 @@ def expected():
     per_req = {}
     for rid, k, text in blocks(os.path.join(ROOT, "02-agents.md"), "text"):
         first = text.split("\n", 1)[0]
-        if not (first.startswith("claude ") or first.startswith("codex ")):
+        if not first.startswith(("claude ", "codex ", "grok ")):
             continue
         per_req.setdefault(rid, []).append(first)
     for rid, lines in per_req.items():

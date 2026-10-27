@@ -17,7 +17,7 @@ self_check=0; [ "${2:-}" = "--self-check" ] && self_check=1
 work="$(mktemp -d "${TMPDIR:-/tmp}/rloop conformance"$'\t'"tab.XXXXXX")"
 trap 'rm -rf "$work"' EXIT
 fakes="$work/fakes"; mkdir -p "$fakes"
-cp "$here/fakes/agent" "$fakes/claude"; cp "$here/fakes/agent" "$fakes/codex"; chmod +x "$fakes/claude" "$fakes/codex"
+cp "$here/fakes/agent" "$fakes/claude"; cp "$here/fakes/agent" "$fakes/codex"; cp "$here/fakes/agent" "$fakes/grok"; chmod +x "$fakes/claude" "$fakes/codex" "$fakes/grok"
 real_git="$(command -v git)"
 
 pass=0; fail=0; failed_items=()
@@ -25,7 +25,7 @@ verdict() { # verdict <CNF id> <ok|fail> <detail>
   if [ "$2" = ok ]; then pass=$((pass + 1)); printf '  PASS  %s  %s\n' "$1" "$3"
   else fail=$((fail + 1)); failed_items+=("$1"); printf '  FAIL  %s  %s\n' "$1" "$3"; fi
 }
-export -n RLOOP_FAKE_PICK RLOOP_FAKE_ROUNDS RLOOP_FAKE_INTERFERENCE RLOOP_FAKE_INTERFERING_REVIEWER RLOOP_FAKE_RUNS RLOOP_FAKE_THREAD_ID RLOOP_FAKE_NO_THREAD_ID RLOOP_FAKE_PROBE_PICK RLOOP_FAKE_MANAGER_CUT RLOOP_FAKE_PROBE_SLEEP_CALL RLOOP_FAKE_MANAGER_CHILD_CALL RLOOP_FAKE_PROBE_CHILD_CALL 2>/dev/null || true
+export -n RLOOP_FAKE_PICK RLOOP_FAKE_ROUNDS RLOOP_FAKE_INTERFERENCE RLOOP_FAKE_INTERFERING_REVIEWER RLOOP_FAKE_RUNS RLOOP_FAKE_THREAD_ID RLOOP_FAKE_NO_THREAD_ID RLOOP_FAKE_PROBE_PICK RLOOP_FAKE_MANAGER_CUT RLOOP_FAKE_PROBE_SLEEP_CALL RLOOP_FAKE_MANAGER_CHILD_CALL RLOOP_FAKE_PROBE_CHILD_CALL RLOOP_FAKE_REVIEWER_OUTCOMES RLOOP_FAKE_GROK_PROGRESS 2>/dev/null || true
 
 source "$here/scenario-lib.sh"
 restrict_path
@@ -56,12 +56,30 @@ carries_arg() { # carries_arg <record file> <string>: some argument of the recor
 pid_in() { tr ' ' '\n' <<< "$2" | grep -qx "$1"; }
 # kill_recorded <record dir>: SIGKILL every PID and GRANDCHILD a fake recorded, so a red row leaves nothing behind
 kill_recorded() { local f p; for f in "$1"/*.env; do for p in $(sed -n 's/^\(PID\|GRANDCHILD\)=//p' "$f" 2>/dev/null); do kill -9 "$p" 2>/dev/null; done; done; }
-# panel_records <label>: fills `panel` with the Panel's .env records, red unless there are the four
-# RUN-8 spawns, so the reads over them cannot pass on however many happen to exist.
+# panel_records <label>: require exactly one environment record of each fixed identity.
 panel_records() {
-  local f
+  local f rv own paths=()
   panel=(); for f in "$rec"/*-reviewer-1-*.env; do [ -e "$f" ] && panel+=("$f"); done
-  [ "${#panel[@]}" = 4 ] || { ok=0; detail="$detail [$1: ${#panel[@]} Reviewer records, not the Panel's four]"; }
+  [ "${#panel[@]}" = 5 ] || { ok=0; detail="$detail [$1: ${#panel[@]} Reviewer records, not the Panel's five]"; }
+  for rv in fable opus astra sol grok; do
+    matching_paths "$rec"/*-reviewer-1-"$rv".env
+    [ "${#paths[@]}" = 1 ] || { ok=0; detail="$detail [$1: $rv has ${#paths[@]} records, not one]"; continue; }
+    own=$(sed -n 's/^PID=//p' "${paths[0]}")
+    [[ "$own" =~ ^[0-9]+$ ]] || { ok=0; detail="$detail [$1: $rv has no unique PID]"; }
+  done
+}
+# panel_started <label>: exact start membership, including identities that never finish.
+panel_started() {
+  local starts
+  panel_records "$1"
+  starts=$(sed -n 's/^reviewer:1:\([^:]*\):start:.*/\1/p' "$rec/trace" 2>/dev/null | LC_ALL=C sort | paste -sd+)
+  [ "$starts" = astra+fable+grok+opus+sol ] || { ok=0; detail="$detail [$1: start membership '$starts']"; }
+}
+# reviewer_ended <label> <identity> <ok|fail>: require one positive outcome, not a set knob.
+reviewer_ended() {
+  local outcome
+  outcome=$(sed -n "s/^reviewer:1:$2:end:[^:]*://p" "$rec/trace" 2>/dev/null)
+  [ "$outcome" = "$3" ] || { ok=0; detail="$detail [$1: $2 outcome '$outcome', expected $3]"; }
 }
 # nothing_survived <label>: of every fake that spawned a child, neither its own pid nor the child's
 # is running once the executable has returned. Every ancestor is gone by then, so neither can be a
@@ -85,7 +103,7 @@ claude_off=(--implementer claude "${off[@]}")
 # newline nor an extra blank line.
 record_is() {
   local f="$1" label="$2"; shift 2
-  printf 'manager:%s\nimplementer:%s\nfable:%s\nopus:%s\nastra:%s\nsol:%s\n' "$@" | cmp -s - "$f" \
+  printf 'manager:%s\nimplementer:%s\nfable:%s\nopus:%s\nastra:%s\nsol:%s\ngrok:%s\n' "$@" | cmp -s - "$f" \
     || { ok=0; detail="$detail [$label: $(basename "$f") is not ${*// /,}: '$(tr '\n' ' ' 2>/dev/null < "$f")']"; }
 }
 scenarios_file="$spec/conformance/scenarios.tsv"
@@ -197,7 +215,7 @@ else verdict CNF-8 fail "$detail"; fi
 # --- CNF-9: the layout --------------------------------------------------------------------------------
 repo="$(new_repo)"; rec="$work/rec-layout"
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run")
-expected_names="feedback-1-astra.md feedback-1-fable.md feedback-1-opus.md feedback-1-sol.md feedback-2-astra.md feedback-2-fable.md feedback-2-opus.md feedback-2-sol.md finished.md implementer-1.err implementer-1.out implementer-2.err implementer-2.out manager-judge-1.err manager-judge-1.out manager-judge-2.err manager-judge-2.out manager-pick.err manager-pick.out probe-1-judge-1.err probe-1-judge-1.md probe-1-judge-1.out probe-1-panel-1.err probe-1-panel-1.md probe-1-panel-1.out probe-1.err probe-1.md probe-1.out probe-2-judge-1.err probe-2-judge-1.md probe-2-judge-1.out probe-2-panel-1.err probe-2-panel-1.md probe-2-panel-1.out probe-2.err probe-2.md probe-2.out probe-pick.err probe-pick.md probe-pick.out reviewer-1-astra.err reviewer-1-fable.err reviewer-1-opus.err reviewer-1-sol.err reviewer-2-astra.err reviewer-2-fable.err reviewer-2-opus.err reviewer-2-sol.err session task-1.md task-2.md task.md"
+expected_names="feedback-1-astra.md feedback-1-fable.md feedback-1-grok.md feedback-1-opus.md feedback-1-sol.md feedback-2-astra.md feedback-2-fable.md feedback-2-grok.md feedback-2-opus.md feedback-2-sol.md finished.md implementer-1.err implementer-1.out implementer-2.err implementer-2.out manager-judge-1.err manager-judge-1.out manager-judge-2.err manager-judge-2.out manager-pick.err manager-pick.out probe-1-judge-1.err probe-1-judge-1.md probe-1-judge-1.out probe-1-panel-1.err probe-1-panel-1.md probe-1-panel-1.out probe-1.err probe-1.md probe-1.out probe-2-judge-1.err probe-2-judge-1.md probe-2-judge-1.out probe-2-panel-1.err probe-2-panel-1.md probe-2-panel-1.out probe-2.err probe-2.md probe-2.out probe-pick.err probe-pick.md probe-pick.out reviewer-1-astra.err reviewer-1-fable.err reviewer-1-grok.err reviewer-1-opus.err reviewer-1-sol.err reviewer-2-astra.err reviewer-2-fable.err reviewer-2-grok.err reviewer-2-opus.err reviewer-2-sol.err session task-1.md task-2.md task.md"
 got_names=$(ls "$repo/run" | LC_ALL=C sort | tr '\n' ' ' | sed 's/ $//')
 ok=1; detail=""
 [ "$e" = 0 ] || { ok=0; detail="exit $e"; }
@@ -205,6 +223,18 @@ ok=1; detail=""
 [ "$(cat "$repo/run/implementer-1.out")" = "implementer output, round 1" ] || { ok=0; detail="$detail implementer-1.out"; }
 grep -q "fake stderr from" "$repo/run/implementer-1.err" || { ok=0; detail="$detail implementer-1.err"; }
 [ "$(cat "$repo/run/feedback-1-opus.md")" = "No findings." ] || { ok=0; detail="$detail feedback-1-opus.md"; }
+# Each identity's stdout and stderr, in both Rounds; missing or duplicate evidence is red.
+for r in 1 2; do
+  for rv in fable opus astra sol grok; do
+    matching_paths "$rec"/*-reviewer-"$r"-"$rv".env
+    [ "${#paths[@]}" = 1 ] || { ok=0; detail="$detail [layout: $r $rv has ${#paths[@]} records]"; continue; }
+    tag=${paths[0]##*/}; tag=${tag%.env}
+    printf 'fake stderr from %s\n' "$tag" | cmp -s - "$repo/run/reviewer-$r-$rv.err" \
+      || { ok=0; detail="$detail [layout: $r $rv stderr differs]"; }
+    printf 'No findings.\n' | cmp -s - "$repo/run/feedback-$r-$rv.md" \
+      || { ok=0; detail="$detail [layout: $r $rv stdout differs]"; }
+  done
+done
 sid=$(cat "$repo/run/session"); [[ "$sid" =~ ^[0-9a-fA-F-]{36}$ ]] || { ok=0; detail="$detail session '$sid'"; }
 # a Run that ends 2 keeps its directory; a missing snapshot is exit 2 (DIR-8, from the excuse table)
 repo2="$(new_repo)"; rec2="$work/rec-layout2"
@@ -238,7 +268,7 @@ check_env() { # check_env <record tag> <ROLE> <ROUND> <REVIEWER or <unset>>
 check_env "manager-0" manager 0 "<unset>"
 check_env "implementer-1" implementer 1 "<unset>"
 check_env "manager-1" manager 1 "<unset>"
-for r in fable opus astra sol; do check_env "reviewer-2-$r" reviewer 2 "$r"; done
+for r in fable opus astra sol grok; do check_env "reviewer-2-$r" reviewer 2 "$r"; done
 # This assertion is only used for the default (claude) Manager preset. Read exactly one
 # record and one value: an absent pick/judge or missing value cannot make the check vacuous.
 check_claude_manager_timeout() { # <record tag> <expected milliseconds>
@@ -305,7 +335,8 @@ P_BASE="$base_hash"; P_ROUND=1; P_MAX_ROUNDS=7; P_IMPLEMENTER_LOG="$repo/run/imp
 P_FEEDBACK_FILES="$repo/run/feedback-1-fable.md
 $repo/run/feedback-1-opus.md
 $repo/run/feedback-1-astra.md
-$repo/run/feedback-1-sol.md"
+$repo/run/feedback-1-sol.md
+$repo/run/feedback-1-grok.md"
 P_DIRTY_AT_START=" M README
 ?? untracked.txt"
 P_UNAVAILABLE=""
@@ -314,9 +345,9 @@ ok=1; detail=""; prompt_ok=1; prompt_detail=""
 # The record directory and the tag, not one glob string: a glob passed as a parameter has to be
 # expanded unquoted, and that splits the directory part on whitespace as well as expanding it.
 check_call() { # check_call <record dir> <record tag> <argv fixture> <prompt fixture> <session> <model> <label>
-  local recf="" f prompt arg seen=0
-  for f in "$1"/*-"$2".argv; do [ -e "$f" ] || continue; recf="$f"; break; done
-  [ -n "$recf" ] || { ok=0; detail="$detail [$7: not spawned]"; prompt_ok=0; prompt_detail="$prompt_detail [$7: not spawned]"; return; }
+  local recf="" f prompt arg seen=0 records=0
+  for f in "$1"/*-"$2".argv; do [ -e "$f" ] || continue; recf="$f"; records=$((records + 1)); done
+  [ "$records" = 1 ] || { ok=0; detail="$detail [$7: $records records, not one]"; prompt_ok=0; prompt_detail="$prompt_detail [$7: $records records, not one]"; return; }
   prompt="$(render "$4")"
   expected_argv "$3" "$prompt" "$5" "$6" > "$work/expected.argv"
   argv_matches "$recf" "$work/expected.argv" || { ok=0; detail="$detail [$7: argv differs]"; }
@@ -330,6 +361,7 @@ check_call "$rec" reviewer-1-fable "$fx/argv/AGT-7.txt" "$fx/prompts/PRM-4.txt" 
 check_call "$rec" reviewer-1-opus "$fx/argv/AGT-8.txt" "$fx/prompts/PRM-4.txt" "$sid" x opus
 check_call "$rec" reviewer-1-astra "$fx/argv/AGT-10-1.txt" "$fx/prompts/PRM-4.txt" "$sid" x astra
 check_call "$rec" reviewer-1-sol "$fx/argv/AGT-10-2.txt" "$fx/prompts/PRM-4.txt" "$sid" x sol
+check_call "$rec" reviewer-1-grok "$fx/argv/AGT-19.txt" "$fx/prompts/PRM-4.txt" "$sid" x grok
 check_call "$rec" manager-1 "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid" claude-opus-5-5 judge
 argv_ok=$ok; argv_detail="$detail"
 # a second Run: clean tree, no instruction, codex implementer, another manager model
@@ -342,7 +374,8 @@ P_MAX_ROUNDS=10; P_IMPLEMENTER_LOG="$repo/run/implementer-1.out"; P_DIRTY_AT_STA
 P_FEEDBACK_FILES="$repo/run/feedback-1-fable.md
 $repo/run/feedback-1-opus.md
 $repo/run/feedback-1-astra.md
-$repo/run/feedback-1-sol.md"
+$repo/run/feedback-1-sol.md
+$repo/run/feedback-1-grok.md"
 ok=1; detail=""
 [ "$e" = 0 ] || { ok=0; detail="$detail [run 2 (codex implementer): exit $e]"; }
 check_call "$rec" manager-0 "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid" claude-fable-5-1 "pick (clean, no instruction)"
@@ -362,7 +395,8 @@ P_IMPLEMENTER_LOG="$repo/run/implementer-1.out"; P_UNAVAILABLE=""
 P_FEEDBACK_FILES="$repo/run/feedback-1-fable.md
 $repo/run/feedback-1-opus.md
 $repo/run/feedback-1-astra.md
-$repo/run/feedback-1-sol.md"
+$repo/run/feedback-1-sol.md
+$repo/run/feedback-1-grok.md"
 ok=1; detail=""
 check_call "$rec" manager-0 "$fx/argv/AGT-3-2.txt" "$fx/prompts/PRM-1.txt" "$sid" gpt-6-astra "codex pick"
 check_call "$rec" manager-1 "$fx/argv/AGT-4-2.txt" "$fx/prompts/PRM-2.txt" "$sid" gpt-6-astra "codex judge"
@@ -383,7 +417,8 @@ P_ROUND=1; P_MAX_ROUNDS=10; P_IMPLEMENTER_LOG="$P_RUN_DIR/implementer-1.out"; P_
 P_FEEDBACK_FILES="$P_RUN_DIR/feedback-1-fable.md
 $P_RUN_DIR/feedback-1-opus.md
 $P_RUN_DIR/feedback-1-astra.md
-$P_RUN_DIR/feedback-1-sol.md"
+$P_RUN_DIR/feedback-1-sol.md
+$P_RUN_DIR/feedback-1-grok.md"
 ok=1; detail=""
 [ "$e" = 0 ] || { ok=0; detail="$detail [hostile: exit $e]"; }
 check_call "$rec_h" manager-0 "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid_h" claude-opus-5-5 "pick (hostile instruction, cyclic run dir)"
@@ -394,7 +429,7 @@ argv_hostile_ok=$ok; argv_hostile_detail="$detail"
 # Directory's (RUN-23), below $work, whose name gives every other Run's paths both as well. The
 # suite builds all of it rather than reading any out of TMPDIR, so this witness, like the rest,
 # cannot move with what the caller exported. Every role of the Run is read here — the pick, the
-# Implementer, the four Reviewers and the judge — so every path rloop renders into a prompt or
+# Implementer, the five Reviewers and the judge — so every path rloop renders into a prompt or
 # passes on a command line is compared against the fixture rendered with those same paths, byte
 # for byte, and a path word-split on its way into any one of them is red under any TMPDIR. What
 # the Run Directory holds afterwards is CNF-9's whitespace arm; this one reads what agents got.
@@ -408,7 +443,8 @@ P_ROUND=1; P_MAX_ROUNDS=10; P_IMPLEMENTER_LOG="$P_RUN_DIR/implementer-1.out"; P_
 P_FEEDBACK_FILES="$P_RUN_DIR/feedback-1-fable.md
 $P_RUN_DIR/feedback-1-opus.md
 $P_RUN_DIR/feedback-1-astra.md
-$P_RUN_DIR/feedback-1-sol.md"
+$P_RUN_DIR/feedback-1-sol.md
+$P_RUN_DIR/feedback-1-grok.md"
 ok=1; detail=""
 [ "$e" = 0 ] || { ok=0; detail="$detail [whitespace paths: exit $e]"; }
 check_call "$rec_ws" manager-0 "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid_ws" claude-opus-5-5 "pick (whitespace paths)"
@@ -417,6 +453,7 @@ check_call "$rec_ws" reviewer-1-fable "$fx/argv/AGT-7.txt" "$fx/prompts/PRM-4.tx
 check_call "$rec_ws" reviewer-1-opus "$fx/argv/AGT-8.txt" "$fx/prompts/PRM-4.txt" "$sid_ws" x "opus (whitespace paths)"
 check_call "$rec_ws" reviewer-1-astra "$fx/argv/AGT-10-1.txt" "$fx/prompts/PRM-4.txt" "$sid_ws" x "astra (whitespace paths)"
 check_call "$rec_ws" reviewer-1-sol "$fx/argv/AGT-10-2.txt" "$fx/prompts/PRM-4.txt" "$sid_ws" x "sol (whitespace paths)"
+check_call "$rec_ws" reviewer-1-grok "$fx/argv/AGT-19.txt" "$fx/prompts/PRM-4.txt" "$sid_ws" x "grok (whitespace paths)"
 check_call "$rec_ws" manager-1 "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid_ws" claude-opus-5-5 "judge (whitespace paths)"
 argv_ws_ok=$ok; argv_ws_detail="$detail"
 # Further Runs: each Implementer preset on a model no Seat defaults to
@@ -437,7 +474,8 @@ for preset in default claude; do
   P_FEEDBACK_FILES="$repo/run/feedback-1-fable.md
 $repo/run/feedback-1-opus.md
 $repo/run/feedback-1-astra.md
-$repo/run/feedback-1-sol.md"
+$repo/run/feedback-1-sol.md
+$repo/run/feedback-1-grok.md"
   [ "$e" = 0 ] || { ok=0; detail="$detail [$preset implementer on a model no Seat defaults to: exit $e]"; }
   check_call "$rec4" manager-0 "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid4" claude-opus-5-5 "pick ($preset preset, --implementer-model $off_table_model)"
   check_call "$rec4" implementer-1 "$fx/argv/$argv_fixture.txt" "$fx/prompts/PRM-3.txt" x "$off_table_model" "implementer ($preset preset, --implementer-model $off_table_model)"
@@ -445,6 +483,7 @@ $repo/run/feedback-1-sol.md"
   check_call "$rec4" reviewer-1-opus "$fx/argv/AGT-8.txt" "$fx/prompts/PRM-4.txt" "$sid4" x "opus ($preset preset, --implementer-model $off_table_model)"
   check_call "$rec4" reviewer-1-astra "$fx/argv/AGT-10-1.txt" "$fx/prompts/PRM-4.txt" "$sid4" x "astra ($preset preset, --implementer-model $off_table_model)"
   check_call "$rec4" reviewer-1-sol "$fx/argv/AGT-10-2.txt" "$fx/prompts/PRM-4.txt" "$sid4" x "sol ($preset preset, --implementer-model $off_table_model)"
+  check_call "$rec4" reviewer-1-grok "$fx/argv/AGT-19.txt" "$fx/prompts/PRM-4.txt" "$sid4" x "grok ($preset preset, --implementer-model $off_table_model)"
   check_call "$rec4" manager-1 "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid4" claude-opus-5-5 "judge ($preset preset, --implementer-model $off_table_model)"
 done
 prompts_ok=$prompt_ok; prompts_detail="$prompt_detail"
@@ -528,6 +567,17 @@ want=$'partial feedback\nREVIEWER FAILED (exit 7)'
 got=$(cat "$repo/run/feedback-1-opus.md" 2>/dev/null)
 { [ "$e" = 0 ] && [ "$got" = "$want" ] && [ "$(cat "$repo/run/feedback-1-fable.md")" = "No findings." ]; } \
   || { ok=0; detail="$detail [note: exit $e; feedback-1-opus.md: '$got']"; }
+# Grok fails alone: byte-exact partial output and marker, every identity started, judge reached.
+repo="$(new_repo)"; rec="$work/rec-revfail-grok"
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" \
+  RLOOP_FAKE_REVIEWER_OUTCOMES=1:grok:fail RLOOP_FAKE_GROK_PROGRESS=1 run_rloop "$repo" "$rec" --run-dir "$repo/run")
+panel_started "Grok failure"
+for rv in fable opus astra sol; do reviewer_ended "Grok failure" "$rv" ok; done
+reviewer_ended "Grok failure" grok fail
+printf 'Inspecting tools...partial feedback\nREVIEWER FAILED (exit 7)\n' | cmp -s - "$repo/run/feedback-1-grok.md" \
+  || { ok=0; detail="$detail [Grok failure: partial output and marker differ]"; }
+[ "$e" = 0 ] && [ "$(path_count "$rec"/*-manager-1.argv)" = 1 ] \
+  || { ok=0; detail="$detail [Grok failure: exit $e or no judge]"; }
 # --- and the same Round with a straggler writing to the standard output the Feedback File is
 # (AGT-13, DIR-4). Every Reviewer leaves a child that ignores SIGTERM and, once its own Reviewer has
 # exited, writes to the descriptor it inherited: the offset is shared, so rloop's note goes at the
@@ -542,7 +592,7 @@ e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=some;judge=done" \
   RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=reviewer RLOOP_FAKE_WRITE_STDOUT=reviewer \
   run_rloop "$repo" "$rec" --run-dir "$repo/run" --kill-after 2)
 [ "$e" = 0 ] || { ok=0; detail="$detail [straggler: exit $e]"; }
-for rv in opus sol; do
+for rv in opus sol grok; do
   f="$repo/run/feedback-1-$rv.md"
   [ -s "$f" ] || { ok=0; detail="$detail [straggler: feedback-1-$rv.md is missing or empty]"; continue; }
   [ "$(head -n1 "$f")" = "partial feedback" ] \
@@ -555,6 +605,35 @@ done
 kill_recorded "$rec"
 if [ "$ok" = 1 ]; then verdict CNF-15 ok "failure note appended, Round proceeded, and the note survives a straggler of the Reviewer's group"; else verdict CNF-15 fail "$detail"; fi
 
+# --- CNF-37: Grok alone survives; paired with no surviving Reviewer ----------------------------
+ok=1; detail=""
+for survivor in grok none; do
+  repo="$(new_repo)"; rec="$work/rec-sole-$survivor"
+  overrides=""; [ "$survivor" != grok ] || overrides=1:grok:ok
+  e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=none;judge=done" \
+    RLOOP_FAKE_REVIEWER_OUTCOMES="$overrides" run_rloop "$repo" "$rec" --run-dir "$repo/run")
+  panel_started "sole $survivor"
+  for rv in fable opus astra sol grok; do
+    outcome=fail; [ "$rv" != "$survivor" ] || outcome=ok
+    reviewer_ended "sole $survivor" "$rv" "$outcome"
+  done
+  if [ "$survivor" = grok ]; then
+    printf 'No findings.\n' | cmp -s - "$repo/run/feedback-1-grok.md" \
+      || { ok=0; detail="$detail [sole Grok: no successful Grok output]"; }
+    [ "$e" = 0 ] && [ "$(path_count "$rec"/*-probe-1.argv)" = 2 ] && \
+      [ "$(path_count "$rec"/*-manager-1.argv)" = 1 ] && grep -qx 'STATUS: done' "$repo/run/finished.md" \
+      || { ok=0; detail="$detail [sole Grok: exit $e, check/judge/done missing]"; }
+    expected='pick,impl1:ok,panel1:some:astra+fable+grok+opus+sol,judge1'
+  else
+    [ "$e" = 2 ] && [ "$(path_count "$rec"/*-probe-1.argv)" = 1 ] && \
+      [ "$(path_count "$rec"/*-manager-1.argv)" = 0 ] && [ ! -e "$repo/run/finished.md" ] \
+      || { ok=0; detail="$detail [all five failed: exit $e, judge/check/Finished File]"; }
+    expected='pick,impl1:ok,panel1:none:astra+fable+grok+opus+sol'
+  fi
+  [ "$(observed_trace "$rec")" = "$expected" ] || { ok=0; detail="$detail [sole $survivor: wrong exact trace]"; }
+done
+if [ "$ok" = 1 ]; then verdict CNF-37 ok "Grok alone succeeds and reaches judge/done; all five failed suppress both judge-site Probe and judge"; else verdict CNF-37 fail "$detail"; fi
+
 # --- CNF-16: the Panel runs concurrently -------------------------------------------------------------
 repo="$(new_repo)"; rec="$work/rec-conc"
 t0=$(date +%s)
@@ -562,32 +641,38 @@ e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLO
 t1=$(date +%s)
 last_start=$(grep '^reviewer:1:.*:start:' "$rec/trace" | awk -F: '{print $5}' | sort -n | tail -1)
 first_end=$(grep '^reviewer:1:.*:end:' "$rec/trace" | awk -F: '{print $5}' | sort -n | head -1)
-if [ "$e" = 0 ] && [ $((t1 - t0)) -lt 8 ] && [ "$last_start" -lt "$first_end" ]; then verdict CNF-16 ok "four 2-second Reviewers overlapped"; else verdict CNF-16 fail "exit $e, $((t1 - t0))s, last start $last_start first end $first_end"; fi
+ok=1; detail=""
+panel_started overlap
+for rv in fable opus astra sol grok; do reviewer_ended overlap "$rv" ok; done
+if [ "$ok" = 1 ] && [ "$e" = 0 ] && [ $((t1 - t0)) -lt 8 ] && [ -n "$last_start" ] && [ -n "$first_end" ] && [ "$last_start" -lt "$first_end" ]; then verdict CNF-16 ok "five 2-second Reviewers overlapped"; else verdict CNF-16 fail "exit $e, $((t1 - t0))s, last start $last_start first end $first_end $detail"; fi
 
 # --- CNF-17: timeouts and process groups -------------------------------------------------------------
 ok=1; detail=""
-# One Reviewer sleeps and spawns a child that ignores SIGTERM; the other three answer, so the judge
+# One Reviewer sleeps and spawns a child that ignores SIGTERM; the other four answer, so the judge
 # is called. The judge's own record says which children and which calls' own processes were alive
 # when it started (AGT-14, AGT-16).
-repo="$(new_repo)"; rec="$work/rec-tmo"
-e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_SLEEP_REVIEWER=30 RLOOP_FAKE_SLEEP_ONLY=fable RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=1 run_rloop "$repo" "$rec" --run-dir "$repo/run" --reviewer-timeout 1 --kill-after 1)
+for slow_rv in fable grok; do
+repo="$(new_repo)"; rec="$work/rec-tmo-$slow_rv"
+e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_SLEEP_REVIEWER=30 RLOOP_FAKE_SLEEP_ONLY="$slow_rv" RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=1 run_rloop "$repo" "$rec" --run-dir "$repo/run" --reviewer-timeout 1 --kill-after 1)
 [ "$e" = 0 ] || { ok=0; detail="$detail [one reviewer timed out: exit $e]"; }
-grep -q 'REVIEWER FAILED' "$repo/run/feedback-1-fable.md" 2>/dev/null || { ok=0; detail="$detail [no failure note after reviewer timeout]"; }
-for r in opus astra sol; do [ "$(cat "$repo/run/feedback-1-$r.md" 2>/dev/null)" = "No findings." ] || { ok=0; detail="$detail [$r did not answer]"; }; done
+grep -q 'REVIEWER FAILED' "$repo/run/feedback-1-$slow_rv.md" 2>/dev/null || { ok=0; detail="$detail [no failure note after reviewer timeout]"; }
+panel_started "timeout $slow_rv"
+for r in fable opus astra sol grok; do [ "$r" = "$slow_rv" ] && continue; reviewer_ended "timeout $slow_rv" "$r" ok; [ "$(cat "$repo/run/feedback-1-$r.md" 2>/dev/null)" = "No findings." ] || { ok=0; detail="$detail [$r did not answer]"; }; done
 grep -q '^manager:1:start:' "$rec/trace" 2>/dev/null || { ok=0; detail="$detail [no judge after reviewer timeout]"; }
-gc=$(sed -n 's/^GRANDCHILD=//p' "$rec"/*-reviewer-1-fable.env 2>/dev/null)
+gc=$(sed -n 's/^GRANDCHILD=//p' "$rec"/*-reviewer-1-"$slow_rv".env 2>/dev/null)
 [ -n "$gc" ] || { ok=0; detail="$detail [the slow reviewer recorded no grandchild]"; }
 matching_paths "$rec"/*-manager-1.env; judge_env="${paths[0]-}"
 if [ -z "$judge_env" ] || ! grep -q '^GRANDCHILDREN_ALIVE=' "$judge_env"; then ok=0; detail="$detail [the judge's record has no GRANDCHILDREN_ALIVE line]"
 elif [ -n "$gc" ] && pid_in "$gc" "$(sed -n 's/^GRANDCHILDREN_ALIVE=//p' "$judge_env")"; then ok=0; detail="$detail [grandchild $gc alive when the judge started]"; fi
 [ -n "$gc" ] && kill -0 "$gc" 2>/dev/null && { ok=0; detail="$detail [grandchild $gc survived the Run]"; }
 # The slow Reviewer's own process, read the same two ways.
-slow=$(sed -n 's/^PID=//p' "$rec"/*-reviewer-1-fable.env 2>/dev/null)
+slow=$(sed -n 's/^PID=//p' "$rec"/*-reviewer-1-"$slow_rv".env 2>/dev/null)
 [ -n "$slow" ] || { ok=0; detail="$detail [the slow reviewer recorded no PID]"; }
 if [ -z "$judge_env" ] || ! grep -q '^CALLS_ALIVE=' "$judge_env"; then ok=0; detail="$detail [the judge's record has no CALLS_ALIVE line]"
 elif [ -n "$slow" ] && pid_in "$slow" "$(sed -n 's/^CALLS_ALIVE=//p' "$judge_env")"; then ok=0; detail="$detail [slow reviewer $slow alive when the judge started]"; fi
 [ -n "$slow" ] && kill -0 "$slow" 2>/dev/null && { ok=0; detail="$detail [slow reviewer $slow survived the Run]"; }
 kill_recorded "$rec"
+done
 # An Implementer that ignores SIGTERM: only the SIGKILL ends it. Each Reviewer's own record says
 # which calls' own processes were alive when it started.
 repo="$(new_repo)"; rec="$work/rec-tmo2"; t0=$(date +%s)
@@ -636,6 +721,8 @@ record_of() {
 gone_by() {
   local label="$1" later="$2" earlier="$3" pair key snap p
   { [ -n "$later" ] && [ -n "$earlier" ]; } || return 0
+  [ -f "${earlier%.env}.child-ready" ] && ! grep -q '^CHILD_NOT_READY=' "$earlier" \
+    || { ok=0; detail="$detail [$label: $(basename "$earlier") child was not ready]"; }
   for pair in PID:CALLS_ALIVE GRANDCHILD:GRANDCHILDREN_ALIVE; do
     key="${pair%%:*}"; snap="${pair#*:}"
     p=$(sed -n "s/^$key=//p" "$earlier" 2>/dev/null)
@@ -703,13 +790,13 @@ done
 # clause, `rloop MUST wait for every one of them before the Checkpoint that follows`, with RUN-7
 # putting `the Checkpoint again` and then the judge after the Panel: the judge-site Probe is the first call
 # that starts once every Reviewer has exited, so its record is read alone, and each of the Panel's
-# four is read against it.
+# five is read against it.
 repo="$(new_repo)"; rec="$work/rec-reap-reviewer"
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=reviewer run_rloop "$repo" "$rec" --run-dir "$repo/run" --kill-after 1)
 [ "$e" = 0 ] || { ok=0; detail="$detail [reviewer: exit $e]"; }
 matching_paths "$rec"/*-probe-1.env; judge_env="${paths[1]-}"
 [ -n "$judge_env" ] || { ok=0; detail="$detail [reviewer: no judge-site Probe record]"; }
-panel_records reviewer
+panel_started reviewer
 for f in ${panel[@]+"${panel[@]}"}; do gone_by reviewer "$judge_env" "$f"; done
 nothing_survived reviewer
 kill_recorded "$rec"
@@ -794,7 +881,7 @@ e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" \
 [ "$(spawn_count "$rec")" = 1 ] || { ok=0; detail="$detail [probe read: $(spawn_count "$rec") calls recorded, not the probe before the pick alone]"; }
 grep -qxF -- "$straggler_line" "$repo/run/probe-pick.out" 2>/dev/null \
   || { ok=0; detail="$detail [probe read: nothing of the probe's straggler reached probe-pick.out, so the read had nothing to witness]"; }
-record_is "$repo/run/probe-pick.md" "probe read" unavailable unavailable unknown unavailable unknown unknown
+record_is "$repo/run/probe-pick.md" "probe read" unavailable unavailable unknown unavailable unknown unknown unknown
 gc=$(sed -n 's/^GRANDCHILD=//p' "$rec"/*-probe-0.env 2>/dev/null)
 { [ -n "$gc" ] && ! kill -0 "$gc" 2>/dev/null; } || { ok=0; detail="$detail [probe read: the probe's child ${gc:-(unrecorded)} is alive once the executable has returned]"; }
 kill_recorded "$rec"
@@ -855,11 +942,11 @@ e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" \
   RLOOP_FAKE_INTERFERENCE=1:afterPanel:editTask \
   RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=reviewer RLOOP_FAKE_WATCH=reviewer:rejected-1-task.md \
   run_rloop "$repo" "$rec" --run-dir "$repo/run" --kill-after 1)
-panel_records "panel watch"
+panel_started "panel watch"
 record_of "panel watch" manager-1; judge_env="$found"
 grep -qxF -- '- [x] ticked by the reviewer' "$repo/run/rejected-1-task.md" 2>/dev/null \
   || { ok=0; detail="$detail [panel watch: rejected-1-task.md has no Reviewer's edit]"; }
-for rv in fable opus astra sol; do
+for rv in fable opus astra sol grok; do
   watched_nothing "panel $rv watch" "reviewer-1-$rv" rejected-1-task.md "the second Checkpoint" "the Reviewer's child" "a Reviewer fake"
   record_of "panel $rv watch" "reviewer-1-$rv"
   gone_by "panel $rv watch" "$judge_env" "$found"
@@ -895,6 +982,11 @@ child_gone_within() {
     sleep 0.1
   done
   [ -n "$end" ] || { ok=0; detail="$detail [$label: $rv recorded no exit]"; return 0; }
+  local paths=()
+  matching_paths "$rec"/*-reviewer-1-"$rv".env
+  if [ "${#paths[@]}" != 1 ] || [ ! -f "${paths[0]%.env}.child-ready" ] || grep -q '^CHILD_NOT_READY=' "${paths[0]}"; then
+    ok=0; detail="$detail [$label: $rv child readiness missing]"
+  fi
   deadline=$(( end + bound * 1000000000 ))
   while kill -0 "$gc" 2>/dev/null; do
     [ "$(date +%s%N)" -lt "$deadline" ] && { sleep 0.1; continue; }
@@ -902,7 +994,7 @@ child_gone_within() {
   done
 }
 # Completion order, not roster order: fable, first of the roster, sleeps ten seconds while the other
-# three answer at once, and every Reviewer leaves a child that ignores SIGTERM. opus's child is the
+# four answer at once, and every Reviewer leaves a child that ignores SIGTERM. opus's child is the
 # one read, opus being named after fable, so a Panel waited for in roster order keeps opus's group
 # until fable has exited too. The bound is --kill-after and five seconds, generous because the claim
 # is only that the group goes with its own Reviewer and a loaded machine can be late; what it
@@ -912,18 +1004,18 @@ repo="$(new_repo)"; rec="$work/rec-reap-order"; mkdir -p "$rec"
     "$exe" --run-dir "$repo/run" --kill-after 1 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
 rpid=$!
 child_gone_within roster opus 6
-# And, read the instant it went, the Panel is the four RUN-8 spawns and fable — the Reviewer ahead of
+# And, read the instant it went, the Panel is the five RUN-8 spawns and fable — the Reviewer ahead of
 # opus in the roster, whose sleep is what roster order would have made opus's group wait for — is
 # still running. Both are positive reads, because every read above is about opus alone and the
 # absence of fable's end line is not evidence that fable ever started: a Panel of one Reviewer would
 # leave the whole row vacuous, and nothing_survived below skips a record that does not exist. So the
-# records are counted rather than globbed, a recorded child is required of each of the four — which
+# records are counted rather than globbed, a recorded child is required of each of the five — which
 # is what makes that survival read a claim about the Panel and not about however many records happen
 # to carry a GRANDCHILD line — and fable's own recorded pid must answer kill -0. The end line is read
 # as well and not instead: fable is the executable's child, and a zombie still answers kill -0.
-panel_records roster
+panel_started roster
 for f in ${panel[@]+"${panel[@]}"}; do
-  grep -q '^GRANDCHILD=' "$f" \
+  [ -f "${f%.env}.child-ready" ] && grep -q '^GRANDCHILD=' "$f" \
     || { ok=0; detail="$detail [roster: $(basename "$f") recorded no child]"; }
 done
 fpid=$(sed -n 's/^PID=//p' "$rec"/*-reviewer-1-fable.env 2>/dev/null | head -1)
@@ -933,10 +1025,11 @@ fi
 grep -q '^reviewer:1:fable:end:' "$rec/trace" 2>/dev/null \
   && { ok=0; detail="$detail [roster: fable had exited too when opus's child went, so no later Reviewer was left to delay it]"; }
 wait "$rpid"; e=$?
+for rv in fable opus astra sol grok; do reviewer_ended roster "$rv" ok; done
 [ "$e" = 0 ] || { ok=0; detail="$detail [roster: exit $e]"; }
 nothing_survived roster
 kill_recorded "$rec"
-# One grace each, not one after another: nobody sleeps, so the four Reviewers exit within a moment of
+# One grace each, not one after another: nobody sleeps, so the five Reviewers exit within a moment of
 # one another, and each leaves such a child. Graces taken one after another put the second group's
 # child two graces past its own Reviewer's exit and the fourth's four. The bound is the grace and
 # four seconds, for the reason above; --kill-after 5 rather than 1 is what puts the shape being
@@ -948,8 +1041,10 @@ repo="$(new_repo)"; rec="$work/rec-reap-grace"; mkdir -p "$rec"
 ( cd "$repo" && exec env --default-signal=INT,TERM PATH="$fakes:$private" RLOOP_FAKE_RECORD="$rec" RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=reviewer \
     "$exe" --run-dir "$repo/run" --kill-after 5 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
 rpid=$!
-for rv in fable opus astra sol; do child_gone_within grace "$rv" 9; done
+for rv in fable opus astra sol grok; do child_gone_within grace "$rv" 9; done
+panel_started grace
 wait "$rpid"; e=$?
+for rv in fable opus astra sol grok; do reviewer_ended grace "$rv" ok; done
 [ "$e" = 0 ] || { ok=0; detail="$detail [grace: exit $e]"; }
 nothing_survived grace
 kill_recorded "$rec"
@@ -974,6 +1069,36 @@ for sig in INT TERM; do
     [ -n "$p" ] || { ok=0; detail="$detail [$sig: the implementer recorded no $key]"; continue; }
     kill -0 "$p" 2>/dev/null && { ok=0; detail="$detail [$sig: implementer $key $p survived]"; }
   done
+  kill_recorded "$rec"
+done
+# Grok-active interruption, separately from the Implementer and Probe arms.
+for sig in INT TERM; do
+  repo="$(new_repo)"; rec="$work/rec-sig-grok-$sig"; mkdir -p "$rec"
+  ( cd "$repo" && exec env --default-signal=INT,TERM PATH="$fakes:$private" RLOOP_FAKE_RECORD="$rec" \
+      RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" \
+      RLOOP_FAKE_SLEEP_REVIEWER=60 RLOOP_FAKE_SLEEP_ONLY=grok RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=1 \
+      "$exe" --run-dir "$repo/run" --reviewer-timeout 300 --kill-after 1 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
+  rpid=$!; slow=""; gc=""
+  for _ in $(seq 1 150); do
+    slow=$(sed -n 's/^PID=//p' "$rec"/*-reviewer-1-grok.env 2>/dev/null)
+    gc=$(sed -n 's/^GRANDCHILD=//p' "$rec"/*-reviewer-1-grok.env 2>/dev/null)
+    if [ -n "$gc" ] && grep -q '^reviewer:1:grok:start:' "$rec/trace" 2>/dev/null &&
+        [ "$(grep -c '^reviewer:1:.*:start:' "$rec/trace" 2>/dev/null)" = 5 ]; then break; fi
+    kill -0 "$rpid" 2>/dev/null || break
+    sleep 0.1
+  done
+  panel_started "Grok $sig"
+  for p in "$slow" "$gc"; do
+    [ -n "$p" ] && kill -0 "$p" 2>/dev/null || { ok=0; detail="$detail [Grok $sig: own process or child not active]"; }
+  done
+  sleep 0.5; kill -"$sig" "$rpid" 2>/dev/null
+  wait "$rpid"; e=$?
+  [ "$e" = 2 ] && grep -q interrupted "$rec/stderr" \
+    || { ok=0; detail="$detail [Grok $sig: exit $e or no interrupted diagnostic]"; }
+  grep -q SIGTERM "$rec"/*-reviewer-1-grok.env 2>/dev/null \
+    || { ok=0; detail="$detail [Grok $sig: no SIGTERM at Grok]"; }
+  [ -f "$repo/run/task-1.md" ] || { ok=0; detail="$detail [Grok $sig: no snapshot retained]"; }
+  nothing_survived "Grok $sig"
   kill_recorded "$rec"
 done
 # --- and the Probe, on the same path. This is `CNF-18`'s Probe Run and `06-conformance.md`'s note
@@ -1058,7 +1183,7 @@ wait "$rpid"; e=$?
 [ "$e" = 2 ] || { ok=0; detail="$detail [reap: exit $e]"; }
 grep -q interrupted "$rec/stderr" || { ok=0; detail="$detail [reap: no 'interrupted']"; }
 kill_recorded "$rec"
-if [ "$ok" = 1 ]; then verdict CNF-18 ok "SIGINT/SIGTERM forwarded, exit 2 'interrupted', nothing survives, run dir intact, for a sleeping Implementer and for the probe before the pick; a second SIGINT kills at once during a call and during a reap"; else verdict CNF-18 fail "$detail"; fi
+if [ "$ok" = 1 ]; then verdict CNF-18 ok "SIGINT/SIGTERM forwarded, exit 2 'interrupted', nothing survives, run dir intact, for a sleeping Implementer, active Grok and for the probe before the pick; a second SIGINT kills at once during a call and during a reap"; else verdict CNF-18 fail "$detail"; fi
 
 # --- CNF-19: git ------------------------------------------------------------------------------------------
 shim="$work/shim"; mkdir -p "$shim"; cp "$here/fakes/git-shim" "$shim/git"; chmod +x "$shim/git"
@@ -1161,6 +1286,7 @@ if [ "$n" = 1 ]; then
   check_probe_env probe-0 0 "the pick"
 else ok=0; detail="$detail [the pick: $n probe calls]"; fi
 [ -f "$repo/run/probe-pick.err" ] || { ok=0; detail="$detail [the pick: probe-pick.err missing]"; }
+record_is "$repo/run/probe-pick.md" "ordinary pick" unknown unknown unknown unknown unknown unknown unknown
 clear_bytes | cmp -s - "$repo/run/probe-pick.out" || { ok=0; detail="$detail [the pick: probe-pick.out is not the probe's bytes]"; }
 for r in 1 2; do
   n=$(path_count "$rec"/*-probe-"$r".argv)
@@ -1173,7 +1299,7 @@ for r in 1 2; do
   present "round $r implementer" "$i" || ordered=0
   present "round $r judge" "$m" || ordered=0
   [ "$i" != -1 ] && [ "$m" != -1 ] && [ "$i" -lt "$p" ] && [ "$j" -lt "$m" ] || ordered=0
-  for rv in fable opus astra sol; do
+  for rv in fable opus astra sol grok; do
     v=$(seq_of "reviewer-$r-$rv")
     present "round $r Reviewer $rv" "$v" || ordered=0
     [ "$v" != -1 ] && [ "$p" -lt "$v" ] && [ "$v" -lt "$j" ] || ordered=0
@@ -1183,8 +1309,10 @@ for r in 1 2; do
     captures=1
     for ext in out err md; do [ -f "$repo/run/probe-$r-$site-1.$ext" ] || captures=0; done
     clear_bytes | cmp -s - "$repo/run/probe-$r-$site-1.out" || captures=0
+    record_is "$repo/run/probe-$r-$site-1.md" "round $r $site" unknown unknown unknown unknown unknown unknown unknown
     [ "$captures" = 1 ] || { ok=0; detail="$detail [round $r: $site numbered captures]"; }
   done
+  record_is "$repo/run/probe-$r.md" "round $r stable Panel copy" unknown unknown unknown unknown unknown unknown unknown
   check_probe_env "probe-$r" "$r" "round $r"
   [ -f "$repo/run/probe-$r.err" ] || { ok=0; detail="$detail [round $r: probe-$r.err missing]"; }
   clear_bytes | cmp -s - "$repo/run/probe-$r.out" || { ok=0; detail="$detail [round $r: probe-$r.out is not the probe's bytes]"; }
@@ -1206,16 +1334,16 @@ repo="$(new_repo)"; rec="$work/rec-probe-verdict"
 # Bound even defective waits at each Run: every non-clear scripted Probe (including the pick),
 # and every failing claude judge, needs short quota options at its own call site.
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=fable RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${claude_off[@]}" --quota-wait 1 --quota-poll 1)
-record_is "$repo/run/probe-1.md" "fable row" unknown unknown unavailable unknown unknown unknown
+record_is "$repo/run/probe-1.md" "fable row" unknown unknown unavailable unknown unknown unknown unknown
 # The verdict alone is not enough: an Implementation could write it and then abort, or act on it
 # early. RUN-15 removes exactly the Reviewer read `unavailable` and no other, so the Run must
 # finish and every other Reviewer must have been called.
 # RUN-15: the Reviewer read `unavailable` is the one that must NOT be called, and every other
-# must be. Asserting all four here would contradict CNF-27 and no Implementation could pass both.
+# must be. Asserting all five here would contradict CNF-27 and no Implementation could pass both.
 check_run_whole() { # check_run_whole <label> <the unavailable reviewer>
   [ "$e" = 0 ] || { ok=0; detail="$detail [$1: exit $e]"; }
   [ -f "$repo/run/finished.md" ] || { ok=0; detail="$detail [$1: no Finished File]"; }
-  for rv in fable opus astra sol; do
+  for rv in fable opus astra sol grok; do
     if [ "$rv" = "$2" ]; then
       ls "$rec"/*-reviewer-1-"$rv".argv >/dev/null 2>&1 && { ok=0; detail="$detail [$1: $rv called though unavailable]"; }
     else
@@ -1227,16 +1355,16 @@ check_run_whole "fable row" fable
 # The other row of the table, so a rule that hardcodes `fable` cannot pass.
 repo="$(new_repo)"; rec="$work/rec-probe-verdict-opus"
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=opus RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${claude_off[@]}" --quota-wait 1 --quota-poll 1)
-record_is "$repo/run/probe-1.md" "opus row" unknown unknown unknown unavailable unknown unknown
+record_is "$repo/run/probe-1.md" "opus row" unknown unknown unknown unavailable unknown unknown unknown
 check_run_whole "opus row" opus
 # The Implementer's Seat on `fable`'s model: its verdict is read from its own model, not copied from
 # a Reviewer's line, and a Round's verdict on it is recorded and acted on by nothing (RUN-22).
 repo="$(new_repo)"; rec="$work/rec-probe-verdict-seat"
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=fable RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager-model "$off_table_model" --implementer claude --implementer-model claude-fable-5-1 --quota-wait 1 --quota-poll 1)
-record_is "$repo/run/probe-1.md" "Implementer's Seat on the table" unknown unavailable unavailable unknown unknown unknown
+record_is "$repo/run/probe-1.md" "Implementer's Seat on the table" unknown unavailable unavailable unknown unknown unknown unknown
 ls "$rec"/*-manager-1.argv >/dev/null 2>&1 || { ok=0; detail="$detail [Implementer's Seat on the table: judge not called]"; }
 check_run_whole "Implementer's Seat on the table" fable
-if [ "$ok" = 1 ]; then verdict CNF-25 ok "six lines, one per Seat; either family at 100% reads unavailable, alone, and a Seat reads its own model"; else verdict CNF-25 fail "$detail"; fi
+if [ "$ok" = 1 ]; then verdict CNF-25 ok "seven lines, one per Seat; either family at 100% reads unavailable, alone, and a Seat reads its own model"; else verdict CNF-25 fail "$detail"; fi
 
 # --- CNF-26: fail open ---------------------------------------------------------------------------------
 ok=1; detail=""
@@ -1259,8 +1387,8 @@ for shape in silent garbage clear aggregate under loose nul fail slow session89 
   [ "$e" = 0 ] || { ok=0; detail="$detail [$shape: exit $e]"; }
   [ -f "$repo/run/finished.md" ] || { ok=0; detail="$detail [$shape: no Finished File]"; }
   ls "$rec"/*-manager-1.argv >/dev/null 2>&1 || { ok=0; detail="$detail [$shape: judge not called]"; }
-  record_is "$repo/run/probe-1.md" "$shape" unknown unknown unknown unknown unknown unknown
-  for rv in fable opus astra sol; do
+  record_is "$repo/run/probe-1.md" "$shape" unknown unknown unknown unknown unknown unknown unknown
+  for rv in fable opus astra sol grok; do
     ls "$rec"/*-reviewer-1-"$rv".argv >/dev/null 2>&1 || { ok=0; detail="$detail [$shape: $rv not spawned]"; }
   done
 done
@@ -1277,10 +1405,10 @@ for shape in fable both session100; do
   [ "$e" = 0 ] || { ok=0; detail="$detail [$shape: exit $e]"; }
   [ -f "$repo/run/finished.md" ] || { ok=0; detail="$detail [$shape: no Finished File]"; }
   opus_verdict=unknown; [ "$shape" != fable ] && opus_verdict=unavailable
-  record_is "$repo/run/probe-1.md" "$shape" unknown unknown unavailable "$opus_verdict" unknown unknown
+  record_is "$repo/run/probe-1.md" "$shape" unknown unknown unavailable "$opus_verdict" unknown unknown unknown
   matching_paths "$rec"/*-manager-1.argv; jf="${paths[0]-}"
   [ -n "$jf" ] || { ok=0; detail="$detail [$shape: judge not called]"; }
-  for rv in fable opus astra sol; do
+  for rv in fable opus astra sol grok; do
     if [ "$rv" = fable ] || { [ "$shape" != fable ] && [ "$rv" = opus ]; }; then
       ls "$rec"/*-reviewer-1-"$rv".argv >/dev/null 2>&1 && { ok=0; detail="$detail [$shape: $rv was called]"; }
       # Byte comparison preserves trailing blank lines, which command substitution would strip.
@@ -1296,13 +1424,15 @@ for shape in fable both session100; do
       || { ok=0; detail="$detail [$shape: judge was not given $rv's Feedback File]"; }
   done
 done
-# Mixed down states: one Reviewer never called and the other three failing is still "every
+# Mixed down states: one Reviewer never called and the other four failing is still "every
 # Reviewer of a Panel is down", so RUN-15 aborts. Nothing else exercises the two kinds together.
 repo="$(new_repo)"; rec="$work/rec-omitted-abort"
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=fable RLOOP_FAKE_ROUNDS="impl=ok;panel=none;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${claude_off[@]}" --quota-wait 1 --quota-poll 1)
-[ "$e" = 2 ] || { ok=0; detail="$detail [one unavailable plus three failed: exit $e, want 2]"; }
+[ "$e" = 2 ] || { ok=0; detail="$detail [one unavailable plus four failed: exit $e, want 2]"; }
 ls "$rec"/*-manager-1.argv >/dev/null 2>&1 && { ok=0; detail="$detail [judge ran with no survivor]"; }
 [ -f "$repo/run/finished.md" ] && { ok=0; detail="$detail [Finished File written with no survivor]"; }
+[ "$(path_count "$rec"/*-probe-1.argv)" = 1 ] || { ok=0; detail="$detail [judge-site Probe ran with no survivor]"; }
+
 if [ "$ok" = 1 ]; then verdict CNF-27 ok "family or session exhaustion: omitted Reviewers recorded in place and all feedback reaches the judge; all down aborts"; else verdict CNF-27 fail "$detail"; fi
 
 # --- CNF-28, CNF-29: a Seat that cannot answer refuses the Run at the pick -------------------------------
@@ -1341,13 +1471,13 @@ repo="$(new_repo)"; rec="$work/rec-refuse-manager"
 e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=opus run_rloop "$repo" "$rec" --run-dir "$repo/run" --implementer claude --quota-wait 1 --quota-poll 1)
 refused "claude preset default models"
 names "claude preset default models" manager implementer claude-opus-5-5 "$opus_line"
-record_is "$repo/run/probe-pick.md" "claude preset default models" unavailable unavailable unknown unavailable unknown unknown
+record_is "$repo/run/probe-pick.md" "claude preset default models" unavailable unavailable unknown unavailable unknown unknown unknown
 # The table's other row, so a rule that hardcodes `opus` for the Manager's Seat cannot pass.
 repo="$(new_repo)"; rec="$work/rec-refuse-manager-fable"
 e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=fable run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager-model claude-fable-5-1 --implementer claude --implementer-model "$off_table_model" --quota-wait 1 --quota-poll 1)
 refused "claude-fable-5-1"
 names "claude-fable-5-1" manager claude-fable-5-1 "$fable_line"
-record_is "$repo/run/probe-pick.md" "claude-fable-5-1" unavailable unknown unavailable unknown unknown unknown
+record_is "$repo/run/probe-pick.md" "claude-fable-5-1" unavailable unknown unavailable unknown unknown unknown unknown
 # Session refusal: both claude presets at their default models, then Manager alone with a codex Implementer.
 # Leading zeros and 101 also distinguish base ten and the pick's >= 90 rule.
 for shape in session90 session090 session101; do
@@ -1356,19 +1486,19 @@ for shape in session90 session090 session101; do
     e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK="$shape" run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager-model "$model" --implementer codex --quota-wait 1 --quota-poll 1)
     refused "$shape Manager $model"
     names "$shape Manager $model" manager "$model" "Current session: ${shape#session}% used · resets 6pm (UTC)"
-    record_is "$repo/run/probe-pick.md" "$shape Manager $model" unavailable unknown unavailable unavailable unknown unknown
+    record_is "$repo/run/probe-pick.md" "$shape Manager $model" unavailable unknown unavailable unavailable unknown unknown unknown
   done
 done
 repo="$(new_repo)"; rec="$work/rec-session-defaults"
 e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=session90 run_rloop "$repo" "$rec" --run-dir "$repo/run" --implementer claude --quota-wait 1 --quota-poll 1)
 refused "session claude preset default models"
 names "session claude preset default models" manager implementer claude-opus-5-5 'Current session: 90% used · resets 6pm (UTC)'
-record_is "$repo/run/probe-pick.md" "session claude preset default models" unavailable unavailable unavailable unavailable unknown unknown
+record_is "$repo/run/probe-pick.md" "session claude preset default models" unavailable unavailable unavailable unavailable unknown unknown unknown
 # Both readings exhaust the Manager alone; RUN-22 carries both lines in report order.
 repo="$(new_repo)"; rec="$work/rec-session-family-pick"
 e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=session100-opus run_rloop "$repo" "$rec" --run-dir "$repo/run" --quota-wait 1 --quota-poll 1)
 refused "session and family Manager"
-record_is "$repo/run/probe-pick.md" "session and family Manager" unavailable unknown unavailable unavailable unknown unknown
+record_is "$repo/run/probe-pick.md" "session and family Manager" unavailable unknown unavailable unavailable unknown unknown unknown
 quoted_in_order 'Current session: 100% used · resets 6pm (UTC)' "$opus_line" \
   || { ok=0; detail="$detail [session and family Manager: quoted lines in report order]"; }
 # A Sequence must stop on the refused first Run, without another Probe or pick.
@@ -1383,19 +1513,19 @@ repo="$(new_repo)"; rec="$work/rec-refuse-implementer"
 e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=opus run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager-model "$off_table_model" --implementer claude --quota-wait 1 --quota-poll 1)
 refused "Implementer's Seat"
 names "Implementer's Seat" implementer claude-opus-5-5 "$opus_line"
-record_is "$repo/run/probe-pick.md" "Implementer's Seat" unknown unavailable unknown unavailable unknown unknown
+record_is "$repo/run/probe-pick.md" "Implementer's Seat" unknown unavailable unknown unavailable unknown unknown unknown
 # The table's other row, so a rule that hardcodes `opus` for the Implementer's Seat cannot pass.
 repo="$(new_repo)"; rec="$work/rec-refuse-implementer-fable"
 e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=fable run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager-model "$off_table_model" --implementer claude --implementer-model claude-fable-5-1 --quota-wait 1 --quota-poll 1)
 refused "Implementer's Seat on claude-fable-5-1"
 names "Implementer's Seat on claude-fable-5-1" implementer claude-fable-5-1 "$fable_line"
-record_is "$repo/run/probe-pick.md" "Implementer's Seat on claude-fable-5-1" unknown unavailable unavailable unknown unknown unknown
+record_is "$repo/run/probe-pick.md" "Implementer's Seat on claude-fable-5-1" unknown unavailable unavailable unknown unknown unknown unknown
 for model in claude-opus-5-5 "$off_table_model" gpt-6.1-sol; do
   repo="$(new_repo)"; rec="$work/rec-session-implementer-$model"
   e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=session90 run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager codex --implementer claude --implementer-model "$model" --quota-wait 1 --quota-poll 1)
   refused "session Implementer $model"
   names "session Implementer $model" implementer "$model" 'Current session: 90% used · resets 6pm (UTC)'
-  record_is "$repo/run/probe-pick.md" "session Implementer $model" unknown unavailable unavailable unavailable unknown unknown
+  record_is "$repo/run/probe-pick.md" "session Implementer $model" unknown unavailable unavailable unavailable unknown unknown unknown
 done
 if [ "$ok" = 1 ]; then verdict CNF-29 ok "an Implementer's Seat recorded unavailable before the pick, on either row: exit 2, no agent spawned, the Seat, model and line named"; else verdict CNF-29 fail "$detail"; fi
 
@@ -1406,9 +1536,9 @@ ok=1; detail=""
 for row in fable opus; do # the Manager's Seat on each row of RUN-21's table, so a Round's reading cannot hardcode `fable`
   case $row in
     fable) model=claude-fable-5-1; line=$fable_line; seats=(--implementer claude --manager-model claude-fable-5-1 --implementer-model "$off_table_model")
-      verdicts=(unavailable unknown unavailable unknown unknown unknown) ;;
+      verdicts=(unavailable unknown unavailable unknown unknown unknown unknown) ;;
     opus) model=claude-opus-5-5; line=$opus_line; seats=(--implementer claude --implementer-model "$off_table_model")
-      verdicts=(unavailable unknown unknown unavailable unknown unknown) ;;
+      verdicts=(unavailable unknown unknown unavailable unknown unknown unknown) ;;
   esac
   repo="$(new_repo)"; rec="$work/rec-judge-guard-$row"
   e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE="clear|$row" RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=fail" run_rloop "$repo" "$rec" --run-dir "$repo/run" --quota-wait 1 --quota-poll 1 "${seats[@]}")
@@ -1417,7 +1547,7 @@ for row in fable opus; do # the Manager's Seat on each row of RUN-21's table, so
   [ -e "$repo/run/manager-judge-2.out" ] && { ok=0; detail="$detail [Round 2, $model: manager-judge-2.out exists]"; }
   ls "$rec"/*-manager-2.argv >/dev/null 2>&1 && { ok=0; detail="$detail [Round 2, $model: its judge was called]"; }
   ls "$rec"/*-implementer-2.argv >/dev/null 2>&1 || { ok=0; detail="$detail [Round 2, $model: no Implementer]"; }
-  for rv in fable opus astra sol; do
+  for rv in fable opus astra sol grok; do
     [ "$rv" = "$row" ] && continue
     ls "$rec"/*-reviewer-2-$rv.argv >/dev/null 2>&1 || { ok=0; detail="$detail [Round 2, $model: $rv not called]"; }
   done
@@ -1444,7 +1574,7 @@ for point in afterImplementer afterPanel; do
       || { ok=0; detail="$detail [$point $shape: exit/output/Finished File]"; }
     [ "$(path_count "$rec"/*-probe-1.argv)" = 2 ] && [ "$(path_count "$rec"/*-manager-0.argv)" = 1 ] && [ "$(path_count "$rec"/*-implementer-1.argv)" = 1 ] && [ "$(path_count "$rec"/*-manager-1.argv)" = 0 ] && [ ! -e "$repo/run/manager-judge-1.out" ] \
       || { ok=0; detail="$detail [$point $shape: wrong pick/Implementer/judge calls]"; }
-    record_is "$repo/run/probe-1.md" "$point $shape" unavailable unavailable unavailable unavailable unknown unknown
+    record_is "$repo/run/probe-1.md" "$point $shape" unavailable unavailable unavailable unavailable unknown unknown unknown
     names "$point $shape" manager "$off_table_model" "Current session: ${shape#session}% used · resets 6pm (UTC)"
     for rv in fable opus; do
       [ "$(path_count "$rec"/*-reviewer-1-$rv.argv)" = 0 ] && printf 'REVIEWER NOT RUN (unavailable)\n' | cmp -s - "$repo/run/feedback-1-$rv.md" \
@@ -1452,7 +1582,7 @@ for point in afterImplementer afterPanel; do
       [ -f "$repo/run/reviewer-1-$rv.err" ] && [ ! -s "$repo/run/reviewer-1-$rv.err" ] \
         || { ok=0; detail="$detail [$point $shape: $rv stderr]"; }
     done
-    for rv in astra sol; do
+    for rv in astra sol grok; do
       [ "$(path_count "$rec"/*-reviewer-1-$rv.argv)" = 1 ] || { ok=0; detail="$detail [$point $shape: $rv not called]"; }
     done
     cmp -s "$repo/run/task.md" "$repo/run/task-1.md" && [ -s "$repo/run/rejected-1-task.md" ] && [ -s "$repo/run/rejected-1-finished.md" ] \
@@ -1474,7 +1604,7 @@ for shape in fable both; do
   e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE_PICK="$shape" RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${claude_off[@]}" --quota-wait 1 --quota-poll 1)
   started "$shape, Seats off the table"
   opus_verdict=unknown; [ "$shape" = both ] && opus_verdict=unavailable
-  record_is "$repo/run/probe-pick.md" "$shape, Seats off the table" unknown unknown unavailable "$opus_verdict" unknown unknown
+  record_is "$repo/run/probe-pick.md" "$shape, Seats off the table" unknown unknown unavailable "$opus_verdict" unknown unknown unknown
 done
 # CNF-26's order, with `unlisted` in the slot its defect gives it — a family line at 100% whose
 # family RUN-21's table does not hold — and without CNF-26's `clear`, which is that item's control.
@@ -1487,7 +1617,7 @@ for shape in silent garbage aggregate unlisted under loose nul fail slow session
   if [ "$shape" = session-slow ]; then written=session100; sleep_probe=3; bound=(--probe-timeout 1); fi
   e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE_PICK="$written" RLOOP_FAKE_SLEEP_PROBE="$sleep_probe" RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager-model claude-fable-5-1 --implementer claude --implementer-model claude-fable-5-1 ${bound[@]+"${bound[@]}"} --quota-wait 1 --quota-poll 1)
   started "$shape, Fable overrides"
-  record_is "$repo/run/probe-pick.md" "$shape, Fable overrides" unknown unknown unknown unknown unknown unknown
+  record_is "$repo/run/probe-pick.md" "$shape, Fable overrides" unknown unknown unknown unknown unknown unknown unknown
 done
 # Leave both Implementer flags unset: runtime argv and Probe processing must agree on codex.
 # A failed pick and a refused Run both exit 2, so assert the exact record and the pick spawn.
@@ -1500,7 +1630,7 @@ for shape in session90 opus; do
   fi
   e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK="$shape" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${manager_args[@]}" --quota-wait 1 --quota-poll 1)
   [ "$e" = 2 ] || { ok=0; detail="$detail [$label: exit $e, not the failed pick's 2]"; }
-  record_is "$repo/run/probe-pick.md" "$label" unknown unknown "$fable_verdict" unavailable unknown unknown
+  record_is "$repo/run/probe-pick.md" "$label" unknown unknown "$fable_verdict" unavailable unknown unknown unknown
   [ "$(path_count "$rec"/*-probe-0.argv)" = 1 ] && [ "$(path_count "$rec"/*-manager-0.argv)" = 1 ] && [ "$(spawn_count "$rec")" = 2 ] \
     || { ok=0; detail="$detail [$label: expected one Probe and one pick, no other calls]"; }
   [ "$(observed_trace "$rec")" = pick ] || { ok=0; detail="$detail [$label: spawn trace is not pick]"; }
@@ -1512,25 +1642,25 @@ repo="$(new_repo)"; rec="$work/rec-session-codex"
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE_PICK=session100 RLOOP_FAKE_PROBE=session100 RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager codex --implementer codex "${off[@]}" --quota-wait 1 --quota-poll 1)
 started "codex session exemption"
 for record in probe-pick probe-1; do
-  record_is "$repo/run/$record.md" "codex $record" unknown unknown unavailable unavailable unknown unknown
+  record_is "$repo/run/$record.md" "codex $record" unknown unknown unavailable unavailable unknown unknown unknown
 done
-[ "$(observed_trace "$rec")" = 'pick,impl1:ok,panel1:all:astra+sol,judge1' ] \
+[ "$(observed_trace "$rec")" = 'pick,impl1:ok,panel1:all:astra+grok+sol,judge1' ] \
   || { ok=0; detail="$detail [codex session exemption: wrong spawns]"; }
 # The Round's Implementer verdict remains recorded without affecting the judge.
 repo="$(new_repo)"; rec="$work/rec-session-implementer-round"
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE=session100 RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager codex --implementer claude --implementer-model "$off_table_model" --quota-wait 1 --quota-poll 1)
 started "Round Implementer session verdict"
-record_is "$repo/run/probe-1.md" "Round Implementer session verdict" unknown unavailable unavailable unavailable unknown unknown
-[ "$(observed_trace "$rec")" = 'pick,impl1:ok,panel1:all:astra+sol,judge1' ] \
+record_is "$repo/run/probe-1.md" "Round Implementer session verdict" unknown unavailable unavailable unavailable unknown unknown unknown
+[ "$(observed_trace "$rec")" = 'pick,impl1:ok,panel1:all:astra+grok+sol,judge1' ] \
   || { ok=0; detail="$detail [Round Implementer session verdict acted on]"; }
 # A low session cannot erase family exhaustion.
 repo="$(new_repo)"; rec="$work/rec-session-family"
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE_PICK=session89-fable RLOOP_FAKE_PROBE=session89-fable RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo" "$rec" --run-dir "$repo/run" "${claude_off[@]}" --quota-wait 1 --quota-poll 1)
 started "family beside low session"
 for record in probe-pick probe-1; do
-  record_is "$repo/run/$record.md" "family beside low session" unknown unknown unavailable unknown unknown unknown
+  record_is "$repo/run/$record.md" "family beside low session" unknown unknown unavailable unknown unknown unknown unknown
 done
-[ "$(observed_trace "$rec")" = 'pick,impl1:ok,panel1:all:astra+opus+sol,judge1' ] \
+[ "$(observed_trace "$rec")" = 'pick,impl1:ok,panel1:all:astra+grok+opus+sol,judge1' ] \
   || { ok=0; detail="$detail [low session erased family exhaustion]"; }
 if [ "$ok" = 1 ]; then verdict CNF-31 ok "family-only off-table reports and fail-open session reports start the Run; codex is session-exempt and a Round records Implementer exhaustion without acting on it"; else verdict CNF-31 fail "$detail"; fi
 
@@ -1610,7 +1740,7 @@ quota_alias() {
 }
 quota_panel_once() {
   local rv
-  for rv in fable opus astra sol; do [ "$(path_count "$rec"/*-reviewer-1-"$rv".argv)" = 1 ] || return 1; done
+  for rv in fable opus astra sol grok; do [ "$(path_count "$rec"/*-reviewer-1-"$rv".argv)" = 1 ] || return 1; done
 }
 quota_check_order() {
   local f p j i m rv v
@@ -1618,16 +1748,16 @@ quota_check_order() {
   f="${paths[0]##*/}"; p="${f%%-*}"; f="${paths[1]##*/}"; j="${f%%-*}"
   i=$(seq_of implementer-1); m=$(seq_of manager-1)
   [ "$i" -gt 0 ] && [ "$m" -gt 0 ] && [ "$i" -lt "$p" ] && [ "$j" -lt "$m" ] || return 1
-  for rv in fable opus astra sol; do
+  for rv in fable opus astra sol grok; do
     v=$(seq_of "reviewer-1-$rv")
     [ "$v" -gt "$p" ] && [ "$v" -lt "$j" ] || return 1
   done
 }
 quota_initial_verdicts() {
-  printf 'manager:unavailable\nimplementer:unknown\nfable:unavailable\nopus:unavailable\nastra:unknown\nsol:unknown\n' | cmp -s - "$1"
+  printf 'manager:unavailable\nimplementer:unknown\nfable:unavailable\nopus:unavailable\nastra:unknown\nsol:unknown\ngrok:unknown\n' | cmp -s - "$1"
 }
 quota_verdicts() {
-  printf 'manager:unknown\nimplementer:unknown\nfable:unknown\nopus:unknown\nastra:unknown\nsol:unknown\n' | cmp -s - "$1"
+  printf 'manager:unknown\nimplementer:unknown\nfable:unknown\nopus:unknown\nastra:unknown\nsol:unknown\ngrok:unknown\n' | cmp -s - "$1"
 }
 quota_names() { # Panel checks, judge checks, judge attempts: exact names, no renamed captures
   local n site ext
@@ -1653,7 +1783,7 @@ for site in panel judge; do
   script=session100,clear; pn=2; jn=1
   [ "$site" != judge ] || { script=clear,session100,session99; pn=1; jn=2; }
   quota_case "$site-recovery" "$script" '' 1 1
-  quota_assert CNF-30 "$site-recovery" quota_outcome 0 1 3 4
+  quota_assert CNF-30 "$site-recovery" quota_outcome 0 1 3 5
   quota_assert CNF-30 "$site-panel-once-each" quota_panel_once
   quota_assert CNF-30 "$site-records" quota_names "$pn" "$jn" 1
   quota_assert CNF-30 "$site-panel-copy" quota_alias "$pn"
@@ -1666,7 +1796,7 @@ done
 repo="$(new_repo)"; rec="$work/rec-quota-all-down"
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS='impl=ok;panel=none;judge=done' \
   run_rloop "$repo" "$rec" --run-dir "$repo/run" --quota-wait 1 --quota-poll 1)
-quota_assert CNF-24 all-down-no-judge-check quota_outcome 2 0 1 4
+quota_assert CNF-24 all-down-no-judge-check quota_outcome 2 0 1 5
 quota_assert CNF-24 all-down-records quota_names 1 0 0
 ok=${quota_ok[24]}; detail=${quota_detail[24]}
 check_probe_env probe-0 0 "all-down pick"
@@ -1679,10 +1809,10 @@ for site in panel judge cut; do
   for shape in opus session100-opus opus-session100; do
     # One Opus-first arm distinguishes report order from a fixed session-first order.
     [ "$shape" != opus-session100 ] || [ "$site" = panel ] || continue
-    script=$shape; cuts=''; np=1; na=0; nr=3
-    [ "$shape" = opus ] || nr=2
-    [ "$site" != judge ] || { script="clear,$shape"; np=2; nr=4; }
-    [ "$site" != cut ] || { script="clear,clear,$shape"; cuts=1:1; np=3; na=1; nr=4; }
+    script=$shape; cuts=''; np=1; na=0; nr=4
+    [ "$shape" = opus ] || nr=3
+    [ "$site" != judge ] || { script="clear,$shape"; np=2; nr=5; }
+    [ "$site" != cut ] || { script="clear,clear,$shape"; cuts=1:1; np=3; na=1; nr=5; }
     quota_case "$site-week-$shape" "$script" "$cuts" 5 2
     quota_assert CNF-30 "$site-week-$shape" quota_outcome 2 "$na" "$np" "$nr"
     if [ "$shape" = opus ]; then
@@ -1696,13 +1826,13 @@ for site in panel judge cut; do
 done
 # The Fable family line does not exhaust an Opus Manager; session alone still waits.
 quota_case foreign-family 'session100-fable,clear' '' 1 1
-quota_assert CNF-30 foreign-family-waits quota_outcome 0 1 3 4
+quota_assert CNF-30 foreign-family-waits quota_outcome 0 1 3 5
 
 # Non-divisible budget: checks at requested sleeps 0,2,4,5, or post-cut 2,4,5.
 for site in panel judge cut; do
-  script=session100,session100,session100,session100-late; np=4; nr=2; na=0
-  [ "$site" != judge ] || { script="clear,$script"; np=5; nr=4; }
-  cuts=''; [ "$site" != cut ] || { script="clear,clear,session100,session100,session100-late"; cuts=1:1; np=5; nr=4; na=1; }
+  script=session100,session100,session100,session100-late; np=4; nr=3; na=0
+  [ "$site" != judge ] || { script="clear,$script"; np=5; nr=5; }
+  cuts=''; [ "$site" != cut ] || { script="clear,clear,session100,session100,session100-late"; cuts=1:1; np=5; nr=5; na=1; }
   RLOOP_FAKE_INTERFERENCE=1:afterPanel:both RLOOP_FAKE_INTERFERING_REVIEWER=astra \
     quota_case "$site-expiry" "$script" "$cuts" 5 2
   quota_assert CNF-30 "$site-expiry-count" quota_outcome 2 "$na" "$np" "$nr"
@@ -1717,45 +1847,45 @@ for site in panel judge cut; do
   [ "$site" != cut ] || { script=clear,clear,session-fail; cuts=1:1; }
   quota_case "$site-unknown" "$script" "$cuts" 1 1
   na=1; [ "$site" != cut ] || na=2
-  quota_assert CNF-26 "$site-unknown-clears" quota_outcome 0 "$na" "$np" 4
+  quota_assert CNF-26 "$site-unknown-clears" quota_outcome 0 "$na" "$np" 5
 done
 # Every retry is sleep-first even when checks fail open; retries alone exhaust the ledger.
 quota_case repeated-cuts 'clear,clear,session-fail' '1:1,1:2,1:3,1:4,1:5,1:6' 5 2
-quota_assert CNF-36 sleep-first-bound quota_outcome 2 4 5 4
+quota_assert CNF-36 sleep-first-bound quota_outcome 2 4 5 5
 quota_assert CNF-36 retry-records quota_names 1 4 4
 quota_assert CNF-36 exhausted-cut-line grep -Fq "$limit_line" "$rec/stderr"
 quota_case shared 'session100,clear' '1:1,1:2,1:3,1:4,1:5,1:6' 5 2
-quota_assert CNF-36 shared-panel-and-cuts quota_outcome 2 3 5 4
+quota_assert CNF-36 shared-panel-and-cuts quota_outcome 2 3 5 5
 RLOOP_FAKE_SLEEP_PROBE=4 RLOOP_FAKE_PROBE_SLEEP_CALL=1:2 \
   quota_case slow-check 'session100,session100,clear' '' 3 2
-quota_assert CNF-36 slow-check-not-debited quota_outcome 0 1 4 4
+quota_assert CNF-36 slow-check-not-debited quota_outcome 0 1 4 5
 # No budget remains at the cut, and therefore no post-cut check exists to quote.
 quota_case no-budget 'session100,clear' 1:1 1 1
-quota_assert CNF-36 no-budget-no-check quota_outcome 2 1 3 4
+quota_assert CNF-36 no-budget-no-check quota_outcome 2 1 3 5
 quota_assert CNF-36 no-budget-cut-line grep -Fq "$limit_line" "$rec/stderr"
 
 # R1: every near-miss is a failed logical call, without a post-cut check or retry.
 for shape in limit-ok limit-err nonl leading prefixed midline nul trailing weekly limit-hang; do
   quota_case "near-$shape" 'clear,clear,session100,clear' "1:1:$shape" 1 1 --manager-timeout 1 --kill-after 1
-  quota_assert CNF-36 "near-$shape" quota_outcome 2 1 2 4
+  quota_assert CNF-36 "near-$shape" quota_outcome 2 1 2 5
 done
 for judge in done rewrite; do
   repo="$(new_repo)"; rec="$work/rec-quota-acted-$judge"
   e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_MANAGER_CUT=1:1:acted-limit \
     RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=$judge" run_rloop "$repo" "$rec" \
     --run-dir "$repo/run" --quota-wait 1 --quota-poll 1)
-  quota_assert CNF-36 "acted-$judge" quota_outcome 2 1 2 4
+  quota_assert CNF-36 "acted-$judge" quota_outcome 2 1 2 5
   if [ "$judge" = done ]; then quota_assert CNF-36 acted-finished-kept grep -qx 'STATUS: done' "$repo/run/finished.md"
   else quota_assert CNF-36 acted-task-kept grep -q 'brief 2' "$repo/run/task.md"; fi
 done
 quota_case codex clear 1:1 1 1 --manager codex
-quota_assert CNF-36 codex-never-retried quota_outcome 2 1 2 4
+quota_assert CNF-36 codex-never-retried quota_outcome 2 1 2 5
 quota_assert CNF-24 codex-judge-check-order quota_check_order
 # A non-zero output without a cut signature is an ordinary failure.
 repo="$(new_repo)"; rec="$work/rec-quota-ordinary-failure"
 e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS='impl=ok;panel=all;judge=fail' \
   run_rloop "$repo" "$rec" --run-dir "$repo/run" --quota-wait 1 --quota-poll 1)
-quota_assert CNF-36 ordinary-failure quota_outcome 2 1 2 4
+quota_assert CNF-36 ordinary-failure quota_outcome 2 1 2 5
 repo="$(new_repo)"; rec="$work/rec-quota-pick-cut"
 e=$(RLOOP_FAKE_MANAGER_CUT=0:1 run_rloop "$repo" "$rec" --run-dir "$repo/run" --quota-wait 1 --quota-poll 1)
 quota_pick_failure() {
@@ -1767,7 +1897,7 @@ quota_assert CNF-36 pick-never-retried quota_pick_failure
 # R1 carries suffix bytes, ignores stderr and accepts any within-bound nonzero status.
 for shape in limit suffix stderr exit7; do
   quota_case "cut-$shape" clear "1:1:$shape" 1 1
-  quota_assert CNF-36 "cut-$shape" quota_outcome 0 2 3 4
+  quota_assert CNF-36 "cut-$shape" quota_outcome 0 2 3 5
   if [ "$shape" = stderr ]; then
     quota_assert CNF-36 first-stderr-untouched cmp -s <(printf 'ignored\n') "$repo/run/manager-judge-1.err"
   fi
@@ -1797,14 +1927,14 @@ check_inherited_shellopts() {
     printf '#!%s -S RLOOP_FAKE_RAW_SHELLOPTS=${SHELLOPTS} bash\n' "$snapshot_env"
     tail -n +2 "$here/fakes/agent"
   } > "$fakes/claude"
-  cp "$fakes/claude" "$fakes/codex"; chmod +x "$fakes/claude" "$fakes/codex"
+  cp "$fakes/claude" "$fakes/codex"; cp "$fakes/claude" "$fakes/grok"; chmod +x "$fakes/claude" "$fakes/codex" "$fakes/grok"
   quota_case inherited-shellopts clear 1:1 1 1
   ok=${quota_ok[10]}; detail=${quota_detail[10]}
   [ "$e" = 0 ] || { ok=0; detail="$detail [SHELLOPTS: exit $e]"; }
   # Check totals as well as each tag, so unexpected roles/Rounds cannot hide extra calls.
   for ext in argv env; do
-    [ "$(path_count "$rec"/*."$ext")" = 12 ] || { ok=0; detail="$detail [SHELLOPTS: not 12 $ext records]"; }
-    for tag in manager-0 implementer-1 reviewer-1-fable reviewer-1-opus reviewer-1-astra reviewer-1-sol manager-1 probe-0 probe-1; do
+    [ "$(path_count "$rec"/*."$ext")" = 13 ] || { ok=0; detail="$detail [SHELLOPTS: not 13 $ext records]"; }
+    for tag in manager-0 implementer-1 reviewer-1-fable reviewer-1-opus reviewer-1-astra reviewer-1-sol reviewer-1-grok manager-1 probe-0 probe-1; do
       want=1
       case $tag in manager-1) want=2 ;; probe-1) want=3 ;; esac
       matching_paths "$rec"/*-"$tag.$ext"
@@ -1830,7 +1960,7 @@ quota_success[10]="RLOOP_* variables, cwd and closed stdin; claude Manager shell
 
 # RUN-24: own exits are cuts even when cleanup outlasts the attempt's timeout.
 quota_positive_cut() { # label: no assertion about either stderr's contents
-  quota_assert CNF-36 "$1" quota_outcome 0 2 3 4
+  quota_assert CNF-36 "$1" quota_outcome 0 2 3 5
   quota_assert CNF-36 "$1-retry-out" test -f "$repo/run/manager-judge-1-retry-1.out"
   quota_assert CNF-36 "$1-retry-err" test -f "$repo/run/manager-judge-1-retry-1.err"
   quota_assert CNF-36 "$1-first-output" cmp -s <(printf '%s\n' "$limit_line") "$repo/run/manager-judge-1.out"
@@ -1856,13 +1986,13 @@ quota_env_case 'BASH_FUNC_foo-bar%%=() { :; }' exported-function
 # AGT-15, R1: late bytes during reap make the limit line cease to be a cut.
 RLOOP_FAKE_MANAGER_CHILD_CALL=1:1 RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=manager \
   RLOOP_FAKE_WRITE_STDOUT=manager:0.2:late-output quota_case late-output clear 1:1 1 1 --kill-after 1
-quota_assert CNF-34 late-output-not-cut quota_outcome 2 1 2 4
+quota_assert CNF-34 late-output-not-cut quota_outcome 2 1 2 5
 quota_assert CNF-34 late-output-kept grep -q late-output "$repo/run/manager-judge-1.out"
 kill_recorded "$rec"
 # The same output-read boundary on a retry, with only that attempt spawning the late writer.
 RLOOP_FAKE_MANAGER_CHILD_CALL=1:2 RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=manager \
   RLOOP_FAKE_WRITE_STDOUT=manager:0.2:late-output quota_case retry-late-output clear '1:1,1:2' 3 1 --kill-after 1
-quota_assert CNF-34 retry-late-output-not-cut quota_outcome 2 2 3 4
+quota_assert CNF-34 retry-late-output-not-cut quota_outcome 2 2 3 5
 quota_assert CNF-34 retry-late-output-kept grep -q late-output "$repo/run/manager-judge-1-retry-1.out"
 kill_recorded "$rec"
 # The first attempt's group is gone before its post-cut check starts.
@@ -1961,8 +2091,8 @@ check_unexported_shellopts() {
   e=$?
   quota_assert CNF-10 "unexported SHELLOPTS: exit $e" test "$e" = 0
   for ext in argv env; do
-    quota_assert CNF-10 "unexported SHELLOPTS: not 10 $ext records" test "$(path_count "$rec"/*."$ext")" = 10
-    for tag in manager-0 implementer-1 reviewer-1-fable reviewer-1-opus reviewer-1-astra reviewer-1-sol manager-1 probe-0 probe-1; do
+    quota_assert CNF-10 "unexported SHELLOPTS: not 11 $ext records" test "$(path_count "$rec"/*."$ext")" = 11
+    for tag in manager-0 implementer-1 reviewer-1-fable reviewer-1-opus reviewer-1-astra reviewer-1-sol reviewer-1-grok manager-1 probe-0 probe-1; do
       want=1; [ "$tag" != probe-1 ] || want=2
       matching_paths "$rec"/*-"$tag.$ext"
       quota_assert CNF-10 "unexported SHELLOPTS $tag: ${#paths[@]} $ext records, want $want" test "${#paths[@]}" = "$want"
@@ -1990,7 +2120,7 @@ check_direct_start() {
     tail -n +2 "$here/fakes/agent"
   } > "$direct/agent"
   chmod +x "$direct/agent"
-  ln -s "$direct/agent" "$fakes/claude"; ln -s "$direct/agent" "$fakes/codex"
+  ln -s "$direct/agent" "$fakes/claude"; ln -s "$direct/agent" "$fakes/codex"; ln -s "$direct/agent" "$fakes/grok"
   {
     printf '#!%s\n' "$BASH"
     echo 'echo "$$ $PPID" >> "$RLOOP_FAKE_RECORD/shell-pids"'
@@ -2014,6 +2144,10 @@ check_direct_start() {
     quota_assert CNF-34 "$label: missing judge out" test -e "$repo/run/manager-judge-1.out"
     quota_assert CNF-34 "$label: missing judge err" test -e "$repo/run/manager-judge-1.err"
     quota_assert CNF-34 "$label: no fake PID record" test -s "$rec/agent-pids"
+    local ok=1 detail=""
+    panel_started "$label direct start"
+    for rv in fable opus astra sol grok; do reviewer_ended "$label direct start" "$rv" ok; done
+    quota_assert CNF-34 "$label: $detail" test "$ok" = 1
     [ -e "$rec/shell-pids" ] && [ -s "$rec/agent-pids" ] || continue
     # Close over logged shell parents, starting at the PID we launched. This exempts a
     # wrapper that forks rloop, and also misses a shell directly under rloop (F30).

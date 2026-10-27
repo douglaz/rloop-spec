@@ -579,12 +579,12 @@ probe before the pick, with that one probe call's standard input left open — a
 `[probe-0: 001-probe-0.env PID … alive when 002-manager-0.env started]` beside a green group half,
 as the item's whole detail and with no other item's verdict moved. `manager-0`, the arm above, is
 then the only own-process read at a call boundary that no mutant reddens. The `survived the Run`
-read is an own-process read of the item as well — `nothing_survived` (`conformance/run:66-78`)
+read is an own-process read of the item as well — `nothing_survived` (`conformance/run:84-96`)
 reads `PID` beside `GRANDCHILD` — and no mutant of either Round reddens that half either, for the
 reason its own comment gives: `Every ancestor is gone by then, so neither can be a zombie`
-(`conformance/run:67-68`). Both own-process brackets come with a green group half for one reason:
-the fake writes `GRANDCHILDREN_ALIVE` (`conformance/fakes/agent:150`) before it spawns the child
-that ignores SIGTERM (`:227`), so a call that starts while the probe is still running finds no
+(`conformance/run:85-86`). Both own-process brackets come with a green group half for one reason:
+the fake writes `GRANDCHILDREN_ALIVE` (`conformance/fakes/agent:153`) before it spawns the child
+that ignores SIGTERM (`:230`), so a call that starts while the probe is still running finds no
 `GRANDCHILD=` line in the probe's record and has nothing to report. The group half can be green with
 the group alive, and it is the two halves together that caught these mutants.
 
@@ -614,7 +614,7 @@ both of `RUN-21`'s call sites, and `CNF-34` gained a watching straggler at each.
 and the mutant is red. Rebuilt against rloop-bash `18c8807`, gated on `RLOOP_FAKE_WATCH`'s value
 beginning `probe:` — what confines it to the two new Runs, where a gate on the variable merely being
 set would mutate the Checkpoint arm too, whose value is `implementer:rejected-1-task.md`
-(`conformance/run:819`) — and with the wait loop of that executable's `reap` inlined rather than
+(`conformance/run:906`) — and with the wait loop of that executable's `reap` inlined rather than
 reordered so the verdicts still see the status the reaping sets, it gives `[probe-0 watch: the
 probe's child saw probe-pick.md, so its group outlived the call and ran through the record]` and the
 same bracket for `probe-1` and `probe-1.md` as the item's whole detail, with every other verdict
@@ -631,11 +631,11 @@ reading a call's output leaves it no file to find, so a read taken before the re
 after look the same to it. The witness for the read is a straggler that *writes* into the capture
 `DIR-4` has the probe's standard output reach `entire and unmodified` — a line the reader acts on,
 since an inert one changes no verdict — and `CNF-34` gained one Run of it, at the probe before the
-pick (`conformance/run:758-800`). `RUN-22` is what makes the read observable there: it has rloop
+pick (`conformance/run:845-887`). `RUN-22` is what makes the read observable there: it has rloop
 `exit 2 without spawning any agent` on that probe's verdicts, so an executable that derives them
 from bytes the straggler's line has not reached yet calls the pick and runs on. The knob is
 `RLOOP_FAKE_WRITE_STDOUT`, which had only a role and a fixed line and now takes a first-write delay
-and the line with it (`conformance/fakes/agent:71-90`, `:190`, `:221-224`); the row asks for one
+and the line with it (`conformance/fakes/agent:71-90`, `:193`, `:224-227`); the row asks for one
 second and `--kill-after 4`, so an early read is a second short of the line and a reaping one has
 three seconds of the child's writing behind it before it reads.
 
@@ -989,7 +989,7 @@ it on whitespace`.
 one executable that handles newlines does not extend that obligation to other Implementations.
 The suite now collects quoted globs into arrays, filters unmatched patterns, counts files, and
 selects whole paths in glob order. `spawn_count` (`conformance/run:46`) uses that count;
-`record_of` (`conformance/run:625-631`) retains its missing-record guard. Environment checks also
+`record_of` (`conformance/run:710-716`) retains its missing-record guard. Environment checks also
 reject both absent and duplicate records. Sequence directory selection uses the same arrays;
 the fresh-directory comparison keeps full paths as NUL-separated records. PID and timestamp
 reads, fixed-filename listings and existence-only checks are not full-path selections.

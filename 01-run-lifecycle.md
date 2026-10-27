@@ -68,7 +68,7 @@ never retried (`RUN-24`).
 2. the Checkpoint (`DIR-6`);
 3. the Panel-site availability check (`RUN-21`, `AGT-18`) and its wait (`RUN-24`), completed
    before the Panel starts;
-4. the Panel: a call for every Reviewer `RUN-21` did not record `unavailable` (`AGT-7`–`AGT-10`,
+4. the Panel: a call for every Reviewer of `AGT-11` that `RUN-21` did not record `unavailable` (`AGT-7`, `AGT-8`, `AGT-10`, `AGT-19`,
    `PRM-4`), started concurrently and all waited for, and a Feedback File written in place for
    each one that was (`RUN-15`);
 5. the Checkpoint again;
@@ -95,7 +95,7 @@ either Manager preset whenever a Reviewer survived and no Panel-site expiry came
 is bounded by `--probe-timeout` (`AGT-1`). After each check rloop MUST record for every Seat exactly
 one verdict — `unavailable` or `unknown` — in `probe-pick.md` before the pick and in its numbered
 Round-site record (`DIR-4`), one `<seat>:<verdict>` line per Seat in the order `manager`,
-`implementer`, `fable`, `opus`, `astra`, `sol`. Every line of every record ends with a newline, the
+`implementer`, `fable`, `opus`, `astra`, `sol`, `grok`. Every line of every record ends with a newline, the
 last one included. The verdicts for the Panel are the last Panel-site check's; rloop copies that
 check's captures and verdicts to `probe-<r>.*`, which `RUN-20` continues to read. A judge-site
 reading never replaces that copy. The Manager's Seat's model is `<manager model>` (`AGT-3`), the
@@ -127,6 +127,10 @@ off-format output, or output with neither qualifying reading for that Seat. An a
 line is `unknown`, never `unavailable` on the family reading alone: the probe lists only families
 it has something to report. An off-table model has no family reading, but a claude Seat can still
 be exhausted by the session reading. Neither reading removes exhaustion established by the other.
+
+Grok's verdict MUST be `unknown` in every record, even if the Claude output mentions Grok or
+`grok-4.7` at 100%. There is no Grok family in the table, additional Probe, quota scraping or
+inference from Reviewer output. Unknown means call it, not assume it will answer (`AGT-19`).
 
 The match is anchored because the probe's output is a model's turn, not a machine format: an
 unanchored search would let a refusal or an explanation that merely repeats those words remove a
@@ -335,7 +339,7 @@ wrote — 31 bytes.*
 
 Both count as down. When **every** Reviewer of a Panel is down — failed, or not run — rloop MUST
 exit 2 without calling the judge. *One Reviewer down is a degraded Panel the Manager can weigh;
-four down is a broken environment.*
+five down is a broken environment.*
 `Rloop.panel_none_aborts` and `Rloop.panel_abort_off_judges` are the pair for failed Reviewers;
 `Rloop.not_run_and_failed_aborts` and `Rloop.not_run_down_off_judges` are the pair for Reviewers
 not run, and `Rloop.none_called_aborts` is the Panel that called none.

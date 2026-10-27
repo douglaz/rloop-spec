@@ -1,7 +1,7 @@
 # rloop — specification set
 
 A language-neutral specification for **rloop**: a loop that lets one long-lived judging agent (the
-Manager) drive disposable working agents (an Implementer, a four-model review Panel) through one
+Manager) drive disposable working agents (an Implementer, a five-model review Panel) through one
 task in a git repository, and drain a backlog by repeating that. `CONTEXT.md` holds the
 vocabulary; `00-overview.md` holds what it is for.
 
@@ -101,6 +101,14 @@ identifier. `tools/check_fixtures.py` blocks on one.
 ## Using rloop
 
 For whoever runs an Implementation:
+
+- **Install and authenticate the CLIs beforehand:** Claude Code, Codex and the official Grok
+  Build CLI. The fixed Panel is `fable`, `opus`, `astra`, `sol`, `grok` (`AGT-11`, `AGT-19`).
+  Grok uses the CLI's existing authentication; operator setup such as `grok login` or
+  `grok models` is not a new rloop call. rloop hardcodes no key, token, user-specific config
+  path or billing choice, and preserves inherited API-key variables (`AGT-13`). A login does
+  not guarantee subscription billing or cost. `AGT-17` records partial Grok verification;
+  the integrated five-Reviewer Round remains dependent Implementation work.
 
 - **A lone Run:** `rloop` picks the next task from the repository's tracker; `rloop "fix the
   flaky retry test"` steers the pick. Exit 0 is done, 1 is blocked, 3 is idle (nothing to pick),

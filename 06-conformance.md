@@ -17,7 +17,7 @@ directory whose name the suite gives a space and a tab, so every path the suite 
 executable holds whitespace whatever the caller exported.
 (`00-overview.md`)
 
-**CNF-2** The suite puts fake `claude` and `codex` executables first on `PATH`. A fake reads
+**CNF-2** The suite puts fake `claude`, `codex` and `grok` executables first on `PATH`. A fake reads
 `RLOOP_ROLE`, `RLOOP_ROUND`, `RLOOP_RUN`, `RLOOP_REVIEWER` and `RLOOP_RUN_DIR` (`AGT-13`) to find
 its scripted part, records what it received — argument list, environment, working directory,
 whether standard input was at end of file — and acts: writes a Task File or Finished File, exits
@@ -138,7 +138,7 @@ sentinel containing a tab and newlines: every call, each judge attempt and every
 records it set and byte-identical before the fake assigns any variable. An unset or changed `out`
 fails. Only these inherited variables are compared in this Run. (`AGT-13`)
 
-A separate one-Round Run, the pick writing a Task File, the Implementer and all four Reviewers
+A separate one-Round Run, the pick writing a Task File, the Implementer and all five Reviewers
 succeeding and the judge writing `STATUS: done`, starts rloop with `SHELLOPTS` removed from its
 environment. Every call, the Probes included, records `SHELLOPTS_EXPORTED=0`. A nonzero Run exit,
 a missing or extra call, a missing export-bit record or an exported `SHELLOPTS` fails. These arms
@@ -165,13 +165,13 @@ without changing the selected preset or its literal effort;
 `--manager codex` produces `AGT-3`'s and `AGT-4`'s second lists and the default produces their
 first; omitting `--implementer` and `--implementer-model` produces `AGT-6`'s list with
 `gpt-6.1-sol`, explicit `--implementer codex` produces that same list and model, and explicit
-`--implementer claude` produces `AGT-5`'s list with `claude-opus-5-5`; the four
-Reviewers' lists are `AGT-7`, `AGT-8` and `AGT-10`'s, one each, with their `RLOOP_REVIEWER` names.
+`--implementer claude` produces `AGT-5`'s list with `claude-opus-5-5`; the five
+Reviewers' lists are `AGT-7`, `AGT-8`, `AGT-10` and `AGT-19`'s, one each, with their `RLOOP_REVIEWER` names.
 One further Run has the repository's own path and its `--run-dir` path each hold a space and a tab,
-and every role's list — the pick's, the Implementer's, the four Reviewers' and the judge's — equals
+and every role's list — the pick's, the Implementer's, the five Reviewers' and the judge's — equals
 its fixture with those paths' bytes unchanged; the suite makes both paths itself rather than
 reading either out of `TMPDIR`, so no verdict here moves with what the caller exported. (`AGT-1`, `AGT-3`,
-`AGT-4`, `AGT-5`, `AGT-6`, `AGT-7`, `AGT-8`, `AGT-10`, `AGT-11`, `RUN-16`, `RUN-23`, `OVR-2`)
+`AGT-4`, `AGT-5`, `AGT-6`, `AGT-7`, `AGT-8`, `AGT-10`, `AGT-11`, `AGT-19`, `RUN-16`, `RUN-23`, `OVR-2`)
 
 *Amended 2026-10-08 (`rl-4i7t`): default-model expectations and the generated argv fixtures now include the new
 models and explicit Implementer effort; the Manager override uses Fable to differ from its default.*
@@ -186,12 +186,12 @@ Directory's paths, the base hash, the Round, `--max-rounds`, the caller's instru
 absent), the dirty-at-start list (a tree with one modified and one untracked path, and a clean
 tree), the unavailable list, empty in each of these Runs since no Probe before the pick here
 reports anything exhausted (`CNF-32` asserts it populated, and empty in a Run of its own), and the
-four Feedback File paths in order. One further Run gives an instruction holding placeholder names
+five Feedback File paths in order. One further Run gives an instruction holding placeholder names
 (`{{TASK_FILE}}`, `{{UNAVAILABLE}}`, `{{ROUND}}`) together with a backslash, `&` and `%s`, and a
 `--run-dir` path holding `{{INSTRUCTION}}`; its pick, Implementer and judge prompts equal their
 fixtures with each value's bytes unchanged, as `PRM-6` renders them. A further Run, the one
 `CNF-11` reads the argument lists of, has the repository's own path and its `--run-dir` path each
-hold a space and a tab; every role's prompt — the pick's, the Implementer's, the four Reviewers'
+hold a space and a tab; every role's prompt — the pick's, the Implementer's, the five Reviewers'
 and the judge's — equals the fixture rendered with the paths the suite handed the executable, byte
 for byte. Each rendered prompt ends with `PRM-5`'s sentence. (`PRM-1`, `PRM-2`, `PRM-3`, `PRM-4`,
 `PRM-5`, `PRM-6`, `RUN-3`, `RUN-23`, `DIR-10`)
@@ -217,7 +217,10 @@ status; a pick whose first line is `STATUS: done` with a NUL byte inside it; a j
 
 **CNF-15** A Reviewer fake that exits 7 after writing a line leaves its Feedback File holding that
 line followed by `REVIEWER FAILED (exit 7)`; a Round with one such Reviewer proceeds to the judge.
-The same Round once more with `--kill-after 2`, every Reviewer fake spawning a child that ignores
+A focused Run has only Grok fail while the original Reviewers succeed: every identity starts,
+Grok's recorded outcome is failure, its progress without a separating newline, partial output and
+appended note are compared byte for byte, and the judge is reached. The same mixed-class Round
+once more with `--kill-after 2`, every Reviewer fake spawning a child that ignores
 SIGTERM and, once its own fake has exited, writing to the standard output it inherited — its
 Reviewer's Feedback File (`AGT-13`, `DIR-4`): the Run ends 0 and each failing Reviewer's Feedback
 File opens with that Reviewer's line, **ends** with `REVIEWER FAILED (exit 7)`, and carries at least
@@ -233,14 +236,25 @@ because a child that wrote nothing leaves the note nothing to survive, and no ar
 pass on absent evidence. `--kill-after 2` rather than 1 so that the child is certainly scheduled to
 write inside the grace; nothing here is clock-measured.*
 
+**CNF-37** With the original Reviewers failing and only Grok successful, require every fixed
+identity's start and its own recorded outcome, exact Panel membership, successful Grok output,
+the judge-site Probe and judge call, a done Finished File and exit 0. Pair this with all Reviewers
+failed: require those same starts and each failed outcome, exit 2, no judge-site Probe or judge,
+and no Finished File. The exact spawn trace is compared in each arm. These are individual
+outcomes the model's abstract Panel classes cannot prove. Failure-marker bytes belong to
+`CNF-15`; quota omission and chronology belong to `CNF-24`–`CNF-31`.
+(`AGT-11`, `AGT-19`, `RUN-8`, `RUN-15`)
+
 ## Concurrency, time and signals
 
 **CNF-16** With every Reviewer fake sleeping 2 seconds, a Round's Panel completes in under 5
-seconds, and every Reviewer's recorded start precedes every Reviewer's recorded end. (`RUN-8`)
+seconds, and every Reviewer's recorded start precedes every Reviewer's recorded end. Exact
+identity membership and one successful end per Reviewer are required. (`RUN-8`)
 
 **CNF-17** With `--reviewer-timeout 1 --kill-after 1`, one Reviewer fake sleeping 30 seconds and
-spawning a child that ignores SIGTERM, and the other three answering: the Run exits 0, the slow
-Reviewer's Feedback File carries `REVIEWER FAILED`, the other three hold the fakes' answer, the
+spawning a child that ignores SIGTERM, and the other four answering, once with slow fable and
+once with slow Grok: the Run exits 0, the slow
+Reviewer's Feedback File carries `REVIEWER FAILED`, the other four hold the fakes' answer, the
 judge is called, and neither the slow Reviewer's own process nor its child is running when the
 judge starts — the judge's own record of the calls and of the children still running at its start
 lists neither — nor once the executable has returned. With `--implementer-timeout 1 --kill-after 1`
@@ -254,7 +268,7 @@ on 2026-09-23: an Implementation that waits for its `timeout` wrapper alone retu
 SIGTERM-ignoring child alive, since the wrapper returns the moment the fake itself dies.*
 
 **CNF-34** With `--kill-after 1` and a Run of one Round that every role completes — the pick writes
-a Task File, the Implementer and all four Reviewers succeed and the judge writes `STATUS: done` —
+a Task File, the Implementer and all five Reviewers succeed and the judge writes `STATUS: done` —
 each Manager fake exiting 0 having spawned a child that ignores SIGTERM: the Run exits 0; no call of
 the Run records any of those children among the children alive when it started, nor the pick's or
 the Implementer's own process among the calls alive when it started; and once the executable has
@@ -267,10 +281,10 @@ Reviewer's child among the children alive when it started and no Reviewer's own 
 calls alive when it started. The same Run with every Probe spawning it, each Probe waiting one
 second after spawning its child before exiting — a sleep every other Run described in this item
 omits: the pick's record carries neither the child nor the own process of the probe before the pick,
-and each of the Panel's four records carries neither the child nor the own process of the Panel-site
+and each of the Panel's five records carries neither the child nor the own process of the Panel-site
 Probe; the judge's record carries neither the child nor the own process of the judge-site Probe.
 Neither of those two Runs can pass on absent evidence: a missing record, a missing snapshot
-line, a missing recorded pid and a Panel of other than four records are each red. A further Run of
+line, a missing recorded pid or child readiness and a Panel of other than five records are each red. A further Run of
 the Implementer's shape, the Implementer fake also appending to the Task File and its child polling
 for `rejected-1-task.md` under the Run Directory rather than sleeping: the Run exits 0,
 `rejected-1-task.md` is there, the child recorded that it was watching before its fake exited, and
@@ -288,7 +302,7 @@ every probe's child writing to the standard output it inherited rather than slee
 after its own fake has exited, the line `Current week (Opus): 100% used` — with `--implementer
 claude`, both Seats at the claude preset's default model and `--kill-after 4`. The Run exits 2, the
 probe before the pick is the only call it makes, that line is in `probe-pick.out`, `probe-pick.md`
-records the Manager's Seat, the Implementer's and `opus` unavailable and the other three unknown,
+records the Manager's Seat, the Implementer's and `opus` unavailable and the other four unknown,
 and the child's pid is recorded and not running once the executable has returned — so rloop read
 that probe's output after reaping its group and not before. Nor does that Run pass on absent
 evidence: a line that never reached the capture leaves the read nothing to witness and is red.
@@ -359,7 +373,7 @@ its own numbered verdict. Readiness and recorded child identities keep absent wi
 `RUN-22`, `RUN-24`)
 
 Two further one-Round Runs exercise `AGT-16`'s `with no shell in between`: the pick writes a
-Task File, the Implementer and all four Reviewers succeed and the judge writes `STATUS: done`.
+Task File, the Implementer and all five Reviewers succeed and the judge writes `STATUS: done`.
 In the no-bash Run, `bash` remains on the executable's private `PATH` as a shim that records its
 PID and parent PID before execing the real bash. In the bash-env Run, real bash is on `PATH` and
 `BASH_ENV` names a file recording the same identities except when the fake itself starts.
@@ -382,18 +396,18 @@ so the same exhausted Seats still witness the read boundary. `F27` records the d
 and verification.*
 
 **CNF-35** With one Round, `--kill-after 1`, the `fable` Reviewer fake sleeping 10 seconds while the
-other three answer at once, and every Reviewer fake spawning a child that ignores SIGTERM: the child
+other four answer at once, and every Reviewer fake spawning a child that ignores SIGTERM: the child
 the `opus` fake left is gone within 6 seconds of `opus`'s own recorded exit, and at that moment the
-Panel is four Reviewer records each carrying a child, `fable`'s own recorded process is running and
+Panel is five Reviewer records each carrying a child, `fable`'s own recorded process is running and
 `fable` has not recorded its exit; the Run ends 0, and neither a fake that spawned a child nor any
 child is running once the executable has returned. Then the same Round with `--kill-after 5` and no
-Reviewer sleeping, so that the four exit within a moment of one another: each of the four children
+Reviewer sleeping, so that the five exit within a moment of one another: each of the five children
 is gone within 9 seconds of its own Reviewer's recorded exit. Neither row passes on absent
-evidence: a Panel of other than four records, a Reviewer that recorded no child, and one whose fake
+evidence: a Panel of other than five records, a Reviewer that recorded no child or readiness, and one whose fake
 recorded no exit, are each red. (`AGT-15`, `RUN-8`)
 *`AGT-15` has `Reviewers run concurrently` and `so each Reviewer's group is reaped as that Reviewer
 exits`, and these are the two ways an Implementation reaps them in some other order anyway. The
-first row is the roster: a Panel waited for in the fixed order `fable`, `opus`, `astra`, `sol` keeps
+first row is the roster: a Panel waited for in the fixed order `fable`, `opus`, `astra`, `sol`, `grok` keeps
 an early Reviewer's group until every Reviewer named before it has exited too — up to
 `--reviewer-timeout` of an orphaned build or check writing into the working tree while the rest of
 the Panel reviews it — and `opus` is the one read because `fable`, the Reviewer ahead of it, is the
@@ -403,7 +417,7 @@ an Implementation that called one Reviewer would satisfy all of them, and the su
 nothing about a record that was never written. `fable`'s missing end line is read as well and not
 instead, a Reviewer the executable has not yet reaped being a zombie whose pid still answers. The
 second row is the grace: a reap that blocks the wait loop leaves the Reviewer that exits next
-unsignalled until the previous group's grace has ended, so the second child of four goes two graces
+unsignalled until the previous group's grace has ended, so the second child of five goes two graces
 past its own Reviewer's exit and the fourth four. `CNF-34` sees neither, reading each Reviewer
 against `the first call to start once every Reviewer has exited`, by which time every
 delay above has ended. Each bound is its row's grace and a margin, five seconds and four, because
@@ -419,7 +433,10 @@ while the first, whose group waits on nothing, is not separated at all.*
 **CNF-18** SIGINT sent to the executable while an Implementer fake sleeps, having spawned a child
 that ignores SIGTERM: the fake records SIGTERM, the executable exits 2 with `interrupted` on
 standard error, neither the fake nor its child survives, and the Run Directory is intact. The
-same with SIGTERM. The same once more with a **Probe** (`AGT-18`) in the Implementer's place: SIGINT
+same with SIGTERM. Separate SIGINT and SIGTERM Runs interrupt active Grok: all fixed identities
+have started, Grok's own recorded process and child are positively alive before the signal,
+Grok records SIGTERM, exit is 2 with `interrupted`, the snapshot remains and neither survives.
+The same once more with a **Probe** (`AGT-18`) in the Implementer's place: SIGINT
 while the probe `RUN-21` runs `once before the pick` sleeps, having spawned such a child, under a
 `--probe-timeout` well above the sleep so that `AGT-14`'s `At the limit` is not what ends the call —
 the probe's record carries SIGTERM, the executable exits 2 with `interrupted` on standard error,
@@ -491,7 +508,7 @@ whose fake leaves the tree dirty exits by its Finished File, with a warning on s
 **CNF-22** Once per Implementation release, by hand: a lone Run and a two-Run Sequence against
 the real CLIs at the versions `AGT-17` names, on a repository with a tracker, ending `done`, with
 the Manager's commits following the repository's conventions and carrying no attribution, and
-the flags in `02` accepted by both CLIs; a Run on a task that turns on a deliberately ambiguous
+the flags in `02` accepted by every prescribed CLI; a Run on a task that turns on a deliberately ambiguous
 passage of the repository's specifications, ending `blocked` with the passage and a recommended
 clarification in the report; and the Consultation observations that follow, against the same
 CLIs.
@@ -562,13 +579,13 @@ The codex Manager arm independently checks the Panel-site and judge-site call or
 fake records. (`RUN-7`, `RUN-21`, `AGT-18`, `AGT-12`, `AGT-13`, `DIR-4`, `OVR-2`, `RUN-15`)
 
 **CNF-25** `probe-<r>.md` names every Seat exactly once, in the order `manager`, `implementer`,
-`fable`, `opus`, `astra`, `sol`, each with `unavailable` or `unknown` and nothing else, every line
+`fable`, `opus`, `astra`, `sol`, `grok`, each with `unavailable` or `unknown` and nothing else, every line
 ending with a newline, the last included — compared byte for byte, since command substitution
 sees neither a missing final newline nor an extra blank line. With both Seats using claude
 presets and their models off
 `RUN-21`'s table and the probe scripted to report `Current week (Fable): 100% used`, `fable` reads
-`unavailable` and the other five read `unknown` — `opus` because no line names its family,
-`astra`, `sol` and the two Seats because no model of theirs is in `RUN-21`'s table. With
+`unavailable` and the other six read `unknown` — `opus` because no line names its family,
+`astra`, `sol`, `grok` and the two Seats because no model of theirs is in `RUN-21`'s table. With
 `Current week (Opus): 100% used` instead, the verdicts swap: `opus` alone reads `unavailable`.
 *Both rows are asserted because one row cannot tell a working table from a rule that hardcodes
 `fable`.* With `--implementer claude --implementer-model claude-fable-5-1`, the Manager's model
@@ -576,6 +593,8 @@ off the table and the
 `Fable` report, `implementer` reads `unavailable` and `manager` `unknown`, and the Run still
 reaches its judge and ends 0. *The record is per Seat, read from each Seat's own model rather than
 copied from a Reviewer's line, and a Round's verdict on the Implementer's Seat stops nothing.*
+Grok's row is always `unknown`, including reports naming Grok or its model at 100%; the
+unlisted-family arms and the Grok false-family mutant exercise that rule (`CNF-31`).
 (`RUN-21`, `RUN-22`, `DIR-4`)
 
 *Amended 2026-10-13 (`rl-9uu1`): the family verdict Runs explicitly select a claude Implementer,
@@ -608,19 +627,19 @@ Implementer. `F27` records the decision's evidence and verification.*
 
 **CNF-27** With both Seats' models off `RUN-21`'s table and the probe scripted to report
 `Current week (Fable): 100% used`, the Round runs no
-`fable` Reviewer at all — no argument list is recorded for it — while `opus`, `astra` and `sol` all
+`fable` Reviewer at all — no argument list is recorded for it — while `opus`, `astra`, `sol` and `grok` all
 run; `feedback-<r>-fable.md` holds exactly `REVIEWER NOT RUN (unavailable)`, carries no
 `REVIEWER FAILED`, and `reviewer-<r>-fable.err` is empty; and the Round reaches its judge and the
 Run ends 0. With both `Current week (Fable): 100% used` and `Current week (Opus): 100% used` on
 separate lines, `probe-1.md` records `manager:unknown`, `implementer:unknown`,
-`fable:unavailable`, `opus:unavailable`, `astra:unknown` and `sol:unknown`, in that order, each
-line ending with a newline. Neither `fable` nor `opus` is called; `astra` and `sol` both run.
+`fable:unavailable`, `opus:unavailable`, `astra:unknown`, `sol:unknown` and `grok:unknown`, in that order, each
+line ending with a newline. Neither `fable` nor `opus` is called; `astra`, `sol` and `grok` all run.
 Each omitted Reviewer's Feedback File contains exactly the not-run line above, with its terminating
 newline and no extra content, and its `.err` file exists and is empty. In both cases the judge
 is called with every Panel Feedback File path, including those of the omitted Reviewers; with
 the called Reviewers succeeding and the judge scripted to finish done, the Run produces its
 Finished File and exits 0. With `fable` omitted and every called Reviewer failing, the Run
-instead exits 2, calls no judge and produces no Finished File. With both Seats using the codex
+instead exits 2, calls neither the judge-site Probe nor the judge and produces no Finished File. With both Seats using the codex
 preset and off-table models, a Round reporting session 100 has the same exact record, omitted
 Reviewer files, surviving Reviewers, judge arguments and successful completion as the both-family
 arm. The preset recommendations are not asserted: `RUN-22` states the message
@@ -641,7 +660,7 @@ standard output is empty; standard error names `claude-opus-5-5`, that line, res
 both `manager` and `implementer`, since both Seats are `unavailable` and `RUN-22`'s message names
 `the Seat — both, when both are`; the Run Directory holds exactly `probe-pick.out`,
 `probe-pick.err` and `probe-pick.md`; and `probe-pick.md` reads `manager:unavailable`, `implementer:unavailable`,
-`fable:unknown`, `opus:unavailable`, then `unknown` for `astra` and `sol`. With `--manager-model
+`fable:unknown`, `opus:unavailable`, then `unknown` for `astra`, `sol` and `grok`. With `--manager-model
 claude-fable-5-1`, the Implementer's model off the table and `Current week (Fable): 100% used`
 instead, the Run is refused the same way and standard error names `claude-fable-5-1`. The pick is
 scripted to fail. Here and in `CNF-29` and `CNF-30`, standard error names a Seat when the Seat's
@@ -721,8 +740,8 @@ evidence and verification.*
 `RUN-21`'s table, the probes before the pick and in Round 1 reporting nothing exhausted, Round 2's
 reporting `Current week (Opus): 100% used`, and Round 1 judged `rewrite`: the executable exits 2;
 `manager-judge-1.out` exists and **`manager-judge-2.out` does not**, nor is a Round 2 judge argument
-list recorded; Round 2's Implementer ran and its Panel ran without `opus` — `fable`, `astra` and
-`sol` called, `feedback-2-opus.md` exactly the not-run line; `probe-2.md` reads
+list recorded; Round 2's Implementer ran and its Panel ran without `opus` — `fable`, `astra`,
+`sol` and `grok` called, `feedback-2-opus.md` exactly the not-run line; `probe-2.md` reads
 `manager:unavailable` and `opus:unavailable`, every other Seat `unknown`; there is no Finished File
 and standard output is empty; and standard error names `manager`, `claude-opus-5-5` and the probe's
 `Opus` line, reset and all, since `RUN-22` exits `with the message above for the Manager's Seat`,
@@ -737,8 +756,8 @@ per-Seat or per-site lookup can get one Seat's row right and another's wrong.*
 
 With `--implementer claude` and both Seats on off-table models, repeat a Round 1 refusal for
 session 100 and 0100.
-The exact Probe record makes both Seats and both claude Reviewers unavailable, leaving astra and
-sol unknown. The pick and Implementer each ran once; both codex Reviewers ran once; neither
+The exact Probe record makes both Seats and both claude Reviewers unavailable, leaving astra,
+sol and grok unknown. The pick and Implementer each ran once; both codex Reviewers and Grok ran once; neither
 claude Reviewer nor the judge ran. Each omitted Reviewer has the exact not-run Feedback File and
 an existing empty `.err`; no judge output or Finished File exists, standard output is empty, exit
 is 2 and standard error names the Manager, its model and the session line verbatim with its reset.
@@ -781,7 +800,7 @@ explicitly on
 `claude-fable-5-1`, matching the family in the malformed, failed and timed-out reports, the Run
 starts and ends 0, every Seat `unknown` in `probe-pick.md`, when the probe before the pick writes
 nothing; writes no usage line; reports only `Current week (all models): 100% used`; reports only
-families outside the table; reports `99% used`; writes `Current week (Fable): 100% used` other
+families outside the table, including Grok and its model; reports `99% used`; writes `Current week (Fable): 100% used` other
 than at the start of a line; writes a family line whose `100% used` is split by a NUL byte;
 reports a family at `100% used` but **exits non-zero**; or does not finish within `--probe-timeout
 1`. *This is what shows fail-open reaches the pick: the pick being called is the assertion, since
@@ -800,7 +819,7 @@ Two further Runs omit both `--implementer` and `--implementer-model`: one select
 `--manager-model claude-sonnet-5` with an exhausted Opus family. Each records
 `manager:unknown` and `implementer:unknown` in byte-exact `probe-pick.md`, with both claude
 Reviewers unavailable for the session report and only `opus` unavailable for the family report;
-`astra` and `sol` remain unknown. The pick is scripted to fail: exit 2, empty standard output,
+`astra`, `sol` and `grok` remain unknown. The pick is scripted to fail: exit 2, empty standard output,
 no Finished File, exactly one Probe and one pick, no other calls and the spawn trace `pick`.
 Missing records or spawns fail with an omitted-Implementer-preset label. *A runtime command
 that defaults to codex while Probe processing still assigns the omitted preset to claude can
@@ -811,9 +830,9 @@ text, a failed session-100 Probe and a Probe scripted to print session 100 after
 bound. Both claude Seats are explicitly on Fable; every Seat is unknown in the exact pick record,
 the pick runs and the Run finishes. With codex Manager and Implementer presets and the same
 claude-looking off-table model literal, session 100 at the pick-site, Panel-site and judge-site
-checks leaves those Seats unknown, both claude Reviewers unavailable and both codex Reviewers
+checks leaves those Seats unknown, both claude Reviewers unavailable and both codex Reviewers and Grok
 unknown. Assert the exact pick record and Panel copy, and the full spawn trace: pick,
-Implementer, astra and sol, judge. With a codex Manager and an
+Implementer, astra, grok and sol, judge. With a codex Manager and an
 off-table claude Implementer, a Round's session 100 instead records the Implementer unavailable
 but leaves that same spawn trace and successful completion. Finally, session 89 beside an
 exhausted Fable family at the pick-site, Panel-site and judge-site checks leaves both off-table

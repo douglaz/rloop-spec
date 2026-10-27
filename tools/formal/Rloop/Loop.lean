@@ -43,14 +43,13 @@ inductive Panel | all | some | none
   deriving DecidableEq, Repr
 
 /-- Reviewer identities (`AGT-11`). -/
-inductive Reviewer | astra | fable | opus | sol
+inductive Reviewer | astra | fable | grok | opus | sol
   deriving DecidableEq, Repr
 
-/-- The complete Panel. `AGT-11`: `The Panel MUST be exactly the four Reviewers AGT-7, AGT-8 and
-AGT-10 name, with the Feedback File names DIR-4 gives them.` The alphabetical order used here is
+/-- The complete Panel. `AGT-11`: `The Panel MUST be exactly the five Reviewers AGT-7, AGT-8, AGT-10 and AGT-19 name, with the Feedback File names DIR-4 gives them.` The alphabetical order used here is
 not that requirement's — it is this model's trace encoding, which `conformance/scenario-lib.sh`
 reproduces with `LC_ALL=C sort`. -/
-def Reviewer.all : List Reviewer := [.astra, .fable, .opus, .sol]
+def Reviewer.all : List Reviewer := [.astra, .fable, .grok, .opus, .sol]
 
 /-- The two Seats outside the Panel (`CONTEXT.md`), the ones `RUN-22` refuses a Run for: removing a
 member leaves a Panel, and removing either of these leaves no Run (`ADR-0008`). -/
@@ -194,7 +193,7 @@ def afterManager (d : Disk) (r : ManagerResult) : Disk :=
 /-- Every Reviewer of the Panel is down (`RUN-15`), given the class `p` of the Reviewers `called`.
 A called Reviewer is down when it failed; one never called is down too under `notRunDown`, so the
 Panel is all down when none was called or none of the called succeeded. Without it only a failure
-counts, and the Panel is all down only when all four were called and failed. -/
+counts, and the Panel is all down only when all five were called and failed. -/
 def allDown (g : Guards) (p : Panel) (called : List Reviewer) : Bool :=
   if g.notRunDown then called.isEmpty || p == .none
   else called == Reviewer.all && p == .none

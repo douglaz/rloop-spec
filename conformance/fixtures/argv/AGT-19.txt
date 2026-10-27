@@ -1,0 +1,28 @@
+grok
+--no-auto-update
+-p
+<review prompt>
+--model
+grok-4.7
+--effort
+high
+--output-format
+plain
+--always-approve
+--sandbox
+off
+--no-subagents
+--no-memory
+--disable-web-search
+--disallowed-tools
+search_replace,write
+--deny
+Bash(git checkout:*)
+--deny
+Bash(git stash:*)
+--deny
+Bash(git reset:*)
+--deny
+Bash(git commit:*)
+--deny
+Bash(git clean:*)

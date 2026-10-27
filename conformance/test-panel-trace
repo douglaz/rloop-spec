@@ -28,16 +28,17 @@ source "$here/scenario-lib.sh"
 die() { echo "FAIL: $*" >&2; exit 1; }
 assert_equal() { [ "$1" = "$2" ] || die "$3: expected '$2', got '$1'"; }
 fakes="$work/fakes"; mkdir -p "$fakes"
-cp "$here/fakes/agent" "$fakes/claude" && cp "$here/fakes/agent" "$fakes/codex" || exit 1
-chmod +x "$fakes/claude" "$fakes/codex"
+cp "$here/fakes/agent" "$fakes/claude" && cp "$here/fakes/agent" "$fakes/codex" && cp "$here/fakes/agent" "$fakes/grok" || exit 1
+chmod +x "$fakes/claude" "$fakes/codex" "$fakes/grok"
+export -n RLOOP_FAKE_REVIEWER_OUTCOMES RLOOP_FAKE_GROK_PROGRESS 2>/dev/null || true
 restrict_path
 
 # Exercise completion order deterministically using the fake agents' record format. Both
 # permutations have the same identity-specific outcomes; failures still count as members.
 rec="$work/order"; mkdir -p "$rec"
-members=astra+fable+opus+sol
+members=astra+fable+grok+opus+sol
 for cls in all some none; do
-  for order in 'fable opus astra sol' 'sol astra opus fable'; do
+  for order in 'fable opus astra sol grok' 'grok sol astra opus fable'; do
     printf 'manager:0:end:1:ok:task\nimplementer:1:end:2:ok\n' > "$rec/trace"
     timestamp=3
     for reviewer in $order; do
@@ -51,7 +52,7 @@ for cls in all some none; do
     done
     expected="pick,impl1:ok,panel1:$cls:$members"
     if [ "$cls" != none ]; then
-      echo 'manager:1:end:7:done' >> "$rec/trace"
+      echo 'manager:1:end:9:done' >> "$rec/trace"
       expected+=,judge1
     fi
     assert_equal "$(observed_trace "$rec")" "$expected" "$cls in order $order"
@@ -90,6 +91,8 @@ reviewer:1:sol:start:3
 reviewer:1:opus:start:4
 reviewer:1:fable:start:5
 reviewer:1:astra:start:6
+reviewer:1:grok:start:6
+reviewer:1:grok:end:7:ok
 reviewer:1:astra:end:7:ok
 reviewer:1:fable:end:8:ok
 reviewer:1:opus:end:9:ok
@@ -177,6 +180,33 @@ old_defaults_control 'p:-none' 's/p:-none/p:-all/' Reviewer 7
 old_defaults_control '; judge="${judge:-fail}"' 's/; judge="${judge:-fail}"//' judge 1
 echo "PASS: a Round past the script's last one fails in all three roles;" \
   'the old succeeding defaults are red'
+# The fake-only identity overrides must preserve the generated some class and stay scoped.
+# Check actual exits, stdout and outcome records, then the next Round without an override.
+for script in some grok-fails grok-only next-round; do
+  rec="$work/outcomes-$script"; mkdir -p "$rec"
+  panel=some; overrides=''; round=1; rounds='impl=ok;panel=some;judge=done'
+  case "$script" in
+    grok-fails) panel=all; overrides=1:grok:fail ;;
+    grok-only|next-round) panel=none; overrides=1:grok:ok ;;
+  esac
+  if [ "$script" != some ]; then rounds="impl=ok;panel=$panel;judge=done|impl=ok;panel=$panel;judge=done"; fi
+  [ "$script" != next-round ] || round=2
+  for rv in fable opus astra sol grok; do
+    want=7
+    case "$script:$rv" in some:fable|some:astra|grok-fails:fable|grok-fails:opus|grok-fails:astra|grok-fails:sol|grok-only:grok) want=0 ;; esac
+    st=0
+    RLOOP_ROLE=reviewer RLOOP_RUN=1 RLOOP_ROUND="$round" RLOOP_REVIEWER="$rv" \
+      RLOOP_FAKE_ROUNDS="$rounds" RLOOP_FAKE_REVIEWER_OUTCOMES="$overrides" RLOOP_FAKE_RECORD="$rec" \
+      "$fakes/grok" </dev/null > "$rec/$rv.out" 2> "$rec/$rv.err" || st=$?
+    assert_equal "$st" "$want" "$script $rv fake exit"
+    if [ "$want" = 0 ]; then printf 'No findings.\n'; else printf 'partial feedback\n'; fi > "$rec/expected"
+    cmp -s "$rec/expected" "$rec/$rv.out" || die "$script $rv fake stdout"
+    outcome=fail; [ "$want" != 0 ] || outcome=ok
+    assert_equal "$(sed -n "s/^reviewer:$round:$rv:end:[^:]*://p" "$rec/trace")" "$outcome" "$script $rv recorded outcome"
+  done
+done
+echo 'PASS: fake identity outcomes, generated some class and Round-scoped overrides'
+
 # CNF-2's executable PATH: restrict_path's skip line, each of its refusals, and its normalisation
 # of a relative PATH entry. Every name the function looks for resolves on this repository's
 # development and CI hosts, from an absolute PATH entry, so nothing else this repository runs
@@ -284,7 +314,7 @@ got_exit=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS='impl=ok;panel=all;judge=do
   RLOOP_FAKE_SLEEP_REVIEWER=30 run_rloop "$repo" "$rec" \
   --run-dir "$repo/run" --reviewer-timeout 1 --kill-after 1)
 assert_equal "$got_exit" 2 'all-timeout exit'
-assert_equal "$(grep -c '^reviewer:1:.*:start:' "$rec/trace")" 4 'all-timeout starts'
+assert_equal "$(grep -c '^reviewer:1:.*:start:' "$rec/trace")" 5 'all-timeout starts'
 assert_equal "$(grep -c '^reviewer:1:.*:end:' "$rec/trace")" 0 'all-timeout ends'
 assert_equal "$(observed_trace "$rec")" "pick,impl1:ok,panel1:none:$members" \
   'actual fake-agent timeouts retain complete membership without a judge'
@@ -313,34 +343,36 @@ for cls in all some none; do
   positive
 done
 
-# Skip sol in both the spawn loop and the wait loop so the remaining Reviewers and Manager
+# Skip grok in both the spawn loop and the wait loop so the remaining Reviewers and Manager
 # still finish normally. The failing verdict must have the correct exit and differ ONLY in
 # that Round's observed membership. This calls precisely run's scenario-comparison path.
 # Both loops are in do_round; the probe's verdict loop, outside it, is left alone.
 assert_equal "$(sed -n '/^do_round() {/,/^}/p' "$original" \
-  | grep -c '^  for rv in fable opus astra sol; do$')" 2 'rloop-bash mutation sites'
+  | grep -c '^  for rv in fable opus astra sol grok; do$')" 2 'rloop-bash mutation sites'
 for skipped_round in 1 2; do
   sed "/^do_round() {/,/^}/{
-/^  for rv in fable opus astra sol; do$/a\\
-    if [ \"\$r\" = $skipped_round ] \&\& [ \"\$rv\" = sol ]; then continue; fi
+/^  for rv in fable opus astra sol grok; do$/a\\
+    if [ \"\$r\" = $skipped_round ] \&\& [ \"\$rv\" = grok ]; then continue; fi
 }" \
-    "$original" > "$work/omit-sol"
-  chmod +x "$work/omit-sol"
+    "$original" > "$work/omit-grok"
+  cmp -s "$original" "$work/omit-grok" && die 'Grok omission: the mutation changed nothing'
+  assert_equal "$(grep -cF -- '= grok ]; then continue; fi' "$work/omit-grok")" 2 'Grok omission changed both loop sites'
+  chmod +x "$work/omit-grok"
   rounds='impl=ok;panel=all;judge=done'
   [ "$skipped_round" = 2 ] && rounds="impl=ok;panel=all;judge=rewrite|$rounds"
   select_scenario "$rounds"
   positive
-  exe="$work/omit-sol"
+  exe="$work/omit-grok"
   result=$(run_scenarios "$work/one.tsv" 2> "$work/diagnostic")
   cat "$work/diagnostic"
   assert_equal "$result" '1 1' "$id omitted-Reviewer verdict"
-  without_sol="panel$skipped_round:all:astra+fable+opus"
-  observed=${exp_trace/"panel$skipped_round:all:$members"/"$without_sol"}
+  without_grok="panel$skipped_round:all:astra+fable+opus+sol"
+  observed=${exp_trace/"panel$skipped_round:all:$members"/"$without_grok"}
   assert_equal "$(cat "$work/diagnostic")" \
     "        $id: expected exit $exp_exit trace $exp_trace; got exit $exp_exit trace $observed" \
     "$id isolated membership mismatch"
   echo "PASS: $id negative control rejected (1 of 1 scenarios differ);" \
-    "skipped sol in Round $skipped_round"
+    "skipped grok in Round $skipped_round"
 done
 
 # The probe scripts (RUN-21, RUN-15): every generated line carrying one probe column passes
@@ -367,7 +399,7 @@ probe_case opus 'Opus unavailable; mutant: the table has no Opus row' \
   ' opus) fam=Opus ;;' 's/ opus) fam=Opus ;;//'
 probe_case fable 'Fable unavailable; mutant: the table has no Fable row' \
   ' fable) fam=Fable ;;' 's/ fable) fam=Fable ;;//'
-probe_case both 'all four down; mutant: a Reviewer not run is not counted down' \
+probe_case both 'all five down; mutant: a Reviewer not run is not counted down' \
   'pids+=("")' '/pids+=("")/{n;/failed=\$((failed + 1))/d}'
 probe_case 'fable|clear' 'Fable re-admitted in Round 2; mutant: verdicts remembered across Rounds' \
   "  unavail=' '" "s/^  unavail=' '\$/  unavail=\"\${unavail:- }\"/"
@@ -377,6 +409,8 @@ probe_case loose 'a probe that does not parse; mutant: the match not anchored' \
   'case $line in "Current week' 's/case \$line in "Current week/case $line in *"Current week/'
 probe_case unlisted 'families outside the table; mutant: the codex Reviewers given families' \
   "*) fam='' ;;" "s/ \*) fam='' ;;/ astra) fam=Astra ;; sol) fam=Sol ;; *) fam='' ;;/"
+probe_case unlisted 'Grok stays unknown; mutant: Grok given a Claude family' \
+  "*) fam='' ;;" "s/ \*) fam='' ;;/ grok) fam=Grok ;; *) fam='' ;;/"
 probe_case unlisted 'families outside the table; mutant: any family name matches' \
   '"Current week ($fam): 100% used"*)' 's/"Current week (\$fam): 100% used"\*)/"Current week ("*"): 100% used"*)/'
 
@@ -387,9 +421,9 @@ probe_case unlisted 'families outside the table; mutant: any family name matches
 # abort is the single site, and the mutant leaves it standing for the Panels it already aborts.
 select_scenario 'impl=ok;panel=some;judge=done' fable
 positive
-site='[ "$failed" -lt 4 ]'
+site='[ "$failed" -lt 5 ]'
 assert_equal "$(grep -cF -- "$site" "$original")" 1 'uncalled beside a failure: mutation site'
-sed 's/\[ "\$failed" -lt 4 \]/& \&\& { unrun=0; for u in "${pids[@]}"; do [ -n "$u" ] || unrun=$((unrun + 1)); done; [ "$unrun" = 0 ] || [ "$unrun" = "$failed" ]; }/' \
+sed 's/\[ "\$failed" -lt 5 \]/& \&\& { unrun=0; for u in "${pids[@]}"; do [ -n "$u" ] || unrun=$((unrun + 1)); done; [ "$unrun" = 0 ] || [ "$unrun" = "$failed" ]; }/' \
   "$original" > "$work/uncalled-with-failure"
 chmod +x "$work/uncalled-with-failure"
 cmp -s "$original" "$work/uncalled-with-failure" \

@@ -229,7 +229,28 @@ calls. The `sol` adviser line of the Consultation in `PRM-1` and `PRM-2` moved w
 were. The `sol` adviser line of the Consultation in `PRM-1` and `PRM-2` and the codex
 Implementer's default in `AGT-5` moved with it. `AGT-17` records the verification.*
 
-**AGT-11** The Panel MUST be exactly the four Reviewers `AGT-7`, `AGT-8` and `AGT-10` name, with
+**AGT-19** Reviewer `grok` MUST be a fresh official Grok Build CLI invocation each Round:
+
+```text
+grok --no-auto-update -p <review prompt> --model grok-4.7 --effort high --output-format plain --always-approve --sandbox off --no-subagents --no-memory --disable-web-search --disallowed-tools "search_replace,write" --deny "Bash(git checkout:*)" --deny "Bash(git stash:*)" --deny "Bash(git reset:*)" --deny "Bash(git commit:*)" --deny "Bash(git clean:*)"
+```
+
+The shared `PRM-4` prompt, rendered by `PRM-6`, is one argument, and each quoted deny pattern is
+one argument. `AGT-12` through `AGT-16` govern this process too; `DIR-4` owns the captures and
+`RUN-15` the failure note. Plain stdout includes progress and tool prose before final Markdown:
+all of it is Feedback File content, with no filtering, grading, reformatting or report extraction.
+Missing binary, authentication rejection, unsupported flags or model, and timeout are attempted
+Reviewer failures, not quota skips. There is no fallback or automatic Reviewer retry.
+
+*Sandbox off permits generated build outputs and Nix daemon sockets. Removing native direct-edit
+and write tools and denying the named commands reduces accidental mutations; shell access can
+still write by another route within `DIR-9`'s cooperative threat model. The subagent, memory and
+web-search switches do not establish that every configured hook, extension or remote tool is
+disabled. This is a direct CLI invocation, not a Claude Code Grok plugin, `grok agent stdio` or
+a runtime API client. Operator prerequisites have their home in `README.md`, **Using rloop**.
+`AGT-17` records the partial live observations and their limits.*
+
+**AGT-11** The Panel MUST be exactly the five Reviewers `AGT-7`, `AGT-8`, `AGT-10` and `AGT-19` name, with
 the Feedback File names `DIR-4` gives them. There is no flag, file or variable that changes the
 Panel; changing it is a change to this document.
 
@@ -251,7 +272,7 @@ the table's conditions:
 | `RLOOP_ROUND` | the Round number; `0` for the pick |
 | `RLOOP_RUN` | the Run's number within its Sequence; `1` for a lone Run |
 | `RLOOP_RUN_DIR` | the Run Directory's absolute path |
-| `RLOOP_REVIEWER` | `fable`, `opus`, `astra` or `sol`; set for Reviewers only |
+| `RLOOP_REVIEWER` | `fable`, `opus`, `astra`, `sol` or `grok`; set for Reviewers only |
 | `BASH_MAX_TIMEOUT_MS` | For every Manager call (pick and every judge) under `--manager claude`, rloop MUST set this to `--manager-timeout` in milliseconds (seconds multiplied by 1000), overriding any inherited value, regardless of the selected model. Every other call receives whatever rloop inherited unchanged. |
 
 *Real agents ignore the `RLOOP_*` variables — the prompt tells a model where things are. The
@@ -364,6 +385,39 @@ Each of the four calls used `Reply with exactly: ok`, stdin from `/dev/null` and
 bound, exited 0 with `ok`, and its banner reported the model and the effort. This was a partial
 verification with trivial prompts, not whole-roster, session-resumption or real-task
 verification.*
+
+*PARTIAL verification, 2026-10-27 (`rl-8gel`): supplied disposable-repository observations on
+`grok 1.0.62 (1474f9cbdd91)`, not experiments repeated by this Specification Run. Only the adopted
+`search_replace,write` value withheld both native tools from the CLI-recorded catalog. The original
+`Edit,Write` left both exposed, and an actual native write created a sentinel. Corrected tool-removal
+checks observed withholding, not denial of a dispatched edit; independent snapshots found source
+hashes, HEAD, reflog, stashes, status and diff unchanged.*
+
+*Corrected review, deny, tool-removal and offline Nix-store-context cases exited 0 within their
+300-second outer bounds with empty stderr. CLI session metadata named `grok-4.7`, effort `high`,
+sandbox `off`, non-interactive true and memory disabled. The review found a seeded defect; git
+status/diff, unittest, Python compilation and generated build output worked. The corrected Nix
+fixture actually built through the offline Nix daemon/store and read `fixture build passed` from
+its output. The first malformed Nix fixture omitted builder dependency context, failed and reached
+its bound during diagnosis; it remains a failed experiment, not successful Nix evidence.*
+
+*Five separate literal commands were refused before execution by their respective unchanged deny
+patterns: `git checkout -- checkout-target.txt`, `git stash push -m grok-permission-probe`,
+`git reset --hard HEAD`, `git commit --allow-empty -m grok-permission-probe` and
+`git clean -f -- clean-target.txt`. All snapshots stayed unchanged. This covers those attempts,
+not all shell forms or alternative tools. Plain stdout included progress before final Markdown,
+sometimes without a separating newline. A bad-model case exited 1 without fallback; a sleep case
+retained initial progress when its outer 30-second wrapper returned 124. Those two cases used the
+original tool-list value; 124 is the wrapper's status, not a native Grok status.*
+
+*The CLI reported grok.com login and no `XAI_*` variable names were present in that check;
+neither proves cost or billing. Native web and subagent tools were absent from the captured
+catalog, while configured workflow/MCP tools and hooks remained discoverable. No credentials were
+captured, and CLI metadata is no provider-side attestation. The supplied live record is
+`/var/tmp/rloop-spec-manager/handover-grok-live.md`, with manifests, outputs, snapshots and exits
+under `/var/tmp/rloop-spec-manager/grok-live/20261027T220056Z/`. No whole-roster verification or
+integrated five-Reviewer Round follows. Implementation integration, its failure/timeout handling
+and a real five-Reviewer Round remain dependent-Run work before the catch-up push (`rl-ytgu`).*
 
 A fake agent accepts any flag, so the Conformance
 Suite cannot tell a wrong flag from a right one; a flag that a newer CLI rejects is found only by a

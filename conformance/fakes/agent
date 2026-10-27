@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The fake agent (CNF-2). Installed as `claude` and `codex` first on PATH by conformance/run. It
+# The fake agent (CNF-2). Installed as `claude`, `codex` and `grok` first on PATH by conformance/run. It
 # never reads its prompt and never parses a flag: it reads rloop's environment contract (AGT-13)
 # to learn which agent it is standing in for, looks up its scripted part, records what it
 # received, and acts.
@@ -22,7 +22,7 @@
 #                            keeps its own process observable separately from a surviving child
 #   RLOOP_FAKE_SLEEP_<ROLE>  seconds to sleep before acting (ROLE = MANAGER|IMPLEMENTER|REVIEWER|PROBE)
 #   RLOOP_FAKE_SLEEP_ONLY    a Reviewer name: RLOOP_FAKE_SLEEP_REVIEWER is honoured by that Reviewer
-#                            alone, the other three act at once (unset: every Reviewer sleeps)
+#                            alone, the other four act at once (unset: every Reviewer sleeps)
 #   RLOOP_FAKE_PROBE         what the availability probe writes (default: clear), one shape per
 #                            Round joined by | (a Round past the last named shape writes clear,
 #                            as when unset, since Scenarios.lean's behaviour reads `-` there;
@@ -33,7 +33,7 @@
 #                            family at 100; both = Fable and Opus each at 100, on separate lines;
 #                            under = 99; garbage = no usage line; silent = nothing;
 #                            fail = the fable line but exit 3; loose = the words mid-line;
-#                            unlisted = families outside RUN-21's table at 100, codex-like ones too;
+#                            unlisted = families outside RUN-21's table at 100, Codex and Grok names/models too;
 #                            nul = the Fable line at 100 with a NUL byte inside the percentage;
 #                            session100-opus = session 100 then Opus 100;
 #                            opus-session100 = Opus 100 then session 100 (same lines, reversed)
@@ -117,6 +117,9 @@
 #   RLOOP_FAKE_COMMIT        1 = the Implementer commits a file during its call
 #   RLOOP_FAKE_THREAD_ID     the thread_id a codex Manager pick reports (default: …cafe)
 #   RLOOP_FAKE_NO_THREAD_ID  1 = a codex Manager pick reports no thread.started event
+#   RLOOP_FAKE_GROK_PROGRESS  1 = Grok writes progress without a separating newline before its answer
+#   RLOOP_FAKE_REVIEWER_OUTCOMES comma-separated <round>:<reviewer>:<ok|fail> overrides,
+#                              used only in focused identity witnesses; no generated alphabet change
 #   RLOOP_FAKE_RECORD        directory the fake records into (required)
 #
 # No knob turns it on: every fake of every Run also carries CALLS_ALIVE=<pids> in its .env record,
@@ -200,7 +203,7 @@ if { [ "$gc_ignore_term" = 1 ] && [ "$sleep_for" != 0 ]; } || [ "$gc_ignore_term
   # the group's SIGTERM ends neither; only the group's SIGKILL does.
   if [ "${watch%%:*}" = "$role" ]; then
     # The same child, polling rather than sleeping, for the same gc_life seconds in twentieths.
-    ( trap '' TERM; : > "$rec/$tag.watching"; i=0
+    ( trap '' TERM; : > "$rec/$tag.child-ready"; : > "$rec/$tag.watching"; i=0
       while [ "$i" -lt $(( gc_life * 20 )) ]; do
         [ -e "$run_dir/${watch#*:}" ] && { : > "$rec/$tag.seen"; break; }
         sleep 0.05; i=$(( i + 1 ))
@@ -217,15 +220,17 @@ if { [ "$gc_ignore_term" = 1 ] && [ "$sleep_for" != 0 ]; } || [ "$gc_ignore_term
     # descriptor's file offset is shared: a line written earlier would land ahead of the fake's own.
     # Then it waits out the delay the knob asks for, which is how a row puts a bound below the
     # window it separates in, and writes the line the knob names.
-    ( trap '' TERM; while kill -0 "$$" 2>/dev/null; do sleep 0.05; done
+    ( trap '' TERM; : > "$rec/$tag.child-ready"; while kill -0 "$$" 2>/dev/null; do sleep 0.05; done
       sleep "${ws_delay:-0}"
       i=0
       while [ "$i" -lt $(( gc_life * 20 )) ]; do
         echo "${ws_line:-straggler of $tag}"; sleep 0.05; i=$(( i + 1 ))
       done ) & echo "GRANDCHILD=$!" >> "$rec/$tag.env"
   else
-    ( trap '' TERM; sleep "$gc_life" ) & echo "GRANDCHILD=$!" >> "$rec/$tag.env"
+    ( trap '' TERM; : > "$rec/$tag.child-ready"; sleep "$gc_life" ) & echo "GRANDCHILD=$!" >> "$rec/$tag.env"
   fi
+  i=0; while [ ! -e "$rec/$tag.child-ready" ] && [ "$i" -lt 200 ]; do sleep 0.05; i=$(( i + 1 )); done
+  [ -e "$rec/$tag.child-ready" ] || echo "CHILD_NOT_READY=1" >> "$rec/$tag.env"
 fi
 
 # Capture preceded set -u: bash recomputes SHELLOPTS even when it was not inherited.
@@ -368,11 +373,20 @@ case "$role" in
     case "$p" in
       all) o=ok ;;
       none) o=fail ;;
-      # fable and astra succeed, opus and sol fail. astra's model is one RUN-21's table does not
+      # fable and astra succeed, grok, opus and sol fail. astra's model is one RUN-21's table does not
       # name, so it is called whatever the probe reported: some is a mixed Panel in every Round.
       some) case "$reviewer" in fable|astra) o=ok ;; *) o=fail ;; esac ;;
     esac
+    # Overrides are scoped by Round and identity, never carried into another Round.
+    IFS=, read -r -a overrides <<< "${RLOOP_FAKE_REVIEWER_OUTCOMES:-}"
+    for entry in ${overrides[@]+"${overrides[@]}"}; do
+      IFS=: read -r override_round override_reviewer override_outcome <<< "$entry"
+      if [ "$override_round" = "$round" ] && [ "$override_reviewer" = "$reviewer" ]; then
+        case "$override_outcome" in ok|fail) o=$override_outcome ;; *) exit 99 ;; esac
+      fi
+    done
     [ "$reviewer" = "${RLOOP_FAKE_INTERFERING_REVIEWER:-fable}" ] && interfere afterPanel
+    if [ "$reviewer" = grok ] && [ "${RLOOP_FAKE_GROK_PROGRESS:-0}" = 1 ]; then printf 'Inspecting tools...'; fi
     if [ "$o" = ok ]; then echo "No findings."; else echo "partial feedback"; status=7; fi
     outcome="$o"
     ;;
@@ -429,7 +443,7 @@ case "$role" in
       # Exhausted families RUN-21's table does not hold, two spelled like the codex Reviewers and two
       # as their models: a Reviewer's family comes from that table or nowhere, so all stay unknown.
       unlisted) printf 'Current week (%s): 100%% used · resets Sep 24, 3pm (UTC)\n' \
-                 Sonnet Astra Sol gpt-6-astra gpt-6.1-sol ;;
+                 Sonnet Astra Sol Grok grok grok-4.7 gpt-6-astra gpt-6.1-sol ;;
       # A NUL byte inside the percentage: the line does not begin with RUN-21's prefix, however it
       # reads once a byte is dropped, so it must stay unknown.
       nul)     printf 'Current week (Fable): 1\0'; printf '00%% used · resets Sep 24, 3pm (UTC)\n' ;;

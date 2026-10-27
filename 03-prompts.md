@@ -73,7 +73,7 @@ unchanged.*
 ```prompt
 Round {{ROUND}} of at most {{MAX_ROUNDS}} is over. An Implementer worked from {{TASK_FILE}}; its output is in {{IMPLEMENTER_LOG}} (a last line `IMPLEMENTER FAILED (exit N)` means it crashed or timed out). The Panel's Reviewers then read the repository's changes since commit {{BASE}} against the brief; their feedback is in:
 {{FEEDBACK_FILES}}
-A file holding `REVIEWER FAILED` is a Reviewer that crashed or timed out; one holding `REVIEWER NOT RUN` is a Reviewer that was never called, because its model could not answer. That model cannot answer as an adviser either: if this Round needs a Consultation, count it as a model that did not answer and do not call it. Files named `rejected-*` in {{RUN_DIR}}, if any, were written over your files by another agent and set aside; read them as evidence about that agent.
+A file holding `REVIEWER FAILED` is a Reviewer that crashed or timed out; one holding `REVIEWER NOT RUN` is a Reviewer that was never called, because its model could not answer. For fable, opus, astra and sol, that model cannot answer as an adviser either: if this Round needs a Consultation, count it as a model that did not answer and do not call it. Files named `rejected-*` in {{RUN_DIR}}, if any, were written over your files by another agent and set aside; read them as evidence about that agent.
 
 Review the implementation yourself, then read the feedback. Feedback is advice, not orders: send back only what makes the implementation fail the brief as written, or is a genuine defect. Reject findings that add scope, over-engineer, or ask for machinery the brief does not need. File an issue only for a finding that would change what the software does, what the repository's specifications require, or whether a check can catch a defect: a bug, a missing or contradictory requirement, a test or gate that cannot fail or fails for the wrong reason. Everything else — wording, phrasing, style, formatting, comment accuracy, prose tightening, duplicated explanation — is cosmetic and is never filed; a cheap cosmetic finding inside this Round's scope may be fixed in this Round, and otherwise is listed once in your report in {{FINISHED_FILE}} and dropped. A false statement inside a requirement is a requirement defect and may be filed; a false or imprecise code comment is cosmetic.
 
@@ -139,10 +139,10 @@ the Run Directory: the sentence's exception is empty for it.*
 
 ## The Reviewers
 
-**PRM-4** The review prompt, the same for all four Reviewers, MUST be:
+**PRM-4** The review prompt, the same for all five Reviewers, MUST be:
 
 ```prompt
-You are one of four independent Reviewers of an rloop Round. Read the repository's instructions for agents if it has any. Read the brief at {{TASK_FILE}}. Then review the repository's changes since commit {{BASE}} — committed and uncommitted, tracked and untracked; use git to see them — against that brief. Ignore changes under .rloop/ and in issue-tracker files (.beads/ and the like).
+You are one of five independent Reviewers of an rloop Round. Read the repository's instructions for agents if it has any. Read the brief at {{TASK_FILE}}. Then review the repository's changes since commit {{BASE}} — committed and uncommitted, tracked and untracked; use git to see them — against that brief. Ignore changes under .rloop/ and in issue-tracker files (.beads/ and the like).
 
 Report, in Markdown, to the Manager who will judge this Round:
 0. What you could not do: any command this review needed that your sandbox refused or that failed before running (a build, a test suite, a gate), named up front, so the Manager knows what your verdict rests on. Say "I ran everything I needed" if that is true.
@@ -178,7 +178,7 @@ need one belongs to the Manager's judgment.
 | `{{ROUND}}` | the Round just finished, decimal |
 | `{{MAX_ROUNDS}}` | `--max-rounds`, decimal |
 | `{{IMPLEMENTER_LOG}}` | absolute path of `implementer-<r>.out` |
-| `{{FEEDBACK_FILES}}` | absolute paths of the Round's four Feedback Files, one per line, in the order `fable`, `opus`, `astra`, `sol`, no trailing newline |
+| `{{FEEDBACK_FILES}}` | absolute paths of the Round's five Feedback Files, one per line, in the order `fable`, `opus`, `astra`, `sol`, `grok`, no trailing newline |
 | `{{DIRTY_AT_START}}` | the dirty-at-start list (`RUN-3`): `git status --porcelain`'s lines verbatim, one per line, no trailing newline; the empty string when the tree was clean |
 | `{{UNAVAILABLE}}` | the Reviewer Seats `probe-pick.md` records `unavailable` (`RUN-21`), each as its Seat name alone — `fable` or `opus` — one per line, in that record's order, no trailing newline; the empty string when it records none |
 

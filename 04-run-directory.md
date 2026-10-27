@@ -42,7 +42,7 @@ others:
 | `manager-judge-<r>.out`, `manager-judge-<r>.err` | rloop, from judge attempt 1's stdout and stderr | Round `r`, retained untouched |
 | `manager-judge-<r>-retry-<k>.out`, `manager-judge-<r>-retry-<k>.err` | rloop, from judge attempt `k+1`'s stdout and stderr | each retry in Round `r`, `k` from 1 |
 | `implementer-<r>.out`, `implementer-<r>.err` | rloop, from the Implementer's stdout and stderr | Round `r` |
-| `feedback-<r>-<reviewer>.md` | rloop, from the Reviewer's stdout, or rloop's own when the Reviewer was not called (`RUN-15`) | Round `r`, one per Reviewer (`fable`, `opus`, `astra`, `sol`) |
+| `feedback-<r>-<reviewer>.md` | rloop, from the Reviewer's stdout, or rloop's own when the Reviewer was not called (`RUN-15`) | Round `r`, one per Reviewer (`fable`, `opus`, `astra`, `sol`, `grok`) |
 | `reviewer-<r>-<reviewer>.err` | rloop, from the Reviewer's stderr; empty when it was not called | Round `r` |
 | `probe-pick.out`, `probe-pick.err` | rloop, from the availability probe's stdout and stderr | before the pick (`RUN-21`) |
 | `probe-pick.md` | rloop | before the pick: one `<seat>:<verdict>` line per Seat (`RUN-21`) |

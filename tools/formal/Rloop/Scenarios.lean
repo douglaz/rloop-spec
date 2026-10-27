@@ -90,8 +90,16 @@ def probeReads (k : Nat) (shape : String) (sessionQuota : Bool := true) (r : Rev
   familyReads shape r &&
     (!(r == .fable || r == .opus) || !sessionQuota || sessionReads k shape)
 
+/-- Grok stays called for every supported (or unrecognised) Probe shape at every site.
+This proves availability, not an individual process exit; Panel results remain abstract classes. -/
+@[req "RUN-21"]
+theorem grok_probe_called (k : Nat) (shape : String) (sessionQuota : Bool) :
+    .grok ∈ Reviewer.all.filter (probeReads k shape sessionQuota) := by
+  simp [Reviewer.all, probeReads, familyReads]
+  split <;> simp_all
+
 def Reviewer.name : Reviewer → String
-  | .astra => "astra" | .fable => "fable" | .opus => "opus" | .sol => "sol"
+  | .astra => "astra" | .fable => "fable" | .grok => "grok" | .opus => "opus" | .sol => "sol"
 
 /-- The CLI preset and optional family membership, plus the pick Probe shape. -/
 structure Seats where

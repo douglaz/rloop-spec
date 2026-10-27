@@ -197,8 +197,8 @@ theorem panel_abort_off_judges :
     ((run { Guards.all with panelAbort := false } orphaned 3).2.any (Spawn.isJudgeOf 1)) = true := by
   decide
 
-/-- The first Panel reads both claude Reviewers `unavailable` and loses the two it calls: two
-Reviewers not run and two failed. -/
+/-- The first Panel reads both claude Reviewers `unavailable` and loses the three it calls: two
+Reviewers not run and three failed. -/
 def halfRun : Behaviour :=
   { orphaned with available := fun _ r => r != .fable && r != .opus }
 
@@ -206,10 +206,10 @@ def halfRun : Behaviour :=
 the Reviewers called in the trace. -/
 @[req "RUN-15"]
 theorem not_run_and_failed_aborts :
-    run Guards.all halfRun 3 = (.e2, [.pick, .implementer 1 true, .panel 1 .none [.astra, .sol]]) := by
+    run Guards.all halfRun 3 = (.e2, [.pick, .implementer 1 true, .panel 1 .none [.astra, .grok, .sol]]) := by
   decide
 
-/-- With a Reviewer never called no longer counted as down, two failures of four read as a degraded
+/-- With a Reviewer never called no longer counted as down, three failures of five read as a degraded
 Panel and the judge is called. -/
 @[req "RUN-15"]
 theorem not_run_down_off_judges :
@@ -304,7 +304,7 @@ def runsOut : Behaviour :=
 theorem manager_out_skips_judge :
     run Guards.all runsOut 3 =
       (.e2, [.pick, .implementer 1 true, .panel 1 .all Reviewer.all, .judge 1,
-             .implementer 2 true, .panel 2 .all [.astra, .opus, .sol]]) := by decide
+             .implementer 2 true, .panel 2 .all [.astra, .grok, .opus, .sol]]) := by decide
 
 /-- With the guard off, Round 2's judge is called on a Manager's Seat recorded `unavailable`. -/
 @[req "RUN-22"]

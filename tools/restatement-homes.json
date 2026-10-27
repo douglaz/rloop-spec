@@ -61,7 +61,7 @@
   },
   {
     "owner": "AGT-11",
-    "sha256": "479c4c444d6afe1865abed54b71a9943a5d6ad25e93e53b98467eba2db5677c2",
+    "sha256": "7327bd662db5688329971f4683769b3a722ec7963c92d82f6f4e0ec92282f7c5",
     "reason": "Owns Panel composition; command identifiers and DIR-4 supply the members and filenames."
   },
   {
@@ -256,7 +256,7 @@
   },
   {
     "owner": "RUN-21",
-    "sha256": "543838aac30a1a65fa00a9fa7656665e5a7c185e7fb8e03095ea24ce51cbcd51",
+    "sha256": "1e715b9e5d9852d32e3df54d1e4f2fccafec671c87f746974dee2d59ab394c3c",
     "reason": "Owns check timing, per-Seat verdicts and the Panel copy; cited identifiers supply commands, files and wait policy."
   },
   {
@@ -343,5 +343,10 @@
     "owner": "AGT-16",
     "sha256": "9e28a6e0c4922ae64a932f1961989fd9093abd50d4ab9c76d731c3af67e939fb",
     "reason": "Owns how agent processes and the Probe are started; AGT-18 identifies the Probe."
+  },
+  {
+    "owner": "RUN-21",
+    "sha256": "f5b9ab65d602a971f26cc3ee73c8663097098cdf59968a71fd69205f6063c5b5",
+    "reason": "Owns Grok's permanently unknown verdict; AGT-19 identifies the attempted call that unknown admits."
   }
 ]
