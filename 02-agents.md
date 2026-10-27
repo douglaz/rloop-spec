@@ -410,13 +410,11 @@ sometimes without a separating newline. A bad-model case exited 1 without fallba
 retained initial progress when its outer 30-second wrapper returned 124. Those two cases used the
 original tool-list value; 124 is the wrapper's status, not a native Grok status.*
 
-*The CLI reported grok.com login and no `XAI_*` variable names were present in that check;
-neither proves cost or billing. Native web and subagent tools were absent from the captured
+*The CLI reported grok.com login; the caller's environment check found no `XAI_*` variable
+names. Neither proves cost or billing. Native web and subagent tools were absent from the captured
 catalog, while configured workflow/MCP tools and hooks remained discoverable. No credentials were
-captured, and CLI metadata is no provider-side attestation. The supplied live record is
-`/var/tmp/rloop-spec-manager/handover-grok-live.md`, with manifests, outputs, snapshots and exits
-under `/var/tmp/rloop-spec-manager/grok-live/20261027T220056Z/`. No whole-roster verification or
-integrated five-Reviewer Round follows. Implementation integration, its failure/timeout handling
+captured, and CLI metadata is no provider-side attestation. No whole-roster verification or
+integrated five-Reviewer Round follows from these partial observations. Implementation integration, its failure/timeout handling
 and a real five-Reviewer Round remain dependent-Run work before the catch-up push (`rl-ytgu`).*
 
 A fake agent accepts any flag, so the Conformance
