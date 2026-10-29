@@ -2105,6 +2105,35 @@ check_unexported_shellopts() {
 }
 check_unexported_shellopts
 
+# Exercise removal at rloop entry, including an inherited empty value and both presets.
+check_autocompact_environment() {
+  local preset value repo rec e ext tag want f
+  local paths=()
+  for preset in claude codex; do
+    for value in 150000 ''; do
+      repo=$(new_repo); rec="$work/rec-autocompact-$preset-${value:-empty}"
+      e=$(CLAUDE_CODE_AUTO_COMPACT_WINDOW="$value" RLOOP_FAKE_PICK=ok:task \
+        RLOOP_FAKE_ROUNDS='impl=ok;panel=all;judge=done' RLOOP_FAKE_MANAGER_CUT='' \
+        run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager "$preset" --implementer "$preset")
+      quota_assert CNF-10 "autocompact $preset '$value': exit $e" test "$e" = 0
+      for ext in argv env; do
+        quota_assert CNF-10 "autocompact $preset: not 11 $ext records" test "$(path_count "$rec"/*."$ext")" = 11
+        for tag in manager-0 implementer-1 reviewer-1-fable reviewer-1-opus reviewer-1-astra reviewer-1-sol reviewer-1-grok manager-1 probe-0 probe-1; do
+          want=1; [ "$tag" != probe-1 ] || want=2
+          matching_paths "$rec"/*-"$tag.$ext"
+          quota_assert CNF-10 "autocompact $preset $tag: ${#paths[@]} $ext records, want $want" test "${#paths[@]}" = "$want"
+        done
+      done
+      for f in "$rec"/*.env; do
+        [ -f "$f" ] || continue
+        quota_assert CNF-10 "autocompact $preset $(basename "$f"): override leaked or presence unrecorded" \
+          grep -qxF 'AUTO_COMPACT_WINDOW_SET=' "$f"
+      done
+    done
+  done
+}
+check_autocompact_environment
+
 # AGT-16: PID identity in two otherwise ordinary one-Round Runs.
 # Isolate both the private PATH and the fakes; other items keep their original launchers.
 check_direct_start() {
