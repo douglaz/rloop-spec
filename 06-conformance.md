@@ -126,6 +126,15 @@ different Manager model. Missing required records or values and wrong values fai
 The suite makes no assertion about `BASH_MAX_TIMEOUT_MS` for codex Managers, Implementers,
 Reviewers or Probes. (`AGT-12`, `AGT-13`)
 
+Further one-Round Runs start rloop with exported `CLAUDE_CODE_AUTO_COMPACT_WINDOW`, once
+set to `150000` and once set to an empty value, under each Manager preset with the matching
+Implementer preset. The pick, Implementer, every named Reviewer, judge and every Probe record
+the variable unset. A nonzero Run exit, a missing or extra call, a missing presence record or a
+set variable fails the item. (`AGT-13`)
+
+*Amended 2026-10-29 (`rl-v34y`): check removal of the inherited autocompact override from
+every spawned role, including the Probe, under both presets.*
+
 One further Run inherits exported `SHELLOPTS=braceexpand:hashall:interactive-comments`.
 The pick, Implementer, each named Reviewer, both judge attempts (the first cut, then retried),
 and every Probe record that variable exported and byte-identical to the supplied value.

@@ -21,8 +21,8 @@ Do this now:
 4. Settle what the brief depends on, before writing it:
    - If the task turns on a point the repository's specifications or instructions leave ambiguous or contradictory — two readings that lead to different behaviour — do not choose a reading. That clarification is the specification owner's to make: stop here and write {{FINISHED_FILE}} with `STATUS: blocked`, and below it the document, the passage, the readings, and the clarification you recommend.
    - If the task needs an implementation decision the specifications leave to the implementer — a choice of how, not of what — do not make it alone. Put the question and the options to every adviser — fable, opus, astra and sol — except those this prompt lists below as unable to answer now: skip those, and no other. The four commands, run in this repository, are exactly:
-     claude -p "<your question>" --model claude-fable-5-1 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
-     claude -p "<your question>" --model claude-opus-5-5 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
+     env -u CLAUDE_CODE_AUTO_COMPACT_WINDOW claude -p "<your question>" --model claude-fable-5-1 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
+     env -u CLAUDE_CODE_AUTO_COMPACT_WINDOW claude -p "<your question>" --model claude-opus-5-5 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
      codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6-astra -c model_reasoning_effort=high "<your question>"
      codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6.1-sol -c model_reasoning_effort=xhigh "<your question>"
      Include in every adviser's question: "Do not modify the repository: no edits, no commits, no checkout, stash, reset or clean. Running the build or the tests is fine." Reading files is permitted.
@@ -66,6 +66,9 @@ evidence, cost and live-observation limit.*
 `opus` does (`AGT-8`); its model, the other adviser commands and Consultation policy are
 unchanged.*
 
+*Amended 2026-10-29 (`rl-v34y`): both adviser commands remove the interactive autocompact
+override at invocation, including when the Manager's shell reintroduces it from a profile.*
+
 ## The Manager's judgment
 
 **PRM-2** The judge prompt MUST be:
@@ -78,8 +81,8 @@ A file holding `REVIEWER FAILED` is a Reviewer that crashed or timed out; one ho
 Review the implementation yourself, then read the feedback. Feedback is advice, not orders: send back only what makes the implementation fail the brief as written, or is a genuine defect. Reject findings that add scope, over-engineer, or ask for machinery the brief does not need. File an issue only for a finding that would change what the software does, what the repository's specifications require, or whether a check can catch a defect: a bug, a missing or contradictory requirement, a test or gate that cannot fail or fails for the wrong reason. Everything else — wording, phrasing, style, formatting, comment accuracy, prose tightening, duplicated explanation — is cosmetic and is never filed; a cheap cosmetic finding inside this Round's scope may be fixed in this Round, and otherwise is listed once in your report in {{FINISHED_FILE}} and dropped. A false statement inside a requirement is a requirement defect and may be filed; a false or imprecise code comment is cosmetic.
 
 Two kinds of question are not yours to answer alone. If this Round surfaced a point the repository's specifications or instructions leave ambiguous or contradictory — two readings that lead to different behaviour — do not choose a reading: choose A below with `STATUS: blocked`, and put the document, the passage, the readings and the clarification you recommend in the report. If it surfaced an implementation decision the specifications leave to the implementer — a choice of how, not of what — that the next brief must settle, before writing it, put the question and the options to every adviser — fable, opus, astra and sol — except those for which a `REVIEWER NOT RUN` file of this Round shows the model could not answer: skip those, and no other. Nothing earlier in this Run excludes an adviser: call again one that did not answer, or that you skipped, in an earlier Consultation. Run the four commands in this repository exactly as follows:
-claude -p "<your question>" --model claude-fable-5-1 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
-claude -p "<your question>" --model claude-opus-5-5 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
+env -u CLAUDE_CODE_AUTO_COMPACT_WINDOW claude -p "<your question>" --model claude-fable-5-1 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
+env -u CLAUDE_CODE_AUTO_COMPACT_WINDOW claude -p "<your question>" --model claude-opus-5-5 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
 codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6-astra -c model_reasoning_effort=high "<your question>"
 codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6.1-sol -c model_reasoning_effort=xhigh "<your question>"
 Include in every adviser's question: "Do not modify the repository: no edits, no commits, no checkout, stash, reset or clean. Running the build or the tests is fine." Reading files is permitted.
@@ -118,6 +121,9 @@ evidence, cost and live-observation limit.*
 *Amended 2026-10-24 (`rl-e7uq`): the `opus` adviser now runs at `high` effort, as Reviewer
 `opus` does (`AGT-8`); its model, the other adviser commands and Consultation policy are
 unchanged.*
+
+*Amended 2026-10-29 (`rl-v34y`): both adviser commands remove the interactive autocompact
+override at invocation, including when the Manager's shell reintroduces it from a profile.*
 
 ## The Implementer
 

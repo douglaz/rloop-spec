@@ -268,12 +268,16 @@ the table's conditions:
 
 | variable | value |
 |---|---|
+| `CLAUDE_CODE_AUTO_COMPACT_WINDOW` | rloop MUST remove this variable from every agent process and the Probe, even when inherited with an empty value; it MUST NOT set a replacement value. |
 | `RLOOP_ROLE` | `manager`, `implementer`, `reviewer` or `probe` |
 | `RLOOP_ROUND` | the Round number; `0` for the pick |
 | `RLOOP_RUN` | the Run's number within its Sequence; `1` for a lone Run |
 | `RLOOP_RUN_DIR` | the Run Directory's absolute path |
 | `RLOOP_REVIEWER` | `fable`, `opus`, `astra`, `sol` or `grok`; set for Reviewers only |
 | `BASH_MAX_TIMEOUT_MS` | For every Manager call (pick and every judge) under `--manager claude`, rloop MUST set this to `--manager-timeout` in milliseconds (seconds multiplied by 1000), overriding any inherited value, regardless of the selected model. Every other call receives whatever rloop inherited unchanged. |
+
+*Amended 2026-10-29 (`rl-v34y`): remove the interactive autocompact override so each model
+uses its automatic window. The exception is in the environment table.*
 
 *Real agents ignore the `RLOOP_*` variables — the prompt tells a model where things are. The
 Conformance Suite's fakes read those to find their scripted part, which is what makes the suite
