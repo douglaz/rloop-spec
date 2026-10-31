@@ -4,5 +4,5 @@ exec
 -m
 gpt-6.1-sol
 -c
-model_reasoning_effort=xhigh
+model_reasoning_effort=high
 <review prompt>

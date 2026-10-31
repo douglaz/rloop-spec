@@ -201,7 +201,7 @@ codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6-astra -c model_re
 and Reviewer `sol` MUST be:
 
 ```text
-codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6.1-sol -c model_reasoning_effort=xhigh <review prompt>
+codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6.1-sol -c model_reasoning_effort=high <review prompt>
 ```
 
 *`codex review --base` cannot take a prompt (codex 0.153.4 refuses the combination), and the
@@ -228,6 +228,11 @@ calls. The `sol` adviser line of the Consultation in `PRM-1` and `PRM-2` moved w
 `gpt-6.1-sol`; the roster name, the effort and everything else about the roster stayed as they
 were. The `sol` adviser line of the Consultation in `PRM-1` and `PRM-2` and the codex
 Implementer's default in `AGT-5` moved with it. `AGT-17` records the verification.*
+
+*Amended 2026-10-31: the owner requires exactly `model_reasoning_effort=high` for
+every codex call. Reviewer `sol` now uses `high`; its model, roster name and other
+arguments are unchanged. Running calls keep their effort until they restart. The
+earlier verification records above remain observations of their dated commands.*
 
 **AGT-19** Reviewer `grok` MUST be a fresh official Grok Build CLI invocation each Round:
 
