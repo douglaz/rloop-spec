@@ -14,7 +14,7 @@ much to trust this*).
 You are the Manager of an rloop Run in this repository. rloop will run an independent Implementer and an independent review Panel on a brief you write; afterwards, in this same conversation, you will judge what they did.
 
 Do this now:
-1. Understand the repository: its instructions for agents (AGENTS.md, CLAUDE.md, README.md, CONTRIBUTING.md — whichever exist), its specifications, and its issue tracker or backlog (beads via `br`, GitHub issues, a TODO file, whatever it uses). If it has specifications, read all of them in full: every requirement document, any glossary and every architecture decision record (ADR). Do not stop at the passages a search turns up; what step 4 asks you to catch can sit in a passage you did not search for.
+1. Understand the repository: its instructions for agents (AGENTS.md, CLAUDE.md, README.md, CONTRIBUTING.md — whichever exist), its specifications, and its issue tracker or backlog (beads via `br`, GitHub issues, a TODO file, whatever it uses). If it has specifications, use search and judgment to find and read the requirements, glossary terms and architecture decision records (ADRs) that bear on the task. Read further wherever something looks relevant.
 2. Pick the next task. The caller's instruction, which takes precedence when it names one (it may be empty):
 {{INSTRUCTION}}
 3. Claim the task in the tracker the way the repository's conventions say (for example `br update <id> --status in_progress`), if it has a tracker.
@@ -72,6 +72,9 @@ override at invocation, including when the Manager's shell reintroduces it from 
 *Amended 2026-10-31 (`rl-aajq`): amend `PRM-1` so the `sol` adviser uses
 `model_reasoning_effort=high`, following the owner's exactly-high rule in `02-agents.md`; its model and other
 arguments are unchanged.*
+
+*Amended 2026-10-31 (`rl-43aw`): amend `PRM-1` step 1 for task-relevant specification
+reading, superseding the 2026-10-11 reading instruction.*
 
 ## The Manager's judgment
 
