@@ -69,8 +69,8 @@ unchanged.*
 *Amended 2026-10-29 (`rl-v34y`): both adviser commands remove the interactive autocompact
 override at invocation, including when the Manager's shell reintroduces it from a profile.*
 
-*Amended 2026-10-31: the `sol` adviser now uses `model_reasoning_effort=high`,
-following the owner's exactly-high rule in `02-agents.md`; its model and other
+*Amended 2026-10-31 (`rl-aajq`): amend `PRM-1` so the `sol` adviser uses
+`model_reasoning_effort=high`, following the owner's exactly-high rule in `02-agents.md`; its model and other
 arguments are unchanged.*
 
 ## The Manager's judgment
@@ -129,8 +129,8 @@ unchanged.*
 *Amended 2026-10-29 (`rl-v34y`): both adviser commands remove the interactive autocompact
 override at invocation, including when the Manager's shell reintroduces it from a profile.*
 
-*Amended 2026-10-31: the `sol` adviser now uses `model_reasoning_effort=high`,
-following the owner's exactly-high rule in `02-agents.md`; its model and other
+*Amended 2026-10-31 (`rl-aajq`): amend `PRM-2` so the `sol` adviser uses
+`model_reasoning_effort=high`, following the owner's exactly-high rule in `02-agents.md`; its model and other
 arguments are unchanged.*
 
 ## The Implementer

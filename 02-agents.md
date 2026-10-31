@@ -229,8 +229,8 @@ calls. The `sol` adviser line of the Consultation in `PRM-1` and `PRM-2` moved w
 were. The `sol` adviser line of the Consultation in `PRM-1` and `PRM-2` and the codex
 Implementer's default in `AGT-5` moved with it. `AGT-17` records the verification.*
 
-*Amended 2026-10-31: the owner requires exactly `model_reasoning_effort=high` for
-every codex call. Reviewer `sol` now uses `high`; its model, roster name and other
+*Amended 2026-10-31 (`rl-aajq`): amend `AGT-10`: the owner requires exactly
+`model_reasoning_effort=high` for every codex call. Reviewer `sol` now uses `high`; its model, roster name and other
 arguments are unchanged. Running calls keep their effort until they restart. The
 earlier verification records above remain observations of their dated commands.*
 
