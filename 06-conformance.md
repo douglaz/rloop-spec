@@ -597,7 +597,7 @@ presets and their models off
 `astra`, `sol`, `grok` and the two Seats because no model of theirs is in `RUN-21`'s table. With
 `Current week (Opus): 100% used` instead, the verdicts swap: `opus` alone reads `unavailable`.
 *Both rows are asserted because one row cannot tell a working table from a rule that hardcodes
-`fable`.* With `--implementer claude --implementer-model claude-fable-5-1`, the Manager's model
+`fable`.* With `--implementer claude --implementer-model claude-fable-5-2`, the Manager's model
 off the table and the
 `Fable` report, `implementer` reads `unavailable` and `manager` `unknown`, and the Run still
 reaches its judge and ends 0. *The record is per Seat, read from each Seat's own model rather than
@@ -670,8 +670,8 @@ both `manager` and `implementer`, since both Seats are `unavailable` and `RUN-22
 `the Seat — both, when both are`; the Run Directory holds exactly `probe-pick.out`,
 `probe-pick.err` and `probe-pick.md`; and `probe-pick.md` reads `manager:unavailable`, `implementer:unavailable`,
 `fable:unknown`, `opus:unavailable`, then `unknown` for `astra`, `sol` and `grok`. With `--manager-model
-claude-fable-5-1`, the Implementer's model off the table and `Current week (Fable): 100% used`
-instead, the Run is refused the same way and standard error names `claude-fable-5-1`. The pick is
+claude-fable-5-2`, the Implementer's model off the table and `Current week (Fable): 100% used`
+instead, the Run is refused the same way and standard error names `claude-fable-5-2`. The pick is
 scripted to fail. Here and in `CNF-29` and `CNF-30`, standard error names a Seat when the Seat's
 word stands whole in what is left of standard error once every `manager-model` and
 `implementer-model` is deleted together with any dashes before it, then `--manager` and
@@ -720,8 +720,8 @@ Implementer's at the claude preset's default and the probe before the pick repor
 Manager, Implementer or Reviewer argument list recorded, standard output empty, the Run Directory
 holding the three `probe-pick.*` files alone, `probe-pick.md` reading `manager:unknown` and
 `implementer:unavailable`, and standard error naming `implementer`, `claude-opus-5-5` and the
-probe's line. With `--implementer-model claude-fable-5-1` and `Current week (Fable): 100% used`
-instead, the Run is refused the same way and standard error names `claude-fable-5-1`. Of standard
+probe's line. With `--implementer-model claude-fable-5-2` and `Current week (Fable): 100% used`
+instead, the Run is refused the same way and standard error names `claude-fable-5-2`. Of standard
 error the item asserts presence only. `RUN-22` states `a message naming the Seat — both, when both
 are — its model, and the reset the probe reported`, and bounds the stream no further; `RUN-10`
 states `Progress and diagnostics go to standard error and their wording is not specified`. The pick
@@ -756,9 +756,9 @@ and standard output is empty; and standard error names `manager`, `claude-opus-5
 `Opus` line, reset and all, since `RUN-22` exits `with the message above for the Manager's Seat`,
 which names the reset by `quoting verbatim every line that establishes that Seat's exhaustion`. With
 Round 1's probe reporting `Opus` instead, the Run exits 2 with no `manager-judge-1.out`, and
-standard error names the same three. With `--manager-model claude-fable-5-1` and `Current week
+standard error names the same three. With `--manager-model claude-fable-5-2` and `Current week
 (Fable): 100% used` instead, both Runs go the same way with `fable` in `opus`'s place, and standard
-error names `claude-fable-5-1`. The withheld judge is scripted to fail. *The missing judge is the
+error names `claude-fable-5-2`. The withheld judge is scripted to fail. *The missing judge is the
 assertion: a Run whose judge was called and failed also exits 2. The second pair of Runs is there
 because one row cannot tell a Seat read from its own model from a rule that hardcodes `opus`, and a
 per-Seat or per-site lookup can get one Seat's row right and another's wrong.*
@@ -806,7 +806,7 @@ probe before the pick reporting
 is called — and ends 0, and `probe-pick.md` reads `manager:unknown`, `implementer:unknown` and
 the Reviewers' lines `CNF-25` and `CNF-27` give those reports. With both Seats using claude presets
 explicitly on
-`claude-fable-5-1`, matching the family in the malformed, failed and timed-out reports, the Run
+`claude-fable-5-2`, matching the family in the malformed, failed and timed-out reports, the Run
 starts and ends 0, every Seat `unknown` in `probe-pick.md`, when the probe before the pick writes
 nothing; writes no usage line; reports only `Current week (all models): 100% used`; reports only
 families outside the table, including Grok and its model; reports `99% used`; writes `Current week (Fable): 100% used` other
