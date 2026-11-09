@@ -76,6 +76,7 @@ is a green check that asserts nothing.* (`RUN-11`)
 unknown option; `--max-rounds 0`; `--max-rounds x`; `--reviewer-timeout -1`;
 `--reviewer-timeout 0`; `--probe-timeout 0`; `--kill-after 0`; two `INSTRUCTION` arguments;
 `--auto --base HEAD`; `--auto --run-dir d`; `--auto --run-dir ''`, the value empty;
+`--auto --no-close`; `--no-close=x`;
 `--implementer-model --max-rounds 1`, the value swallowed; `--=x`; `--auto=1`; `--help=x`;
 `--version=x`; `--manager gpt-6-astra`, a value outside the preset's set and the mistake a caller
 makes who means `--manager codex --manager-model gpt-6-astra`. `--version` and `--help` exit 0
@@ -84,6 +85,8 @@ pick and exits 0; with nine scripted done, it stops after exactly eight picks an
 
 The quota-option arms also reject zero, missing and nonnumeric values for each quota option,
 with exit 2, a diagnostic and nothing spawned. (`AGT-1`, `AGT-2`, `SEQ-3`, `SEQ-5`, `SEQ-6`)
+
+*Amended 2026-11-09 (`rl-8pam`): add `--auto --no-close` and `--no-close=x`.*
 
 **CNF-6** Outside a git working tree the executable exits 2 and spawns nothing. (`RUN-1`)
 
@@ -194,8 +197,9 @@ evidence and verification.*
 Directory's paths, the base hash, the Round, `--max-rounds`, the caller's instruction (given and
 absent), the dirty-at-start list (a tree with one modified and one untracked path, and a clean
 tree), the unavailable list, empty in each of these Runs since no Probe before the pick here
-reports anything exhausted (`CNF-32` asserts it populated, and empty in a Run of its own), and the
-five Feedback File paths in order. One further Run gives an instruction holding placeholder names
+reports anything exhausted (`CNF-32` asserts it populated, and empty in a Run of its own), the
+tracker clause as it renders without `--no-close` (`CNF-38` asserts the other), and the five
+Feedback File paths in order. One further Run gives an instruction holding placeholder names
 (`{{TASK_FILE}}`, `{{UNAVAILABLE}}`, `{{ROUND}}`) together with a backslash, `&` and `%s`, and a
 `--run-dir` path holding `{{INSTRUCTION}}`; its pick, Implementer and judge prompts equal their
 fixtures with each value's bytes unchanged, as `PRM-6` renders them. A further Run, the one
@@ -208,6 +212,13 @@ for byte. Each rendered prompt ends with `PRM-5`'s sentence. (`PRM-1`, `PRM-2`, 
 *Amended 2026-10-13 (`rl-9uu1`): the hostile-value prompt Run explicitly selects claude, while the
 omitted-preset and whitespace-path Runs use codex; prompt comparisons remain byte-exact. `F27`
 records the decision's evidence and verification.*
+
+**CNF-38** With `--no-close`, in a Run of this item's own that judges `done` in one Round and ends
+0, the judge's prompt argument equals `PRM-2`'s fixture rendered as in `CNF-12` with
+`{{TRACKER_CLOSE}}` as `PRM-6` gives it under `--no-close`, and the pick's and the Implementer's
+equal their fixtures rendered as in `CNF-12`, compared byte for byte. *`CNF-12` alone passes an
+Implementation that ignores the flag, and this item alone passes one that always renders it.*
+(`AGT-1`, `PRM-2`, `PRM-6`)
 
 **CNF-13** `{{BASE}}` is the full hash of `HEAD` at start, and with `--base <ref>` the full hash of
 that ref; a commit the fake Implementer makes during Round 1 does not change the base rendered

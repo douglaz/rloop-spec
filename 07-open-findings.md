@@ -614,7 +614,7 @@ both of `RUN-21`'s call sites, and `CNF-34` gained a watching straggler at each.
 and the mutant is red. Rebuilt against rloop-bash `18c8807`, gated on `RLOOP_FAKE_WATCH`'s value
 beginning `probe:` — what confines it to the two new Runs, where a gate on the variable merely being
 set would mutate the Checkpoint arm too, whose value is `implementer:rejected-1-task.md`
-(`conformance/run:906`) — and with the wait loop of that executable's `reap` inlined rather than
+(`conformance/run:933`) — and with the wait loop of that executable's `reap` inlined rather than
 reordered so the verdicts still see the status the reaping sets, it gives `[probe-0 watch: the
 probe's child saw probe-pick.md, so its group outlived the call and ran through the record]` and the
 same bracket for `probe-1` and `probe-1.md` as the item's whole detail, with every other verdict
@@ -631,7 +631,7 @@ reading a call's output leaves it no file to find, so a read taken before the re
 after look the same to it. The witness for the read is a straggler that *writes* into the capture
 `DIR-4` has the probe's standard output reach `entire and unmodified` — a line the reader acts on,
 since an inert one changes no verdict — and `CNF-34` gained one Run of it, at the probe before the
-pick (`conformance/run:845-887`). `RUN-22` is what makes the read observable there: it has rloop
+pick (`conformance/run:872-914`). `RUN-22` is what makes the read observable there: it has rloop
 `exit 2 without spawning any agent` on that probe's verdicts, so an executable that derives them
 from bytes the straggler's line has not reached yet calls the pick and runs on. The knob is
 `RLOOP_FAKE_WRITE_STDOUT`, which had only a role and a fixed line and now takes a first-write delay
@@ -989,7 +989,7 @@ it on whitespace`.
 one executable that handles newlines does not extend that obligation to other Implementations.
 The suite now collects quoted globs into arrays, filters unmatched patterns, counts files, and
 selects whole paths in glob order. `spawn_count` (`conformance/run:46`) uses that count;
-`record_of` (`conformance/run:710-716`) retains its missing-record guard. Environment checks also
+`record_of` (`conformance/run:737-743`) retains its missing-record guard. Environment checks also
 reject both absent and duplicate records. Sequence directory selection uses the same arrays;
 the fresh-directory comparison keeps full paths as NUL-separated records. PID and timestamp
 reads, fixed-filename listings and existence-only checks are not full-path selections.
@@ -2874,3 +2874,38 @@ caller-exported `out` defect. `export-shellopts` adds `export SHELLOPTS` after o
 set in the corrected scratch and isolates the absent-export defect. Their full-suite
 verdicts and any co-reds are recorded above. The PID arms make no check that `BASH_ENV`
 itself reaches a call unchanged; BE-strip's result records that remaining limit.
+
+## F31 — `--no-close`: the caller closes the task (open 2026-11-09)
+
+The owner's decision of 2026-11-09, tracked by `rl-8pam`, adds `--no-close` (`AGT-1`): "an rloop
+--no-close change made as one rloop Run". It is for a caller that reviews each Run's commits itself
+before they go further. Until then `PRM-2`'s option A said `close the task in the tracker if it has
+one`, so the task was closed in the Run's own commit, before the review that decides whether it is
+done. With the flag, `{{TRACKER_CLOSE}}` renders as `do not close the task in the tracker: whoever
+started this Run closes it after reviewing this Run's commits` (`PRM-6`). Without the flag every
+prompt renders as before, byte for byte (`CNF-12`); with it, only the judge's prompt changes
+(`PRM-6`, `CNF-38`).
+
+Rejected on the way:
+
+- **The caller takes the Manager's place,** with rloop running only the Implementer and the Panel
+  for each Round. That needs a second mode of the Run, and a Run Directory used by more than one
+  call of rloop, where `DIR-3` says `A Run Directory MUST be used by exactly one Run. There is no
+  flag to reuse one.` and the non-goals say `A Run that failed is inspected, not resumed.`
+  (`00-overview.md`). It also changes `the Lean model that owns the decision table` (`ADR-0002`),
+  makes the author of the instruction the judge of its result, and removes the pick: in the caller's
+  records, 10 of 18 blocks that were genuine questions came at the pick, before any Implementer was
+  paid.
+- **Telling the Manager in the instruction to leave the task open,** with no change here. That
+  contradicts option A's fixed clause, which the Manager reads after the instruction, so which one
+  it obeys would be its own call in each Run.
+
+Whether the flag may be given with `--auto`, and why, is `SEQ-3`'s.
+
+Deferred: a clause in `PRM-2` making the caller's instruction the task's governing text, with a
+Reviewer demand beyond it reported as a note in the Finished File rather than sent back unless it is
+a genuine defect or shows the text ambiguous or contradictory. The caller tries it in its own Run
+instructions first, over ten Runs. It comes here as its own reviewed amendment only if the trial
+holds: the Managers followed the paragraph, and no note those Runs leave was a genuine defect.
+
+Still open: no live Run has used `--no-close` yet.

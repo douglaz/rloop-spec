@@ -18,6 +18,7 @@ rloop [OPTIONS] [INSTRUCTION]
   --implementer-model MODEL    the Implementer's model                   (default: the preset's, AGT-5)
   --base REF                   the ref Reviewers diff against                  (default: HEAD at start)
   --run-dir PATH               the Run Directory, which must not exist yet     (default: DIR-2)
+  --no-close                   tell the judge to leave the task open in the tracker (PRM-6)
   --max-rounds N               Rounds per Run                                  (default: 10)
   --max-runs N                 Runs per Sequence                               (default: 20)
   --manager-timeout SECONDS    per Manager call                                (default: 3600)
@@ -41,6 +42,10 @@ absent, the Manager picks on its own. A long option that takes a value MAY also 
 *Amended 2026-10-13 (`rl-9uu1`): omitting `--implementer` selects codex; the selected
 preset's model default remains `AGT-5`'s. `F27` records the owner's evidence and verification.*
 
+*Amended 2026-11-09 (`rl-8pam`): add `--no-close`, for a caller that closes the task itself after
+reviewing the Run's commits. What it changes in the judge prompt is `PRM-6`'s; `AGT-2` and `SEQ-3`
+were amended with it; `F31` records the owner's decision.*
+
 **AGT-2** An unknown option, a missing or non-numeric value, a value outside the set a preset flag
 names — `--manager` and `--implementer` each take `claude` or `codex` and nothing else — a number
 below 1 for `--max-rounds`, `--max-runs`, a timeout, `--kill-after`, `--quota-wait` or
@@ -48,7 +53,7 @@ below 1 for `--max-rounds`, `--max-runs`, a timeout, `--kill-after`, `--quota-wa
 message on standard error and nothing spawned. A value is missing when its option is the last
 argument or when the next argument begins with `--`; a flag never becomes another flag's value. A
 number is a string of decimal digits read in base ten, so `08` is `8`. A value given with `=` to
-`--auto`, `--help` or `--version`, which take none, is an unknown option. *A usage error found after
+`--auto`, `--no-close`, `--help` or `--version`, which take none, is an unknown option. *A usage error found after
 the first agent call has already spent money.* *The preset clause is stated here from 2026-09-20
 with `--manager`; it was always true of `--implementer`, which named its two values in `AGT-1` and
 nowhere said what a third does.* *Every duration's minimum is 1 from 2026-09-24; until then a
