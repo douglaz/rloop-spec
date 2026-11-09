@@ -111,7 +111,7 @@ these readings establishes exhaustion:
 
 | model | family |
 |---|---|
-| `claude-fable-5-1` | `Fable` |
+| `claude-fable-5-2` | `Fable` |
 | `claude-opus-5-5` | `Opus` |
 
 - A line of its standard output **begins** with `Current session: <n>% used`, where `<n>` is
@@ -154,6 +154,9 @@ Probe parsing and availability policy were unchanged by that amendment.*
 *Amended 2026-10-08 (`rl-8ee8`): add the account session reading to `RUN-21`, with different
 thresholds at the two call sites. `F23` records the owner's evidence and the successful Runs the
 pick threshold would have refused.*
+
+*Amended 2026-11-09: amend `RUN-21` so the Fable row names `claude-fable-5-2`; the family,
+Probe parsing and availability policy are unchanged.*
 
 **RUN-22** When `probe-pick.md` records the Manager's Seat `unavailable`, or the Implementer's Seat
 `unavailable`, rloop MUST exit 2 without spawning any agent, and MUST write to standard error a

@@ -169,7 +169,7 @@ operator's CLI configuration. `F22` records the owner's verification.*
 **AGT-7** Reviewer `fable` MUST be:
 
 ```text
-claude -p <review prompt> --model claude-fable-5-1 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
+claude -p <review prompt> --model claude-fable-5-2 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
 ```
 
 **AGT-8** Reviewer `opus` MUST be:
@@ -177,6 +177,9 @@ claude -p <review prompt> --model claude-fable-5-1 --effort high --dangerously-s
 ```text
 claude -p <review prompt> --model claude-opus-5-5 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
 ```
+
+*Amended 2026-11-09: amend `AGT-7` so Reviewer `fable` uses `claude-fable-5-2`; its roster
+name, `high` effort and other arguments are unchanged. `AGT-17` records the verification.*
 
 *Amended 2026-10-08 (`rl-4i7t`): Reviewer `opus` now uses `claude-opus-5-5`; its roster name,
 `xhigh` effort and other arguments are unchanged.*
@@ -425,6 +428,14 @@ catalog, while configured workflow/MCP tools and hooks remained discoverable. No
 captured, and CLI metadata is no provider-side attestation. No whole-roster verification or
 integrated five-Reviewer Round follows from these partial observations. Implementation integration, its failure/timeout handling
 and a real five-Reviewer Round remain dependent-Run work before the catch-up push (`rl-ytgu`).*
+
+*Amended 2026-11-09: `claude-fable-5-2` was verified at `high` on Claude Code 2.1.293 with the
+`AGT-7` arguments, `Reply with exactly: ok`, stdin from `/dev/null` and a 300-second bound; it
+exited 0 with `ok` as its whole standard output. Standard error carried the CLI's
+`[claude-code:unrecognized_model]` warning: that version's model catalog does not describe
+`claude-fable-5-2`, and the warning says auto-compact then keeps the session within 200k tokens.
+That cap is the CLI's statement, not measured here. This was a partial verification with a trivial
+prompt, not whole-roster, deny-list, session-resumption or real-task verification.*
 
 A fake agent accepts any flag, so the Conformance
 Suite cannot tell a wrong flag from a right one; a flag that a newer CLI rejects is found only by a
