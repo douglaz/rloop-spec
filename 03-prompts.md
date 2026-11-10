@@ -101,7 +101,7 @@ Before any adviser call, set a maximum duration of at least 600 seconds for each
 
 Then do exactly one of:
 
-A. The task is done, or cannot be completed, or needs a clarification of the specifications. File only the follow-up issues the rule above says to file; close the task in the tracker if it has one. Make sure the accepted work is in history and the tree is clean: commit what is not yet committed, tracker files included, following the repository's commit conventions — no tool or assistant attribution, no squashing or rewriting of history, no empty commit. Never edit code to get a commit past a hook or signing, and never bypass either: if a commit needs a code change, that is a finding — choose B instead. Do not commit work you did not accept. These paths were already modified or untracked before this Run started and are not yours to commit:
+A. The task is done, or cannot be completed, or needs a clarification of the specifications. File only the follow-up issues the rule above says to file; {{TRACKER_CLOSE}}. Make sure the accepted work is in history and the tree is clean: commit what is not yet committed, tracker files included, following the repository's commit conventions — no tool or assistant attribution, no squashing or rewriting of history, no empty commit. Never edit code to get a commit past a hook or signing, and never bypass either: if a commit needs a code change, that is a finding — choose B instead. Do not commit work you did not accept. These paths were already modified or untracked before this Run started and are not yours to commit:
 {{DIRTY_AT_START}}
 Then write {{FINISHED_FILE}} with a first line of exactly `STATUS: done` or exactly `STATUS: blocked`, followed by your report: what was done; what is committed and what is left in the tree; the base commit {{BASE}} and the commit HEAD names now; your notes and questions for whoever started this Run.
 
@@ -143,6 +143,10 @@ arguments are unchanged.*
 *Amended 2026-11-09: amend `PRM-2` so the `fable` adviser uses `claude-fable-5-2`, as Reviewer
 `fable` does (`AGT-7`); its effort, the other adviser commands and Consultation policy are
 unchanged.*
+
+*Amended 2026-11-09 (`rl-8pam`): option A's tracker clause is now `{{TRACKER_CLOSE}}`. Without
+`--no-close` it renders as the clause it replaced, so the prompt is unchanged byte for byte; with
+it, as `do not close the task in the tracker` (`PRM-6`). `F31` records the owner's decision.*
 
 ## The Implementer
 
@@ -206,9 +210,14 @@ need one belongs to the Manager's judgment.
 | `{{FEEDBACK_FILES}}` | absolute paths of the Round's five Feedback Files, one per line, in the order `fable`, `opus`, `astra`, `sol`, `grok`, no trailing newline |
 | `{{DIRTY_AT_START}}` | the dirty-at-start list (`RUN-3`): `git status --porcelain`'s lines verbatim, one per line, no trailing newline; the empty string when the tree was clean |
 | `{{UNAVAILABLE}}` | the Reviewer Seats `probe-pick.md` records `unavailable` (`RUN-21`), each as its Seat name alone — `fable` or `opus` — one per line, in that record's order, no trailing newline; the empty string when it records none |
+| `{{TRACKER_CLOSE}}` | without `--no-close` (`AGT-1`), exactly `close the task in the tracker if it has one`; with it, exactly `do not close the task in the tracker, and reopen it if this Run's work closed it: whoever started this Run closes it after reviewing this Run's commits` |
 
 *A list rendered one per line into a line of its own keeps the block readable whether it has zero
 or forty entries, and an empty list leaves an empty line, which a model reads as "none".*
+
+*`{{TRACKER_CLOSE}}` is a value, not an `if` in the template: rloop substitutes one of two fixed
+strings chosen by its own command line, as it substitutes `{{INSTRUCTION}}` from its argument, and
+the Manager decides nothing about it. It is stated from 2026-11-09 (`rl-8pam`).*
 
 *The one-pass sentence is stated here from 2026-09-23, after a review of rloop-bash found its
 renderer substituting the placeholders one after another, each over the whole text so far, so that

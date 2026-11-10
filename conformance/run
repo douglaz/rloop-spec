@@ -148,6 +148,8 @@ usage_error a b
 usage_error --auto --base HEAD
 usage_error --auto --run-dir "$repo/d"
 usage_error --auto --run-dir ''
+usage_error --auto --no-close
+usage_error --no-close=x
 usage_error --implementer-model --max-rounds 1
 usage_error --=x
 usage_error --auto=1
@@ -303,7 +305,7 @@ render() { # render <template file> ; placeholders from variables P_*, one pass 
   while [[ $t == *\{\{*\}\}* ]]; do
     out+="${t%%\{\{*}"; t="${t#*\{\{}"; name="${t%%\}\}*}"; t="${t#*\}\}}"
     case $name in
-      INSTRUCTION|TASK_FILE|FINISHED_FILE|RUN_DIR|BASE|ROUND|MAX_ROUNDS|IMPLEMENTER_LOG|FEEDBACK_FILES|DIRTY_AT_START|UNAVAILABLE)
+      INSTRUCTION|TASK_FILE|FINISHED_FILE|RUN_DIR|BASE|ROUND|MAX_ROUNDS|IMPLEMENTER_LOG|FEEDBACK_FILES|DIRTY_AT_START|UNAVAILABLE|TRACKER_CLOSE)
         v="P_$name"; out+="${!v}" ;;
       *) out+="{{$name}}" ;;
     esac
@@ -340,6 +342,10 @@ $repo/run/feedback-1-grok.md"
 P_DIRTY_AT_START=" M README
 ?? untracked.txt"
 P_UNAVAILABLE=""
+# PRM-6's two values; every Run but CNF-38's renders the first
+tracker_close_default="close the task in the tracker if it has one"
+tracker_close_no_close="do not close the task in the tracker, and reopen it if this Run's work closed it: whoever started this Run closes it after reviewing this Run's commits"
+P_TRACKER_CLOSE="$tracker_close_default"
 ok=1; detail=""; prompt_ok=1; prompt_detail=""
 [ "$e" = 0 ] || { ok=0; detail="$detail [run 1: exit $e]"; }
 # The record directory and the tag, not one glob string: a glob passed as a parameter has to be
@@ -513,6 +519,27 @@ e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_NO_THREAD_ID=1 run_rloop "$repo" "$rec" -
 ls "$rec"/*-implementer-*.argv >/dev/null 2>&1 && { ok=0; detail="$detail [a Round ran after a pick reporting no id]"; }
 [ -d "$repo/run" ] || { ok=0; detail="$detail [the Run Directory was not kept]"; }
 if [ "$ok" = 1 ]; then verdict CNF-23 ok "a codex Manager Run of two Rounds ends 0 done; the session file holds the reported thread_id, every judge call carries it, the pick's output is kept entire, and a pick reporting none exits 2"; else verdict CNF-23 fail "$detail"; fi
+
+# --- CNF-38: --no-close renders PRM-6's other tracker clause into the judge prompt alone -------------------
+repo_nc="$(new_repo)"; rec_nc="$work/rec-no-close"; ok=1; detail=""; prompt_ok=1; prompt_detail=""
+base_nc=$(cd "$repo_nc" && git rev-parse HEAD)
+e_nc=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" run_rloop "$repo_nc" "$rec_nc" --run-dir "$repo_nc/run" --no-close)
+[ "$e_nc" = 0 ] || { ok=0; detail="$detail [exit $e_nc]"; }
+sid_nc=$(cat "$repo_nc/run/session" 2>/dev/null)
+P_INSTRUCTION=""; P_TASK_FILE="$repo_nc/run/task.md"; P_FINISHED_FILE="$repo_nc/run/finished.md"; P_RUN_DIR="$repo_nc/run"
+P_BASE="$base_nc"; P_ROUND=1; P_MAX_ROUNDS=10; P_IMPLEMENTER_LOG="$repo_nc/run/implementer-1.out"
+P_FEEDBACK_FILES="$repo_nc/run/feedback-1-fable.md
+$repo_nc/run/feedback-1-opus.md
+$repo_nc/run/feedback-1-astra.md
+$repo_nc/run/feedback-1-sol.md
+$repo_nc/run/feedback-1-grok.md"
+P_DIRTY_AT_START=""; P_UNAVAILABLE=""
+check_call "$rec_nc" manager-0 "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid_nc" claude-opus-5-5 "pick (--no-close)"
+check_call "$rec_nc" implementer-1 "$fx/argv/AGT-6.txt" "$fx/prompts/PRM-3.txt" "$sid_nc" gpt-6.1-sol "implementer (--no-close)"
+P_TRACKER_CLOSE="$tracker_close_no_close"
+check_call "$rec_nc" manager-1 "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid_nc" claude-opus-5-5 "judge (--no-close)"
+P_TRACKER_CLOSE="$tracker_close_default"
+if [ "$ok" = 1 ] && [ "$prompt_ok" = 1 ]; then verdict CNF-38 ok "with --no-close the judge prompt renders the leave-open tracker clause and the pick and Implementer prompts are unchanged"; else verdict CNF-38 fail "$detail $prompt_detail"; fi
 
 # --- CNF-13: the base ---------------------------------------------------------------------------------
 repo="$(new_repo)"; rec="$work/rec-base"

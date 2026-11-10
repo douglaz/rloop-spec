@@ -16,10 +16,13 @@ Manager was always meant to read those.*
 unchanged. *An instruction naming one task — "implement br-42" — ends the Sequence cleanly: the
 second Run finds it done and goes idle. No special case.*
 
-**SEQ-3** `--auto` MUST be a usage error (exit 2, nothing spawned) together with `--base` or with
-`--run-dir`. *`--base` asks for a review of the accumulated branch; a Sequence asks for one task's
-diff per Run; the two contradict. `--run-dir` names one directory and a Sequence needs one per
-Run.*
+**SEQ-3** `--auto` MUST be a usage error (exit 2, nothing spawned) together with `--base`, with
+`--run-dir` or with `--no-close`. *`--base` asks for a review of the accumulated branch; a Sequence
+asks for one task's diff per Run; the two contradict. `--run-dir` names one directory and a
+Sequence needs one per Run. `--no-close` leaves each task for the caller to close after reviewing
+the Run, and a Sequence gives the caller no point between Runs at which to do it: the next pick
+would find the last task still open and could pick it again.* *`--no-close` is refused here from
+2026-11-09 (`rl-8pam`).*
 
 ## Between Runs
 
