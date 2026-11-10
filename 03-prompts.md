@@ -210,7 +210,7 @@ need one belongs to the Manager's judgment.
 | `{{FEEDBACK_FILES}}` | absolute paths of the Round's five Feedback Files, one per line, in the order `fable`, `opus`, `astra`, `sol`, `grok`, no trailing newline |
 | `{{DIRTY_AT_START}}` | the dirty-at-start list (`RUN-3`): `git status --porcelain`'s lines verbatim, one per line, no trailing newline; the empty string when the tree was clean |
 | `{{UNAVAILABLE}}` | the Reviewer Seats `probe-pick.md` records `unavailable` (`RUN-21`), each as its Seat name alone — `fable` or `opus` — one per line, in that record's order, no trailing newline; the empty string when it records none |
-| `{{TRACKER_CLOSE}}` | without `--no-close` (`AGT-1`), exactly `close the task in the tracker if it has one`; with it, exactly `do not close the task in the tracker: whoever started this Run closes it after reviewing this Run's commits` |
+| `{{TRACKER_CLOSE}}` | without `--no-close` (`AGT-1`), exactly `close the task in the tracker if it has one`; with it, exactly `do not close the task in the tracker, and reopen it if this Run's work closed it: whoever started this Run closes it after reviewing this Run's commits` |
 
 *A list rendered one per line into a line of its own keeps the block readable whether it has zero
 or forty entries, and an empty list leaves an empty line, which a model reads as "none".*

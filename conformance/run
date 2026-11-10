@@ -344,7 +344,7 @@ P_DIRTY_AT_START=" M README
 P_UNAVAILABLE=""
 # PRM-6's two values; every Run but CNF-38's renders the first
 tracker_close_default="close the task in the tracker if it has one"
-tracker_close_no_close="do not close the task in the tracker: whoever started this Run closes it after reviewing this Run's commits"
+tracker_close_no_close="do not close the task in the tracker, and reopen it if this Run's work closed it: whoever started this Run closes it after reviewing this Run's commits"
 P_TRACKER_CLOSE="$tracker_close_default"
 ok=1; detail=""; prompt_ok=1; prompt_detail=""
 [ "$e" = 0 ] || { ok=0; detail="$detail [run 1: exit $e]"; }

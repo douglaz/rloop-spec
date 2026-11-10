@@ -2881,10 +2881,16 @@ The owner's decision of 2026-11-09, tracked by `rl-8pam`, adds `--no-close` (`AG
 --no-close change made as one rloop Run". It is for a caller that reviews each Run's commits itself
 before they go further. Until then `PRM-2`'s option A said `close the task in the tracker if it has
 one`, so the task was closed in the Run's own commit, before the review that decides whether it is
-done. With the flag, `{{TRACKER_CLOSE}}` renders as `do not close the task in the tracker: whoever
-started this Run closes it after reviewing this Run's commits` (`PRM-6`). Without the flag every
-prompt renders as before, byte for byte (`CNF-12`); with it, only the judge's prompt changes
-(`PRM-6`, `CNF-38`).
+done. With the flag, `{{TRACKER_CLOSE}}` renders as `do not close the task in the tracker, and
+reopen it if this Run's work closed it: whoever started this Run closes it after reviewing this
+Run's commits` (`PRM-6`). Without the flag every prompt renders as before, byte for byte
+(`CNF-12`); with it, only the judge's prompt changes (`PRM-6`, `CNF-38`).
+
+The reopen is there because the Implementer follows `the repository's instructions for agents`
+(`PRM-3`), and those instructions or the task brief can tell it to close the task when the work is
+done, so the task could reach the caller's review already closed. The judge writes the Run's last
+tracker state, so the reopen goes in its clause. A Run that ends before the judge chooses option A
+keeps such a closure.
 
 Rejected on the way:
 
