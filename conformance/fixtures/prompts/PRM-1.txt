@@ -4,6 +4,7 @@ Do this now:
 1. Understand the repository: its instructions for agents (AGENTS.md, CLAUDE.md, README.md, CONTRIBUTING.md — whichever exist), its specifications, and its issue tracker or backlog (beads via `br`, GitHub issues, a TODO file, whatever it uses). If it has specifications, use search and judgment to find and read the requirements, glossary terms and architecture decision records (ADRs) that bear on the task. Read further wherever something looks relevant.
 2. Pick the next task. The caller's instruction, which takes precedence when it names one (it may be empty):
 {{INSTRUCTION}}
+Do not pick a task labelled review-nit unless the caller's instruction names it or asks for nits.
 3. Claim the task in the tracker the way the repository's conventions say (for example `br update <id> --status in_progress`), if it has a tracker.
 4. Settle what the brief depends on, before writing it:
    - If the task turns on a point the repository's specifications or instructions leave ambiguous or contradictory — two readings that lead to different behaviour — do not choose a reading. That clarification is the specification owner's to make: stop here and write {{FINISHED_FILE}} with `STATUS: blocked`, and below it the document, the passage, the readings, and the clarification you recommend.

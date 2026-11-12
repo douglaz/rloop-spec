@@ -151,7 +151,12 @@ For whoever runs an Implementation:
   out of scope. Judge the uncommitted work by that feedback and by the repository's own gates,
   then commit or discard it yourself. Two things the Run will not have tidied: a task the Manager
   claimed in the tracker at the pick is **still claimed**, and a follow-up it promised to file
-  when closing the Run was never filed.
+  when closing the Run was never filed. Whoever started the Run files its follow-ups using
+  `PRM-2` option A: `First search the open issues`; file each that `still holds in the repository with the work you accept`.
+  The latest list is in the Run Directory's `task.md`, the last rewritten Task File; at the round
+  cap it is newer than the `task-<r>.md` snapshots (`DIR-5`: `the brief Round r ran against`).
+  After a failed or undecided Manager call, the last Round's findings were never judged and are
+  not in that list: it holds only what the last rewritten brief recorded.
   *An operator did exactly this reconstruction on 2026-09-19 (`F10`) and kept the work: all four
   Reviewers had reported no findings and every gate passed.*
 - **A Run is long.** A Round takes 15–30 minutes, and one Implementer call may run for

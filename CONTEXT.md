@@ -47,6 +47,16 @@ _Avoid_: Slot, role, agent
 One **Reviewer**'s findings for one **Round**, written for the **Manager**. A **Reviewer** that failed leaves what it wrote with rloop's note after it; one that was never called leaves rloop's note alone (`RUN-15`).
 _Avoid_: Review, findings file
 
+**Severity**:
+A finding's rating by impact on the P0–P3 scale (`PRM-4`: `Start each with its severity`).
+The **Manager** judges the rating (`PRM-2`: `Rate every finding yourself on the Reviewers' scale, P0 to P3`).
+_Avoid_: Vote, priority (the tracker's ordering is distinct)
+
+**Follow-up**:
+An accepted finding carried beyond the **Run** for later work; its disposition belongs to
+`PRM-2`: `next brief lists it, and it is filed when the Run ends`.
+_Avoid_: Suggestion, next-Round fix
+
 **Clarification**:
 A change to the repository's specifications or instructions that only their owner can make. A task that needs one ends its **Run** blocked; the **Manager** never chooses a reading.
 _Avoid_: Assumption, interpretation
