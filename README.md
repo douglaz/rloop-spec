@@ -152,7 +152,7 @@ For whoever runs an Implementation:
   then commit or discard it yourself. Two things the Run will not have tidied: a task the Manager
   claimed in the tracker at the pick is **still claimed**, and a follow-up it promised to file
   when closing the Run was never filed. Whoever started the Run files its follow-ups using
-  `PRM-2` option A: `First search the open issues`; file each that `still holds in the work you accept`.
+  `PRM-2` option A: `First search the open issues`; file each that `still holds in the repository with the work you accept`.
   The latest list is in the Run Directory's `task.md`, the last rewritten Task File; at the round
   cap it is newer than the `task-<r>.md` snapshots (`DIR-5`: `the brief Round r ran against`).
   After a failed or undecided Manager call, the last Round's findings were never judged and are
