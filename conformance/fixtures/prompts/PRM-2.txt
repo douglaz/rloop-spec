@@ -28,7 +28,7 @@ Before any adviser call, set a maximum duration of at least 600 seconds for each
 Then do exactly one of:
 
 A. The task is done, or cannot be completed, or needs a clarification of the specifications. If the repository has a tracker, file every follow-up listed in this Run's last brief or accepted in this
-Round that still holds at HEAD, one issue per distinct defect; list in your report, as resolved, each one a
+Round that still holds in the work you accept, committed or not, one issue per distinct defect; list in your report, as resolved, each one a
 later repair removed. First search the open issues; the same defect, already covered by an open
 issue of equal or higher priority, is a comment on that issue instead. Each issue says:
 - what is wrong, with file:line evidence;
