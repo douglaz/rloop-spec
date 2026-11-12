@@ -108,6 +108,13 @@ that would change neither what the software does, what the repository's specific
 a check can catch a defect: wording, phrasing, style, formatting, comment accuracy, prose tightening,
 duplicated explanation. A false statement inside a requirement is P1 when an implementation following it
 would behave wrongly, and otherwise at least P2; a false or imprecise code comment is P3.
+The rest of the Reviewers' scale: P0 is data or money loss, a secret exposed, a security hole, a crash or corruption of
+core function, or the deliverable fundamentally fails the brief. P1 should block acceptance: wrong behaviour in a
+supported case, a requirement of the brief not met, a test or gate that cannot fail or fails for the wrong reason, or
+a requirement the change makes false or contradictory (an implementation that follows the text would behave wrongly,
+or two requirements cannot both hold). Any defect that can lose or misdirect money, expose a secret or corrupt data on
+a reachable path is at least P1. P2 is a real defect that does not block, such as an edge case beyond the brief, a
+missing test the brief does not require, or a statement that is wrong in a way that matters.
 
 Two kinds of question are not yours to answer alone. If this Round surfaced a point the repository's specifications or instructions leave ambiguous or contradictory — two readings that lead to different behaviour — do not choose a reading: choose A below with `STATUS: blocked`, and put the document, the passage, the readings and the clarification you recommend in the report. If it surfaced an implementation decision the specifications leave to the implementer — a choice of how, not of what — that the next brief must settle, before writing it, put the question and the options to every adviser — fable, opus, astra and sol — except those for which a `REVIEWER NOT RUN` file of this Round shows the model could not answer: skip those, and no other. Nothing earlier in this Run excludes an adviser: call again one that did not answer, or that you skipped, in an earlier Consultation. Run the four commands in this repository exactly as follows:
 env -u CLAUDE_CODE_AUTO_COMPACT_WINDOW claude -p "<your question>" --model claude-fable-5-2 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
@@ -186,7 +193,8 @@ it, as `do not close the task in the tracker` (`PRM-6`). `F31` records the owner
 
 *Amended 2026-11-11 (`rl-uoso`): amend `PRM-2` with `Send back only a P0 or P1 defect that this
 Run's changes since {{BASE}} introduce or that leaves the brief unmet`; accepted follow-ups are
-`never repaired in this Run`. Options A and B carry their filing and retention. This amends the
+`never repaired in this Run`. The judge prompt states the Reviewers' scale itself, because the
+Manager never sees `PRM-4`. Options A and B carry their filing and retention. This amends the
 2026-09-30 filing rule (`rl-no-cosmetic-beads-z0q1`), whose note above remains history.
 `ADR-0012` records the owner's rulings; `F32` records the evidence and what remains open.*
 

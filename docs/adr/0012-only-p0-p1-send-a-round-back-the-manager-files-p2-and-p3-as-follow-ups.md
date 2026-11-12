@@ -12,7 +12,9 @@ motivated the change, its limits and the still-open rollout evaluation.
 `PRM-4` owns the scale: `Start each with its severity — [P0], [P1], [P2] or [P3] — then file:line
 evidence and what you verified, by reading or by running.` `PRM-2` owns judgment: `Rate every
 finding yourself on the Reviewers' scale, P0 to P3`; `a Reviewer's tag is evidence, not a
-verdict`. Findings remain advice, as in `ADR-0011`, rather than votes on a Panel question.
+verdict`. Neither agent sees the other's prompt, so `PRM-2` repeats the scale for the Manager:
+`The rest of the Reviewers' scale`. Findings remain advice, as in `ADR-0011`, rather than votes on a
+Panel question.
 
 `PRM-2` owns acceptance: `Send back only a P0 or P1 defect that this Run's changes since
 {{BASE}} introduce or that leaves the brief unmet; a P2, a P3 or a suggestion never sends a
