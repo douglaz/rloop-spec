@@ -2915,3 +2915,94 @@ instructions first, over ten Runs. It comes here as its own reviewed amendment o
 holds: the Managers followed the paragraph, and no note those Runs leave was a genuine defect.
 
 Still open: no live Run has used `--no-close` yet.
+
+## F32 — Finding severity and follow-up work (open 2026-11-11)
+
+`rl-uoso` amends `PRM-1`, `PRM-2` and `PRM-4`; `ADR-0012` records the decision and the owner's
+rulings. `PRM-2` now says `Send back only a P0 or P1 defect that this Run's changes since
+{{BASE}} introduce or that leaves the brief unmet; a P2, a P3 or a suggestion never sends a
+Round back.` For accepted P2/P3, `it is never repaired in this Run, not even when the Round
+goes back for a P0 or P1, the next brief lists it, and it is filed when the Run ends`.
+
+The supplied measurement, `/var/tmp/severity-policy-manager/data.md` (2026-11-11), is a separate
+rating pass over every finding on one P0-P3 rubric. Its scope is 665 Runs and 1,064 Rounds,
+2026-09-18..11-11, with the process experiment excluded. Clusters collect findings from
+Reviewers within one Round, and take the worst finding item's severity. They are not distinct
+defects across Rounds: the same defect seen twice can count twice.
+
+### What the record states
+
+Acted-on means the judgment or next brief required the work.
+
+| Acted-on clusters | Total | P0 | P1 | P2 | P3 | P2/P3 share |
+|---|---|---|---|---|---|---|
+| Findings | 1,520 | 18 | 635 | 619 | 248 | 57% |
+| Suggestions/questions only | 967 | 0 | 13 | 196 | 758 | 99% |
+| Any type | 2,487 | 18 | 648 | 815 | 1,006 | 73% |
+
+Historical acted-on suggestions do not change the new disposition in `PRM-2`: `An accepted
+suggestion is not filed: it is listed once in the report.`
+
+Of 1,064 Rounds, 400 were sent back. H means acted-on P0/P1, L means only P2/P3 acted on,
+and N means nothing acted on. The record separates H findings from H via a suggestion only:
+
+| Sent-back class | Rounds |
+|---|---|
+| H findings | 286 |
+| H via a suggestion only | 7 |
+| L | 106 (26.5% of sent-back Rounds) |
+| N | 1 |
+
+L by Round number was R1 67, R2 25, R3 9 and R4 5; every L Round had a later Round.
+There were 115 Rounds after a Run's first L send-back (10.8% of all Rounds), in 95 Runs.
+Tail lengths were one Round in 78 Runs, two in 15 Runs, three in one and four in one.
+
+H Rounds also carried 1,031 acted-on P2/P3 clusters: 314 P2 findings, 133 P3 findings,
+139 P2 suggestions and 445 P3 suggestions. These added work and review surface without an
+extra Round.
+
+The tail produced 14 acted-on P0/P1 clusters in 9 of the 95 Runs. At least four concern the
+L Round's own repairs. The record has 609 filed clusters of all types, but no measurement of
+their later outcomes.
+
+### Inferences and limits
+
+The 115 tail Rounds estimate what the acceptance rule alone might have removed if the first
+L Round had been accepted. Acted-on proves neither that a repair landed nor that the item
+alone caused a send-back. The Manager's own review, a failed Implementer or a gate could also
+drive one.
+
+An upper bound is that about 9 Runs in 95 (~9%) might have accepted a high defect that a
+later Round caught. Labels cannot settle which defects predated the L Round; at least four
+concern its own repairs. This is not a measured miss rate.
+
+The rating pass overrates unique high items: 29 of 44 verified items held as P0/P1.
+Depending on extrapolation, the true L count could be 106 plus roughly 20–60. No P2 items
+were verified, so under-rating in that direction was not measured. The decline since 10-25
+has confounds: projects changed, and Reviewer effort changed. It does not establish a causal
+effect of a Manager change.
+
+Savings are estimates. The 11-06..11-11 cost window covers 79 Rounds, 74 with all steps in
+the window. All-79 median/mean cost was $14.99/$17.50; complete-74 cost was $15.68/$18.68.
+Median/mean wall time was 75/115 minutes. Applying that window to 115 older tail Rounds
+gives about $1,700–$2,000 at list prices and 145 hours of wall time (95 Implementer hours),
+not verified savings. Historical configurations differ, and overlapping Runs make wall time
+different from elapsed delay.
+
+Filing moves work rather than deleting it. Net savings depend on triage and whether follow-ups
+are later worked; the outcomes of those 609 filed clusters are unmeasured. Historical clusters
+of all types are not a future count of distinct beads. Per-Run bead forecasts are upper bounds
+because clustering is per Round.
+
+### Still open: measure after rollout
+
+Evaluate the first approximately 50 Rounds after rollout with the same rubric. Report:
+
+- sent-back Rounds without acted-on P0/P1 (target 0);
+- `review-followup` and `review-nit` beads filed per Run;
+- closed-unworked versus worked follow-ups;
+- P0/P1 found by the caller's review after the Manager accepted.
+
+The rough forecast is 0.93 P2 and 0.37 P3 findings per Run, counted as per-Round clusters.
+Those are finding counts, not all-type counts or a promise of distinct beads to file. This Run
+does not perform rollout measurement; prompt equality alone cannot show the policy's outcome.

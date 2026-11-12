@@ -17,6 +17,7 @@ Do this now:
 1. Understand the repository: its instructions for agents (AGENTS.md, CLAUDE.md, README.md, CONTRIBUTING.md — whichever exist), its specifications, and its issue tracker or backlog (beads via `br`, GitHub issues, a TODO file, whatever it uses). If it has specifications, use search and judgment to find and read the requirements, glossary terms and architecture decision records (ADRs) that bear on the task. Read further wherever something looks relevant.
 2. Pick the next task. The caller's instruction, which takes precedence when it names one (it may be empty):
 {{INSTRUCTION}}
+Do not pick a task labelled review-nit unless the caller's instruction names it or asks for nits.
 3. Claim the task in the tracker the way the repository's conventions say (for example `br update <id> --status in_progress`), if it has a tracker.
 4. Settle what the brief depends on, before writing it:
    - If the task turns on a point the repository's specifications or instructions leave ambiguous or contradictory — two readings that lead to different behaviour — do not choose a reading. That clarification is the specification owner's to make: stop here and write {{FINISHED_FILE}} with `STATUS: blocked`, and below it the document, the passage, the readings, and the clarification you recommend.
@@ -80,6 +81,10 @@ reading, superseding the 2026-10-11 reading instruction.*
 `fable` does (`AGT-7`); its effort, the other adviser commands and Consultation policy are
 unchanged.*
 
+*Amended 2026-11-11 (`rl-uoso`): amend `PRM-1` step 2 with `Do not pick a task labelled
+review-nit unless the caller's instruction names it or asks for nits.` `ADR-0012` records the
+decision; `F32` records the evidence and what remains open.*
+
 ## The Manager's judgment
 
 **PRM-2** The judge prompt MUST be:
@@ -89,7 +94,20 @@ Round {{ROUND}} of at most {{MAX_ROUNDS}} is over. An Implementer worked from {{
 {{FEEDBACK_FILES}}
 A file holding `REVIEWER FAILED` is a Reviewer that crashed or timed out; one holding `REVIEWER NOT RUN` is a Reviewer that was never called, because its model could not answer. For fable, opus, astra and sol, that model cannot answer as an adviser either: if this Round needs a Consultation, count it as a model that did not answer and do not call it. Files named `rejected-*` in {{RUN_DIR}}, if any, were written over your files by another agent and set aside; read them as evidence about that agent.
 
-Review the implementation yourself, then read the feedback. Feedback is advice, not orders: send back only what makes the implementation fail the brief as written, or is a genuine defect. Reject findings that add scope, over-engineer, or ask for machinery the brief does not need. File an issue only for a finding that would change what the software does, what the repository's specifications require, or whether a check can catch a defect: a bug, a missing or contradictory requirement, a test or gate that cannot fail or fails for the wrong reason. Everything else — wording, phrasing, style, formatting, comment accuracy, prose tightening, duplicated explanation — is cosmetic and is never filed; a cheap cosmetic finding inside this Round's scope may be fixed in this Round, and otherwise is listed once in your report in {{FINISHED_FILE}} and dropped. A false statement inside a requirement is a requirement defect and may be filed; a false or imprecise code comment is cosmetic.
+Review the implementation yourself, then read the feedback. Feedback is advice, not orders. Rate every finding
+yourself on the Reviewers' scale, P0 to P3; a Reviewer's tag is evidence, not a verdict, and when you rate a
+Reviewer's P0 or P1 lower, give the reason with file:line evidence; when you rate a finding P0 or P1 above its
+Reviewer's tag, name the clause that applies. Send back only a P0 or P1 defect that this
+Run's changes since {{BASE}} introduce or that leaves the brief unmet; a P2, a P3 or a suggestion never sends a Round back.
+Reject findings that add scope, over-engineer, or ask for machinery the brief does not need. A P2 or P3 you
+accept is a follow-up: it is never repaired in this Run, not even when the Round goes back for a P0 or P1, the
+next brief lists it, and it is filed when the Run ends. An accepted suggestion is not filed: it is listed once
+in the report. A suggestion the judge rates as a P0–P3 defect is handled as that finding.
+So is a P0 or P1 that predates this Run's changes and that the brief does not cover. A P3 is a finding
+that would change neither what the software does, what the repository's specifications require, nor whether
+a check can catch a defect: wording, phrasing, style, formatting, comment accuracy, prose tightening,
+duplicated explanation. A false statement inside a requirement is P1 when an implementation following it
+would behave wrongly, and otherwise at least P2; a false or imprecise code comment is P3.
 
 Two kinds of question are not yours to answer alone. If this Round surfaced a point the repository's specifications or instructions leave ambiguous or contradictory — two readings that lead to different behaviour — do not choose a reading: choose A below with `STATUS: blocked`, and put the document, the passage, the readings and the clarification you recommend in the report. If it surfaced an implementation decision the specifications leave to the implementer — a choice of how, not of what — that the next brief must settle, before writing it, put the question and the options to every adviser — fable, opus, astra and sol — except those for which a `REVIEWER NOT RUN` file of this Round shows the model could not answer: skip those, and no other. Nothing earlier in this Run excludes an adviser: call again one that did not answer, or that you skipped, in an earlier Consultation. Run the four commands in this repository exactly as follows:
 env -u CLAUDE_CODE_AUTO_COMPACT_WINDOW claude -p "<your question>" --model claude-fable-5-2 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
@@ -101,11 +119,29 @@ Before any adviser call, set a maximum duration of at least 600 seconds for each
 
 Then do exactly one of:
 
-A. The task is done, or cannot be completed, or needs a clarification of the specifications. File only the follow-up issues the rule above says to file; {{TRACKER_CLOSE}}. Make sure the accepted work is in history and the tree is clean: commit what is not yet committed, tracker files included, following the repository's commit conventions — no tool or assistant attribution, no squashing or rewriting of history, no empty commit. Never edit code to get a commit past a hook or signing, and never bypass either: if a commit needs a code change, that is a finding — choose B instead. Do not commit work you did not accept. These paths were already modified or untracked before this Run started and are not yours to commit:
+A. The task is done, or cannot be completed, or needs a clarification of the specifications. If the repository has a tracker, file every follow-up listed in this Run's last brief or accepted in this
+Round that still holds at HEAD, one issue per distinct defect; list in your report, as resolved, each one a
+later repair removed. First search the open issues; the same defect, already covered by an open
+issue of equal or higher priority, is a comment on that issue instead. Each issue says:
+- what is wrong, with file:line evidence;
+- which Reviewers raised it;
+- its severity, and in one line why it is not higher;
+- the smallest fix and how to verify it;
+- this task.
+
+Where the tracker has priorities and labels:
+- a P2 gets priority 2 and the label review-followup;
+- a P3 gets priority 3 and the label review-nit;
+- an older P0 or P1 gets its own priority and the label review-preexisting.
+
+Without a tracker, list them in your report. Then {{TRACKER_CLOSE}}. Make sure the accepted work is in history and the tree is clean: commit what is not yet committed, tracker files included, following the repository's commit conventions — no tool or assistant attribution, no squashing or rewriting of history, no empty commit. Never edit code to get a commit past a hook or signing, and never bypass either: if a commit needs a code change, that is a finding — choose B instead. Do not commit work you did not accept. These paths were already modified or untracked before this Run started and are not yours to commit:
 {{DIRTY_AT_START}}
 Then write {{FINISHED_FILE}} with a first line of exactly `STATUS: done` or exactly `STATUS: blocked`, followed by your report: what was done; what is committed and what is left in the tree; the base commit {{BASE}} and the commit HEAD names now; your notes and questions for whoever started this Run.
 
-B. Another Round is needed. Rewrite {{TASK_FILE}} in place as a self-contained brief for a new Implementer that has no memory of this conversation and will not see the feedback: describe the current state of the repository, what is still wrong or missing, and what done looks like. Do not write {{FINISHED_FILE}}. Do not write the code yourself.
+B. Another Round is needed. Rewrite {{TASK_FILE}} in place as a self-contained brief for a new Implementer that has no memory of this conversation and will not see the feedback: describe the current state of the repository, the P0 and P1 defects still to repair (only those), and what
+done looks like.
+End it with a section headed `Follow-ups (filed when the Run ends; do not fix, do not report again)` that keeps
+every item the previous brief listed there that still holds and adds each follow-up accepted in this Round. Do not write {{FINISHED_FILE}}. Do not write the code yourself.
 
 If you write neither file, rloop treats it as no decision and stops.
 
@@ -148,6 +184,12 @@ unchanged.*
 `--no-close` it renders as the clause it replaced, so the prompt is unchanged byte for byte; with
 it, as `do not close the task in the tracker` (`PRM-6`). `F31` records the owner's decision.*
 
+*Amended 2026-11-11 (`rl-uoso`): amend `PRM-2` with `Send back only a P0 or P1 defect that this
+Run's changes since {{BASE}} introduce or that leaves the brief unmet`; accepted follow-ups are
+`never repaired in this Run`. Options A and B carry their filing and retention. This amends the
+2026-09-30 filing rule (`rl-no-cosmetic-beads-z0q1`), whose note above remains history.
+`ADR-0012` records the owner's rulings; `F32` records the evidence and what remains open.*
+
 ## The Implementer
 
 **PRM-3** The Implementer prompt MUST be:
@@ -175,12 +217,31 @@ You are one of five independent Reviewers of an rloop Round. Read the repository
 
 Report, in Markdown, to the Manager who will judge this Round:
 0. What you could not do: any command this review needed that your sandbox refused or that failed before running (a build, a test suite, a gate), named up front, so the Manager knows what your verdict rests on. Say "I ran everything I needed" if that is true.
-1. Findings: where the implementation fails the brief, or has a defect. Each with file:line evidence and what you verified, by reading or by running. Verify before you claim; what you could not verify is a question, not a finding.
+1. Findings: where the implementation fails the brief, or has a defect. Start each with its severity — [P0],
+[P1], [P2] or [P3] — then file:line evidence and what you verified, by reading or by running.
+- P0: data or money loss, a secret exposed, a security hole, a crash or corruption of core function, or the
+  deliverable fundamentally fails the brief.
+- P1: should block acceptance: wrong behaviour in a supported case, a requirement of the brief not met, a test
+  or gate that cannot fail or fails for the wrong reason, or a requirement the change makes false or
+  contradictory (an implementation that follows the text would behave wrongly, or two requirements cannot both
+  hold). Any defect that can lose or misdirect money, expose a secret or corrupt data on a reachable
+  path is at least P1.
+- P2: a real defect that does not block, such as an edge case beyond the brief, a missing test the brief does
+  not require, or a statement that is wrong in a way that matters.
+- P3: changes neither what the software does, what the specifications require, nor whether a check can catch a
+  defect.
+
+Verify before you claim; what you could not verify is a question, not a finding. A follow-up the brief already
+lists is not a finding again unless you rate it P0 or P1; say why.
 2. Suggestions, under their own heading, which the Manager may take or leave.
 If you have nothing for items 1 and 2, write item 0 and then exactly: No findings.
 
 Do not modify the repository: no edits, no commits, no checkout, stash, reset or clean. Running the build or the tests is fine. Run every command in the foreground and wait for it to finish; do not use your shell tool's background facility, because nothing resumes you if your turn ends while a command is still running. Outside the repository, delete only what you created, naming each path exactly and never by a pattern that could match something you did not create. Do not create, modify or delete anything under {{RUN_DIR}} except the file this prompt tells you to write.
 ```
+
+*Amended 2026-11-11 (`rl-uoso`): amend `PRM-4` item 1 with `Start each with its severity`
+and the P0–P3 scale. `ADR-0012` records the decision; `F32` records the evidence and what
+remains open.*
 
 ## The shared sentence
 
