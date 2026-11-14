@@ -2161,6 +2161,49 @@ check_autocompact_environment() {
 }
 check_autocompact_environment
 
+# CNF-10: only Reviewers override the inherited prompt-cache lifetime, under both presets.
+check_prompt_cache_environment() {
+  local preset state repo rec e ext tag want f expected_set expected_value
+  local paths=()
+  for preset in claude codex; do
+    for state in unset 1h; do
+      repo=$(new_repo); rec="$work/rec-prompt-cache-$preset-$state"
+      e=$(
+        if [ "$state" = unset ]; then unset CLAUDE_CODE_PROMPT_CACHE_TTL
+        else export CLAUDE_CODE_PROMPT_CACHE_TTL="$state"; fi
+        RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS='impl=ok;panel=all;judge=done' RLOOP_FAKE_MANAGER_CUT='' \
+          run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager "$preset" --implementer "$preset"
+      )
+      quota_assert CNF-10 "prompt cache $preset $state: exit $e" test "$e" = 0
+      quota_assert CNF-10 "prompt cache $preset $state: successful Round trace" test "$(observed_trace "$rec")" = \
+        'pick,impl1:ok,panel1:all:astra+fable+grok+opus+sol,judge1'
+      quota_assert CNF-10 "prompt cache $preset $state: missing done decision" grep -qxF 'STATUS: done' "$repo/run/finished.md"
+      for ext in argv env; do
+        quota_assert CNF-10 "prompt cache $preset $state: not 11 $ext records" test "$(path_count "$rec"/*."$ext")" = 11
+        for tag in manager-0 implementer-1 reviewer-1-fable reviewer-1-opus reviewer-1-astra reviewer-1-sol reviewer-1-grok manager-1 probe-0 probe-1; do
+          want=1; [ "$tag" != probe-1 ] || want=2
+          matching_paths "$rec"/*-"$tag.$ext"
+          quota_assert CNF-10 "prompt cache $preset $state $tag: ${#paths[@]} $ext records, want $want" test "${#paths[@]}" = "$want"
+        done
+      done
+      for f in "$rec"/*.env; do
+        [ -f "$f" ] || continue
+        case "$f" in
+          *-reviewer-1-*.env) expected_set=x; expected_value=5m ;;
+          *)
+            if [ "$state" = unset ]; then expected_set=''; expected_value=''
+            else expected_set=x; expected_value="$state"; fi ;;
+        esac
+        quota_assert CNF-10 "prompt cache $preset $state $(basename "$f"): wrong or unrecorded presence" \
+          grep -qxF "PROMPT_CACHE_TTL_SET=$expected_set" "$f"
+        quota_assert CNF-10 "prompt cache $preset $state $(basename "$f"): wrong or unrecorded value" \
+          grep -qxF "PROMPT_CACHE_TTL_VALUE=$expected_value" "$f"
+      done
+    done
+  done
+}
+check_prompt_cache_environment
+
 # AGT-16: PID identity in two otherwise ordinary one-Round Runs.
 # Isolate both the private PATH and the fakes; other items keep their original launchers.
 check_direct_start() {

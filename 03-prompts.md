@@ -22,8 +22,8 @@ Do not pick a task labelled review-nit unless the caller's instruction names it 
 4. Settle what the brief depends on, before writing it:
    - If the task turns on a point the repository's specifications or instructions leave ambiguous or contradictory — two readings that lead to different behaviour — do not choose a reading. That clarification is the specification owner's to make: stop here and write {{FINISHED_FILE}} with `STATUS: blocked`, and below it the document, the passage, the readings, and the clarification you recommend.
    - If the task needs an implementation decision the specifications leave to the implementer — a choice of how, not of what — do not make it alone. Put the question and the options to every adviser — fable, opus, astra and sol — except those this prompt lists below as unable to answer now: skip those, and no other. The four commands, run in this repository, are exactly:
-     env -u CLAUDE_CODE_AUTO_COMPACT_WINDOW claude -p "<your question>" --model claude-fable-5-2 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
-     env -u CLAUDE_CODE_AUTO_COMPACT_WINDOW claude -p "<your question>" --model claude-opus-5-5 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
+     env -u CLAUDE_CODE_AUTO_COMPACT_WINDOW CLAUDE_CODE_PROMPT_CACHE_TTL=5m claude -p "<your question>" --model claude-fable-5-2 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
+     env -u CLAUDE_CODE_AUTO_COMPACT_WINDOW CLAUDE_CODE_PROMPT_CACHE_TTL=5m claude -p "<your question>" --model claude-opus-5-5 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
      codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6-astra -c model_reasoning_effort=high "<your question>"
      codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6.1-sol -c model_reasoning_effort=high "<your question>"
      Include in every adviser's question: "Do not modify the repository: no edits, no commits, no checkout, stash, reset or clean. Running the build or the tests is fine." Reading files is permitted.
@@ -85,6 +85,9 @@ unchanged.*
 review-nit unless the caller's instruction names it or asks for nits.` `ADR-0012` records the
 decision; `F32` records the evidence and what remains open.*
 
+*Amended 2026-11-14 (`rl-24sa`): amend `PRM-1` so the Claude advisers set
+`CLAUDE_CODE_PROMPT_CACHE_TTL=5m` at invocation. `F33` records the owner's decision and evidence.*
+
 ## The Manager's judgment
 
 **PRM-2** The judge prompt MUST be:
@@ -117,8 +120,8 @@ a reachable path is at least P1. P2 is a real defect that does not block, such a
 missing test the brief does not require, or a statement that is wrong in a way that matters.
 
 Two kinds of question are not yours to answer alone. If this Round surfaced a point the repository's specifications or instructions leave ambiguous or contradictory — two readings that lead to different behaviour — do not choose a reading: choose A below with `STATUS: blocked`, and put the document, the passage, the readings and the clarification you recommend in the report. If it surfaced an implementation decision the specifications leave to the implementer — a choice of how, not of what — that the next brief must settle, before writing it, put the question and the options to every adviser — fable, opus, astra and sol — except those for which a `REVIEWER NOT RUN` file of this Round shows the model could not answer: skip those, and no other. Nothing earlier in this Run excludes an adviser: call again one that did not answer, or that you skipped, in an earlier Consultation. Run the four commands in this repository exactly as follows:
-env -u CLAUDE_CODE_AUTO_COMPACT_WINDOW claude -p "<your question>" --model claude-fable-5-2 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
-env -u CLAUDE_CODE_AUTO_COMPACT_WINDOW claude -p "<your question>" --model claude-opus-5-5 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
+env -u CLAUDE_CODE_AUTO_COMPACT_WINDOW CLAUDE_CODE_PROMPT_CACHE_TTL=5m claude -p "<your question>" --model claude-fable-5-2 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
+env -u CLAUDE_CODE_AUTO_COMPACT_WINDOW CLAUDE_CODE_PROMPT_CACHE_TTL=5m claude -p "<your question>" --model claude-opus-5-5 --effort high --dangerously-skip-permissions --disallowedTools "Edit,Write,NotebookEdit,Bash(git checkout:*),Bash(git stash:*),Bash(git reset:*),Bash(git commit:*),Bash(git clean:*)"
 codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6-astra -c model_reasoning_effort=high "<your question>"
 codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6.1-sol -c model_reasoning_effort=high "<your question>"
 Include in every adviser's question: "Do not modify the repository: no edits, no commits, no checkout, stash, reset or clean. Running the build or the tests is fine." Reading files is permitted.
@@ -197,6 +200,9 @@ Run's changes since {{BASE}} introduce or that leaves the brief unmet`; accepted
 Manager never sees `PRM-4`. Options A and B carry their filing and retention. This amends the
 2026-09-30 filing rule (`rl-no-cosmetic-beads-z0q1`), whose note above remains history.
 `ADR-0012` records the owner's rulings; `F32` records the evidence and what remains open.*
+
+*Amended 2026-11-14 (`rl-24sa`): amend `PRM-2` so the Claude advisers set
+`CLAUDE_CODE_PROMPT_CACHE_TTL=5m` at invocation. `F33` records the owner's decision and evidence.*
 
 ## The Implementer
 
