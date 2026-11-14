@@ -138,6 +138,18 @@ set variable fails the item. (`AGT-13`)
 *Amended 2026-10-29 (`rl-v34y`): check removal of the inherited autocompact override from
 every spawned role, including the Probe, under both presets.*
 
+Further one-Round Runs start rloop with `CLAUDE_CODE_PROMPT_CACHE_TTL` unset and with it
+inherited as `1h`, under each Manager preset with the matching Implementer preset. The pick
+writes a Task File, the Implementer and all named Reviewers succeed, and the judge writes
+`STATUS: done`. Every named Reviewer records `5m`; the pick, Implementer, every judge and
+every Probe record the inherited state unchanged: unset remains unset and `1h` remains `1h`.
+Presence and value are recorded separately. A nonzero Run exit, missing or extra call,
+missing record or wrong value fails the item. (`AGT-13`)
+
+*Amended 2026-11-14 (`rl-24sa`): check the Reviewer cache-lifetime override and preservation
+of the inherited state for every other call, including the Probe, under both presets. `F33`
+records the decision and the live-verification limits.*
+
 One further Run inherits exported `SHELLOPTS=braceexpand:hashall:interactive-comments`.
 The pick, Implementer, each named Reviewer, both judge attempts (the first cut, then retried),
 and every Probe record that variable exported and byte-identical to the supplied value.

@@ -5,4 +5,6 @@ exec
 <implementer model>
 -c
 model_reasoning_effort=high
+-c
+model_auto_compact_token_limit=250000
 <implementer prompt>

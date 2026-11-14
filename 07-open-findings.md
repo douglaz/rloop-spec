@@ -583,8 +583,8 @@ read is an own-process read of the item as well — `nothing_survived` (`conform
 reads `PID` beside `GRANDCHILD` — and no mutant of either Round reddens that half either, for the
 reason its own comment gives: `Every ancestor is gone by then, so neither can be a zombie`
 (`conformance/run:85-86`). Both own-process brackets come with a green group half for one reason:
-the fake writes `GRANDCHILDREN_ALIVE` (`conformance/fakes/agent:153`) before it spawns the child
-that ignores SIGTERM (`:230`), so a call that starts while the probe is still running finds no
+the fake writes `GRANDCHILDREN_ALIVE` (`conformance/fakes/agent:154`) before it spawns the child
+that ignores SIGTERM (`:231`), so a call that starts while the probe is still running finds no
 `GRANDCHILD=` line in the probe's record and has nothing to report. The group half can be green with
 the group alive, and it is the two halves together that caught these mutants.
 
@@ -635,7 +635,7 @@ pick (`conformance/run:872-914`). `RUN-22` is what makes the read observable the
 `exit 2 without spawning any agent` on that probe's verdicts, so an executable that derives them
 from bytes the straggler's line has not reached yet calls the pick and runs on. The knob is
 `RLOOP_FAKE_WRITE_STDOUT`, which had only a role and a fixed line and now takes a first-write delay
-and the line with it (`conformance/fakes/agent:71-90`, `:193`, `:224-227`); the row asks for one
+and the line with it (`conformance/fakes/agent:71-90`, `:194`, `:225-228`); the row asks for one
 second and `--kill-after 4`, so an early read is a second short of the line and a reaping one has
 three seconds of the child's writing behind it before it reads.
 
@@ -3006,3 +3006,79 @@ Evaluate the first approximately 50 Rounds after rollout with the same rubric. R
 The rough forecast is 0.93 P2 and 0.37 P3 findings per Run, counted as per-Round clusters.
 Those are finding counts, not all-type counts or a promise of distinct beads to file. This Run
 does not perform rollout measurement; prompt equality alone cannot show the policy's outcome.
+
+## F33 — Prompt-cache lifetimes and Codex compaction (open 2026-11-14)
+
+The owner's prompt-cache analysis of 2026-11-14 followed the request:
+"Analyze our processes and focus on high or low rates of cached tokens". On the proposal that followed, the owner
+answered "Ok, fix all issues". The two items this Run lands, tracked by `rl-24sa`, were put
+to the owner as:
+
+- Item 1: "**The 5-minute cache for one-off readers:** set `CLAUDE_CODE_PROMPT_CACHE_TTL=5m` where rloop-bash starts its Reviewers and advisers, but not its Manager, and in the panel skills."
+- Item 3: "**Codex compaction at about 250k:** a review panel first, because the Implementer loses detail sooner."
+
+For item 3, a four-reader review panel (four readers, two rounds, 2026-11-14) answered 4 of 4
+in the round-2 consensus: add `-c model_auto_compact_token_limit=250000` to `AGT-6` for every
+Codex Implementer, unconditionally, including an overridden model; no rloop option and no
+random draw; leave the Codex Manager's pick and judge lines (`AGT-3`, `AGT-4`) unchanged;
+evaluation and any revert happen outside rloop. This was accepted under the owner's
+2026-11-05 panel rule, "if 4/4 agree, just accept it". It narrows the proposal, which also
+named the Manager when it is Codex.
+
+The accepted amendments are in `AGT-13`, `PRM-1`, `PRM-2` and `AGT-6`; `AGT-17` records
+partial supplied verification and `CNF-10` owns the environment checks. Those bodies own the
+rules. Item 2 of the proposal (manager waits) is not this repository's. The Manager's own cache
+stays at the default: "but not its Manager". The quoted proposal mentions other repositories;
+it authorizes no work there in this Run.
+
+### Evidence and limits
+
+The owner's prompt-cache analysis of 2026-11-14 covers three machines, 7 days each, at list
+prices. Calls are billed through subscriptions, so the dollar amounts stand for quota use.
+
+`claude -p` readers write their cache at the 1-hour price and are short threads, so their
+writes dominate their cost: fable readers spend 64% of their cost on writes. All three machines
+agreed on the 5-minute lifetime for one-off `claude -p` seats and the 1-hour default for the
+Manager, whose resumed judge calls read the whole context 24 times in 25 on one machine.
+
+On the main machine the Codex Implementer made 27,473 calls, 7,693 of them (28.0%, in 63 of
+174 threads) past 272,000 input tokens, where long-context rates apply (2x input and cached
+input, 1.5x output), at about $314 a week above normal rates. Codex compacts on its own only
+at 368,000-459,000. The Codex Manager's premium was $17 and Reviewers never passed 272,000.
+
+`AGT-17`'s supplied observations cover the Claude cache-write lifetime, CLI acceptance of the
+250,000 setting, and continuation of a `/goal` turn with a 50,000 setting. They were not
+repeated by this Run. They establish neither a hard cap nor a real Implementer task at 250,000,
+whole-roster verification, task quality or net savings after rollout. Fakes compare delivery;
+they cannot establish actual CLI flag acceptance, cache billing, compaction timing or quality.
+
+### Rejected alternatives
+
+- The 5-minute lifetime for the Manager: resumed judges re-read the whole context, so it would
+  pay more.
+- `--exclude-dynamic-system-prompt-sections` on Claude Reviewers and advisers: measured, a
+  second `claude-opus-5-5` reader in another repository read 11,758 cached tokens on its first
+  call instead of 10,807, +951 of about 29,000, so it barely helps; no information was lost.
+  This flag was not adopted.
+- A compaction limit on the Codex Manager: $17 a week against the judge's memory of earlier
+  Rounds (`AGT-4`: `Resuming is what makes the Manager one conversation`).
+- A randomized trial of the limit inside rloop: `AGT-1` says `There are no environment-variable
+  equivalents and no configuration file`; choosing between two Implementer lines would add a
+  specified mechanism and its own conformance items for one experiment. The evaluation and any
+  revert belong outside rloop.
+
+### Still open: the evaluation of the 250,000 limit
+
+The four-reader review panel agreed these terms, recorded by `rl-24sa` on 2026-11-14:
+
+- Fix the baseline before rollout: past Implementer threads that peaked above 250,000,
+  long tasks compared with long tasks.
+- Read the first five compacted Rounds one by one for redone or reverted edits, stale gate
+  claims and dropped requirements.
+- Revert `AGT-6` at once if a `/goal` turn ends at a compaction.
+- At a checkpoint no earlier than two weeks after rollout, revert if compacted Rounds'
+  send-back rate is 10 points or more above the baseline, or if measured net saving,
+  re-reading and extra Rounds included, is under $150 a week.
+
+This Run records the terms. It does not run the evaluation, define a new rloop mechanism, fix
+a baseline using unavailable data, or claim savings or quality outcomes measured after rollout.

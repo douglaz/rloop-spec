@@ -153,7 +153,7 @@ Reviewer `sol`'s model. The claude default and the effort are unchanged.*
 **AGT-6** The Implementer, with `--implementer codex`, MUST be:
 
 ```text
-codex exec --dangerously-bypass-approvals-and-sandbox -m <implementer model> -c model_reasoning_effort=high <implementer prompt>
+codex exec --dangerously-bypass-approvals-and-sandbox -m <implementer model> -c model_reasoning_effort=high -c model_auto_compact_token_limit=250000 <implementer prompt>
 ```
 
 with `<implementer model>` as `AGT-5` gives it.
@@ -170,6 +170,13 @@ gets the preset's model unless they pass `--implementer-model`.*
 effort is newly pinned to `high` for every model, overrides included. The 2026-09-22 amendment
 pinned the model so it could be Probed; this amendment also removes effort's dependence on the
 operator's CLI configuration. `F22` records the owner's verification.*
+
+*Amended 2026-11-14 (`rl-24sa`): the compaction limit applies to every Codex Implementer,
+including an overridden model. It is provisional until the evaluation left open in `F33`:
+long-context prices start at 272k input tokens, while Codex's own compaction was observed at
+368k–459k. The Manager command lines stay unchanged to preserve the judge's memory of earlier
+Rounds (`AGT-4`: `Resuming is what makes the Manager one conversation`). `F33` records the
+owner's decision and evidence; evaluation and any revert happen outside rloop.*
 
 **AGT-7** Reviewer `fable` MUST be:
 
@@ -282,6 +289,7 @@ the table's conditions:
 | variable | value |
 |---|---|
 | `CLAUDE_CODE_AUTO_COMPACT_WINDOW` | rloop MUST remove this variable from every agent process and the Probe, even when inherited with an empty value; it MUST NOT set a replacement value. |
+| `CLAUDE_CODE_PROMPT_CACHE_TTL` | For every Reviewer call, rloop MUST set this to `5m`, overriding any inherited value. Every other call, and the Probe, receives whatever rloop inherited unchanged. |
 | `RLOOP_ROLE` | `manager`, `implementer`, `reviewer` or `probe` |
 | `RLOOP_ROUND` | the Round number; `0` for the pick |
 | `RLOOP_RUN` | the Run's number within its Sequence; `1` for a lone Run |
@@ -291,6 +299,10 @@ the table's conditions:
 
 *Amended 2026-10-29 (`rl-v34y`): remove the interactive autocompact override so each model
 uses its automatic window. The exception is in the environment table.*
+
+*Amended 2026-11-14 (`rl-24sa`): Reviewers write their prompt cache at the 5-minute lifetime;
+the Manager, the Implementer and the Probe keep whatever rloop inherited. `F33` records the
+owner's decision and the evidence.*
 
 *Real agents ignore the `RLOOP_*` variables — the prompt tells a model where things are. The
 Conformance Suite's fakes read those to find their scripted part, which is what makes the suite
@@ -441,6 +453,32 @@ exited 0 with `ok` as its whole standard output. Standard error carried the CLI'
 `claude-fable-5-2`, and the warning says auto-compact then keeps the session within 200k tokens.
 That cap is the CLI's statement, not measured here. This was a partial verification with a trivial
 prompt, not whole-roster, deny-list, session-resumption or real-task verification.*
+
+*Partial verification, 2026-11-14 (`rl-24sa`): supplied observations, not experiments repeated
+by this Run. On Claude Code 2.1.321, with `CLAUDE_CODE_PROMPT_CACHE_TTL=5m` in the environment,
+a `claude-opus-5-5` reader and a `claude-fable-5-2` reader, each with the `AGT-7`/`AGT-8`
+arguments and stdin from `/dev/null`, recorded every cache write in their session transcripts
+as `ephemeral_5m_input_tokens` and none as `ephemeral_1h_input_tokens` (opus 40,150 tokens over
+6 calls, fable 110,514 over 15). Four further `claude-opus-5-5` calls with the `AGT-8` arguments
+plus `--session-id` (two of them also with `--exclude-dynamic-system-prompt-sections`) did the
+same. Without the variable, `claude -p` writes at the 1-hour lifetime (the owner's prompt-cache
+analysis of 2026-11-14).*
+
+*Partial verification, 2026-11-14 (`rl-24sa`): on codex-cli 0.167.0,
+`model_auto_compact_token_limit` is a configuration field settable with `-c`; the `AGT-6` line
+with `-c model_auto_compact_token_limit=250000`, plus `--json`, and the model `gpt-6.1-sol`,
+given `Reply with exactly: ok`, stdin from `/dev/null`, exited 0 with `ok`. This supplied
+observation establishes CLI acceptance, not the task quality or net savings left open in `F33`.*
+
+*Partial verification, 2026-11-14 (`rl-24sa`): in a separate supplied test with `-s read-only`
+in place of the bypass flag, the limit set to 50000 and a `/goal` prompt that printed four files
+of 30-74 KB, the per-call input was 22,136; 30,251; 38,714; 46,360; then a compaction; 23,130;
+35,647; 55,229; then a compaction; 23,173. The `/goal` turn carried on after each compaction
+and finished correctly. One call went 5,229 tokens over the limit before compacting, right after
+a single 74 KB tool result: the limit is not a hard cap. After a compaction the history held
+the system and developer messages, the repository's agent instructions, the original prompt,
+and one opaque compaction item. This was a partial verification, not a real Implementer task
+at 250,000, and not a whole-roster check. These observations were not repeated by this Run.*
 
 A fake agent accepts any flag, so the Conformance
 Suite cannot tell a wrong flag from a right one; a flag that a newer CLI rejects is found only by a
