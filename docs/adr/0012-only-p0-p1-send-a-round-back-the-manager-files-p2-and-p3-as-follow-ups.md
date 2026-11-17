@@ -55,3 +55,61 @@ rendered by PRM-6 with the values the suite knows`. That checks literal delivery
 live Manager follows the policy. No semantic severity parser or severity tests are added.
 The decision table and formal model remain the control-flow home (`ADR-0002`); agent judgment
 is outside that model. `F32` leaves the policy's effect for live measurement.
+
+## Amended 2026-11-17: the owner's words, a recorded rating, the last Round
+
+An audit of 2026-11-17 read this set against the owner's rule, whose scale is:
+
+> - P0: money or data loss, a secret, security, core function broken, or the brief fundamentally failed.
+> - P1: blocks acceptance: wrong behaviour in a supported case, a brief requirement unmet, a check that cannot
+>   fail, or a requirement made false. Any money, secret or data-loss defect on a reachable path is at least P1.
+> - P2: a real defect that does not block.
+> - P3: changes no behaviour, requirement or check.
+>
+> The judge re-rates; lowering a P0/P1 needs file:line evidence, and raising one to P0/P1 names the clause.
+
+Three amendments follow, all to prompt text:
+
+- **The owner's P0 and P1.** `PRM-4` and `PRM-2` now carry the owner's P0 and P1 lines word for
+  word; `PRM-4`'s P0 line reads `money or data loss, a secret, security, core function broken, or
+  the brief fundamentally failed`. The old P0 limited broken core function to a crash or corruption. The old P1 added a test
+  or gate that fails for the wrong reason, a contradictory requirement and misdirected money, which
+  widened it beyond the owner's text; `F34` records raises that rested on a clause of that kind and
+  did not hold. P2 and P3 keep their examples, which illustrate the owner's lines without widening
+  them.
+- **A recorded rating.** `PRM-2` asked for evidence and clauses (`when you rate a Reviewer's P0 or
+  P1 lower, give the reason with file:line evidence`) but gave them nowhere to go, so neither could
+  be checked after the Run. Every judge reply now ends with the ratings: each finding's Reviewers
+  and tags, the Manager's rating, the evidence for a lowering or the clause for a raise, and the
+  clause every P0 or P1 meets. rloop already keeps that reply: `DIR-4` lists
+  `manager-judge-<r>.out` as written by `rloop, from judge attempt 1's stdout and stderr`.
+- **The last Round.** Nothing told the Manager that the Round it judged was the last. A Manager
+  that chose B there ended the Run with exit 2, since `RUN-13` says `a verdict of *next Round*
+  becomes exit 2`, and the follow-ups its brief listed were filed only if the caller rebuilt them
+  from the Run Directory. `PRM-2` now has the last Round end through option A, and the follow-ups
+  filed either way. It ends blocked when the Round surfaced an ambiguity, as `RUN-19` requires
+  `when the task turns on a point the repository's specifications or instructions leave ambiguous
+  or contradictory`; when a choice is unsettled, since `RUN-20` says `A choice the advisers leave
+  unsettled MUST end the Run`; or when a P0 or P1 that sends a Round back remains, naming each
+  one. It ends done otherwise. A blocked last Round leaves the task open in the tracker, as the
+  cap's exit 2 did before. The one exception is option A's own: `SEQ-8` says `A hook failure that
+  needs a code change is a finding like any other and goes back through a Round`, so a commit that
+  needs a code change still chooses B, and in the last Round that Run ends at the cap's exit 2 as
+  before. The same exit 2 still catches a Manager that does not listen.
+
+The same day the owner capped a change to a project's own test tooling at two review Rounds:
+later findings become follow-ups, except one that touches money, machine deletion or secrets, or
+a check that can pass when it should fail. Applying it is the caller's choice of
+`--max-rounds`, so it lands as guidance in `README.md`, *Using rloop*. The default stays 10.
+
+Rejected on the way:
+
+- **The ratings in the next brief.** Option B's brief goes to an Implementer that
+  `will not see the feedback` (`PRM-2`), and to Reviewers who would read the Manager's ratings
+  before forming their own.
+- **A ratings file in the Run Directory.** `DIR-4` says `The Run Directory MUST hold exactly
+  these names, and an Implementation MUST NOT add others`. A new name needs a placeholder, a
+  Checkpoint rule and conformance items, for a record the kept judge output already holds.
+- **A tooling preset or a lower default.** rloop cannot tell what a task touches, and `OVR-1`
+  says `It MUST NOT parse a Reviewer's output, an Implementer's output, or any part of the
+  Finished File beyond its first line.` The caller knows, so the caller sets `--max-rounds`.

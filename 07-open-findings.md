@@ -3082,3 +3082,42 @@ The four-reader review panel agreed these terms, recorded by `rl-24sa` on 2026-1
 
 This Run records the terms. It does not run the evaluation, define a new rloop mechanism, fix
 a baseline using unavailable data, or claim savings or quality outcomes measured after rollout.
+
+## F34 — The owner's P0 and P1, recorded ratings and the last Round (open 2026-11-17)
+
+`PRM-2` and `PRM-4` are amended; `ADR-0012`, *Amended 2026-11-17*, records the decision and what
+was rejected.
+
+The evidence is a read-only audit of 2026-11-17. It read this set at `5086b8c` and rloop-bash at
+`b8d745a`, found their judge and review prompts byte-identical, and measured the owner's rule
+against one day's reviews in a fast lane, where a manager judged each round's reviewers. That
+lane is not rloop, so its numbers are evidence about briefs and judges in general, not a
+measurement of rloop:
+
+- Every review brief for a change to test tooling widened P1 with a clause of its own, such as a
+  check that fails wrongly. 3 of the 4 tooling P1s the audit judged inflated cited such a clause.
+- Reviewers rated about one P0 or P1 per reviewer read on tooling, against about 0.2 on product
+  changes.
+- No change kept its re-ratings in one record. Every lowering had evidence, but 4 of 9 raises did
+  not hold under the owner's text: two cited a brief's own widened clause and one rested on a
+  guess.
+- 9 of 28 tooling review rounds came after a second round. With the owner's exceptions, 6 of them
+  would have ended at a two-round cap. Two defects the cap would have deferred were checks that
+  could pass when they should fail, one of them found only in a third round; that is why such a
+  check joins the exceptions.
+
+These are one auditor's ratings over one day and one project.
+
+Deferred: three gaps the audit named that these amendments leave as they were.
+
+- A Reviewer may report a listed follow-up again as P0 or P1 with a reason but no clause.
+- Option A's line for an older P0 or P1 does not say that such an issue holds nothing, as the
+  owner's rule does.
+- `PRM-1` says `Do not pick a task labelled review-nit unless the caller's instruction names it or
+  asks for nits.` It has no such rule for `review-followup` tasks in a drain a caller has
+  delegated.
+
+Still open: no live Run has yet reached its last Round under the amended `PRM-2`, and none has
+yet run a tooling task with `--max-rounds 2`. `F32`'s rollout measurement can count both: Runs
+that ended at the cap with exit 2, and Runs whose ratings lines lack the evidence or clause a
+changed rating needs.

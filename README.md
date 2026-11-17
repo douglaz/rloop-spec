@@ -113,6 +113,17 @@ For whoever runs an Implementation:
 - **A lone Run:** `rloop` picks the next task from the repository's tracker; `rloop "fix the
   flaky retry test"` steers the pick. Exit 0 is done, 1 is blocked, 3 is idle (nothing to pick),
   2 is a failure (`RUN-10`); the Finished File — the Manager's report — is on standard output.
+- **A task that changes the repository's own test tooling** — its test harnesses, drivers,
+  checkers, smoke, cleanup and gate scripts — gets at most two review Rounds under the owner's
+  rule of 2026-11-17: run it with `--max-rounds 2`. The default stays 10: `RUN-13` gives
+  `(default 10) MUST bound the Implementer calls of a Run`. In the last Round the Manager ends the
+  Run with its report instead of a new brief, and files the follow-ups, since `PRM-2` says
+  `If {{ROUND}} is {{MAX_ROUNDS}}, this is the last Round: do not choose B.` If it ends blocked on
+  a P0 or P1, the task stays open (`PRM-2`: `do not close the task in the tracker, and reopen it if
+  this Run's work closed it`): commit the work, file that finding as a follow-up at its own
+  priority, labelled review-followup, and close the task, unless the finding touches money,
+  machine deletion or secrets, or is a check that can pass when it should fail: that one goes back
+  through another Run.
 - **Blocked (exit 1) is a question for you.** The Manager blocks when the task turns on a point
   the repository's specifications leave ambiguous — it never picks a reading — and the report
   names the passage and recommends a clarification (`RUN-19`). Clarify the specification, then
@@ -146,10 +157,12 @@ For whoever runs an Implementation:
   (`RUN-11`): a file whose first line is not a status, or one a Manager call wrote and then
   failed. `RUN-10` keeps it off standard output either way, so the place to look is the Run
   Directory, which is kept whatever the exit (`RUN-17`): `task-<r>.md` is the brief each Round
-  ran against, `feedback-<r>-*.md` is what the Panel said about the last Round's work, and
+  ran against, `feedback-<r>-*.md` is what the Panel said about the last Round's work,
   `implementer-<r>.out` ends with the Implementer's own account, including anything it declared
-  out of scope. Judge the uncommitted work by that feedback and by the repository's own gates,
-  then commit or discard it yourself. Two things the Run will not have tidied: a task the Manager
+  out of scope, and `manager-judge-<r>.out` ends with the Manager's rating of each of Round `r`'s
+  findings when that judge call finished (`PRM-2`: `end your reply to this prompt with your
+  ratings`). Judge the uncommitted work by that feedback
+  and by the repository's own gates, then commit or discard it yourself. Two things the Run will not have tidied: a task the Manager
   claimed in the tracker at the pick is **still claimed**, and a follow-up it promised to file
   when closing the Run was never filed. Whoever started the Run files its follow-ups using
   `PRM-2` option A: `First search the open issues`; file each that `still holds in the repository with the work you accept`.
