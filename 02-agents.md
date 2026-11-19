@@ -19,6 +19,7 @@ rloop [OPTIONS] [INSTRUCTION]
   --base REF                   the ref Reviewers diff against                  (default: HEAD at start)
   --run-dir PATH               the Run Directory, which must not exist yet     (default: DIR-2)
   --no-close                   tell the judge to leave the task open in the tracker (PRM-6)
+  --fable                      seat Reviewer fable on the Panel (AGT-11)
   --max-rounds N               Rounds per Run                                  (default: 10)
   --max-runs N                 Runs per Sequence                               (default: 20)
   --manager-timeout SECONDS    per Manager call                                (default: 3600)
@@ -46,6 +47,9 @@ preset's model default remains `AGT-5`'s. `F27` records the owner's evidence and
 reviewing the Run's commits. What it changes in the judge prompt is `PRM-6`'s; `AGT-2` and `SEQ-3`
 were amended with it; `F31` records the owner's decision.*
 
+*Amended 2026-11-19: add `--fable`, which seats Reviewer `fable`; without it rloop never calls that
+Reviewer (`AGT-11`). `F35` records the owner's decision.*
+
 **AGT-2** An unknown option, a missing or non-numeric value, a value outside the set a preset flag
 names — `--manager` and `--implementer` each take `claude` or `codex` and nothing else — a number
 below 1 for `--max-rounds`, `--max-runs`, a timeout, `--kill-after`, `--quota-wait` or
@@ -53,7 +57,7 @@ below 1 for `--max-rounds`, `--max-runs`, a timeout, `--kill-after`, `--quota-wa
 message on standard error and nothing spawned. A value is missing when its option is the last
 argument or when the next argument begins with `--`; a flag never becomes another flag's value. A
 number is a string of decimal digits read in base ten, so `08` is `8`. A value given with `=` to
-`--auto`, `--no-close`, `--help` or `--version`, which take none, is an unknown option. *A usage error found after
+`--auto`, `--no-close`, `--fable`, `--help` or `--version`, which take none, is an unknown option. *A usage error found after
 the first agent call has already spent money.* *The preset clause is stated here from 2026-09-20
 with `--manager`; it was always true of `--implementer`, which named its two values in `AGT-1` and
 nowhere said what a third does.* *Every duration's minimum is 1 from 2026-09-24; until then a
@@ -271,8 +275,14 @@ a runtime API client. Operator prerequisites have their home in `README.md`, **U
 `AGT-17` records the partial live observations and their limits.*
 
 **AGT-11** The Panel MUST be exactly the five Reviewers `AGT-7`, `AGT-8`, `AGT-10` and `AGT-19` name, with
-the Feedback File names `DIR-4` gives them. There is no flag, file or variable that changes the
-Panel; changing it is a change to this document.
+the Feedback File names `DIR-4` gives them. Reviewer `fable` is seated only when the caller gives
+`--fable` (`AGT-1`). Without it rloop MUST NOT call that Reviewer: it stays a Reviewer of the Panel,
+with the Feedback File `RUN-15` writes in its place, and the other four are the Panel's seated
+Reviewers. There is no flag, file or variable that changes the Panel other than `--fable`;
+changing it otherwise is a change to this document.
+
+*Amended 2026-11-19: Reviewer `fable` is seated only under `--fable`; until then every Round called
+all five. `F35` records the owner's decision.*
 
 ## What every agent process is given
 

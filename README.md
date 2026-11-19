@@ -103,8 +103,8 @@ identifier. `tools/check_fixtures.py` blocks on one.
 For whoever runs an Implementation:
 
 - **Install and authenticate the CLIs beforehand:** Claude Code, Codex and the official Grok
-  Build CLI. The fixed Panel is `fable`, `opus`, `astra`, `sol`, `grok` (`AGT-11`, `AGT-19`).
-  Grok uses the CLI's existing authentication; operator setup such as `grok login` or
+  Build CLI. The fixed Panel is `fable`, `opus`, `astra`, `sol`, `grok`; `fable` is called only
+  under `--fable` (`AGT-11`, `AGT-19`). Grok uses the CLI's existing authentication; operator setup such as `grok login` or
   `grok models` is not a new rloop call. rloop hardcodes no key, token, user-specific config
   path or billing choice, and preserves inherited API-key variables (`AGT-13`). A login does
   not guarantee subscription billing or cost. `AGT-17` records partial Grok verification;

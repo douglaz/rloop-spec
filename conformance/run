@@ -150,6 +150,7 @@ usage_error --auto --run-dir "$repo/d"
 usage_error --auto --run-dir ''
 usage_error --auto --no-close
 usage_error --no-close=x
+usage_error --fable=x
 usage_error --implementer-model --max-rounds 1
 usage_error --=x
 usage_error --auto=1
@@ -661,6 +662,49 @@ for survivor in grok none; do
 done
 if [ "$ok" = 1 ]; then verdict CNF-37 ok "Grok alone succeeds and reaches judge/done; all five failed suppress both judge-site Probe and judge"; else verdict CNF-37 fail "$detail"; fi
 
+# --- CNF-39: without --fable, Reviewer fable is not seated: never called, its file the not-seated line ---
+ok=1; detail=""; prompt_ok=1; prompt_detail=""
+seat_fable=()
+for arm in clear exhausted down; do
+  repo="$(new_repo)"; rec="$work/rec-unseated-$arm"
+  probe=""; panel=all; [ "$arm" = exhausted ] && probe=fable; [ "$arm" = down ] && panel=none
+  e=$(RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_PROBE="$probe" RLOOP_FAKE_ROUNDS="impl=ok;panel=$panel;judge=done" \
+    run_rloop "$repo" "$rec" --run-dir "$repo/run" "${off[@]}" --quota-wait 1 --quota-poll 1)
+  ls "$rec"/*-reviewer-1-fable.argv >/dev/null 2>&1 && { ok=0; detail="$detail [$arm: fable was called]"; }
+  for rv in opus astra sol grok; do
+    [ "$(path_count "$rec"/*-reviewer-1-"$rv".argv)" = 1 ] || { ok=0; detail="$detail [$arm: $rv not called once]"; }
+  done
+  # Byte comparison preserves trailing blank lines, which command substitution would strip.
+  # RUN-15: an unseated Reviewer recorded unavailable gets the unavailable line, which RUN-20 reads.
+  line='not seated'; [ "$arm" = exhausted ] && line=unavailable
+  printf 'REVIEWER NOT RUN (%s)\n' "$line" | cmp -s - "$repo/run/feedback-1-fable.md" \
+    || { ok=0; detail="$detail [$arm: fable feedback is not exactly the $line line]"; }
+  [ -f "$repo/run/reviewer-1-fable.err" ] && [ ! -s "$repo/run/reviewer-1-fable.err" ] \
+    || { ok=0; detail="$detail [$arm: fable .err missing or not empty]"; }
+  if [ "$arm" = down ]; then
+    [ "$e" = 2 ] && [ "$(path_count "$rec"/*-probe-1.argv)" = 1 ] && \
+      [ "$(path_count "$rec"/*-manager-1.argv)" = 0 ] && [ ! -e "$repo/run/finished.md" ] \
+      || { ok=0; detail="$detail [every seated Reviewer failed: exit $e, judge/check/Finished File]"; }
+    [ "$(observed_trace "$rec")" = 'pick,impl1:ok,panel1:none:astra+grok+opus+sol' ] \
+      || { ok=0; detail="$detail [down: wrong exact trace '$(observed_trace "$rec")']"; }
+  else
+    [ "$e" = 0 ] || { ok=0; detail="$detail [$arm: exit $e]"; }
+  fi
+  [ "$arm" = clear ] || continue
+  sid_us=$(cat "$repo/run/session" 2>/dev/null)
+  P_INSTRUCTION=""; P_TASK_FILE="$repo/run/task.md"; P_FINISHED_FILE="$repo/run/finished.md"; P_RUN_DIR="$repo/run"
+  P_BASE=$(cd "$repo" && git rev-parse HEAD); P_ROUND=1; P_MAX_ROUNDS=10; P_IMPLEMENTER_LOG="$repo/run/implementer-1.out"
+  P_FEEDBACK_FILES="$repo/run/feedback-1-fable.md
+$repo/run/feedback-1-opus.md
+$repo/run/feedback-1-astra.md
+$repo/run/feedback-1-sol.md
+$repo/run/feedback-1-grok.md"
+  P_DIRTY_AT_START=""; P_UNAVAILABLE=""; P_TRACKER_CLOSE="$tracker_close_default"
+  check_call "$rec" manager-1 "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid_us" "$off_table_model" "judge (fable not seated)"
+done
+seat_fable=(--fable)
+if [ "$ok" = 1 ] && [ "$prompt_ok" = 1 ]; then verdict CNF-39 ok "without --fable: fable never called, its file the not-seated line, or the unavailable one when exhausted, the judge given all five files; every seated Reviewer failed aborts"; else verdict CNF-39 fail "$detail $prompt_detail"; fi
+
 # --- CNF-16: the Panel runs concurrently -------------------------------------------------------------
 repo="$(new_repo)"; rec="$work/rec-conc"
 t0=$(date +%s)
@@ -1028,7 +1072,7 @@ child_gone_within() {
 # separates from is a whole Reviewer's sleep away.
 repo="$(new_repo)"; rec="$work/rec-reap-order"; mkdir -p "$rec"
 ( cd "$repo" && exec env --default-signal=INT,TERM PATH="$fakes:$private" RLOOP_FAKE_RECORD="$rec" RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_SLEEP_REVIEWER=10 RLOOP_FAKE_SLEEP_ONLY=fable RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=reviewer \
-    "$exe" --run-dir "$repo/run" --kill-after 1 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
+    "$exe" --fable --run-dir "$repo/run" --kill-after 1 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
 rpid=$!
 child_gone_within roster opus 6
 # And, read the instant it went, the Panel is the five RUN-8 spawns and fable — the Reviewer ahead of
@@ -1066,7 +1110,7 @@ kill_recorded "$rec"
 # not separated at all.
 repo="$(new_repo)"; rec="$work/rec-reap-grace"; mkdir -p "$rec"
 ( cd "$repo" && exec env --default-signal=INT,TERM PATH="$fakes:$private" RLOOP_FAKE_RECORD="$rec" RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=reviewer \
-    "$exe" --run-dir "$repo/run" --kill-after 5 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
+    "$exe" --fable --run-dir "$repo/run" --kill-after 5 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
 rpid=$!
 for rv in fable opus astra sol grok; do child_gone_within grace "$rv" 9; done
 panel_started grace
@@ -1082,7 +1126,7 @@ ok=1; detail=""
 for sig in INT TERM; do
   repo="$(new_repo)"; rec="$work/rec-sig-$sig"; mkdir -p "$rec"
   ( cd "$repo" && exec env --default-signal=INT,TERM PATH="$fakes:$private" RLOOP_FAKE_RECORD="$rec" RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_SLEEP_IMPLEMENTER=60 RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=1 \
-      "$exe" --run-dir "$repo/run" --kill-after 1 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
+      "$exe" --fable --run-dir "$repo/run" --kill-after 1 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
   rpid=$!
   for _ in $(seq 1 50); do ls "$rec"/*-implementer-1.env >/dev/null 2>&1 && break; sleep 0.2; done
   sleep 0.5; kill -"$sig" "$rpid"
@@ -1104,7 +1148,7 @@ for sig in INT TERM; do
   ( cd "$repo" && exec env --default-signal=INT,TERM PATH="$fakes:$private" RLOOP_FAKE_RECORD="$rec" \
       RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" \
       RLOOP_FAKE_SLEEP_REVIEWER=60 RLOOP_FAKE_SLEEP_ONLY=grok RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=1 \
-      "$exe" --run-dir "$repo/run" --reviewer-timeout 300 --kill-after 1 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
+      "$exe" --fable --run-dir "$repo/run" --reviewer-timeout 300 --kill-after 1 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
   rpid=$!; slow=""; gc=""
   for _ in $(seq 1 150); do
     slow=$(sed -n 's/^PID=//p' "$rec"/*-reviewer-1-grok.env 2>/dev/null)
@@ -1139,7 +1183,7 @@ done
 # a red names this arm and not one of the two above.
 repo="$(new_repo)"; rec="$work/rec-sig-probe"; mkdir -p "$rec"
 ( cd "$repo" && exec env --default-signal=INT,TERM PATH="$fakes:$private" RLOOP_FAKE_RECORD="$rec" RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_SLEEP_PROBE=60 RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=1 \
-    "$exe" --run-dir "$repo/run" --probe-timeout 300 --kill-after 1 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
+    "$exe" --fable --run-dir "$repo/run" --probe-timeout 300 --kill-after 1 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
 rpid=$!
 # The child is recorded after the .env record is opened and before the sleep, so the line, not the
 # file, is what says the fake is where this arm wants it.
@@ -1164,7 +1208,7 @@ fi
 kill_recorded "$rec"
 repo="$(new_repo)"; rec="$work/rec-sig2"; mkdir -p "$rec"
 ( cd "$repo" && exec env --default-signal=INT,TERM PATH="$fakes:$private" RLOOP_FAKE_RECORD="$rec" RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_SLEEP_IMPLEMENTER=60 RLOOP_FAKE_IGNORE_TERM=1 \
-    "$exe" --run-dir "$repo/run" --kill-after 30 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
+    "$exe" --fable --run-dir "$repo/run" --kill-after 30 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
 rpid=$!
 for _ in $(seq 1 50); do ls "$rec"/*-implementer-1.env >/dev/null 2>&1 && break; sleep 0.2; done
 sleep 0.5; kill -INT "$rpid"; sleep 1; kill -INT "$rpid"
@@ -1178,7 +1222,7 @@ for f in "$rec"/*.env; do ipid=$(sed -n 's/^PID=//p' "$f"); [ -n "$ipid" ] && ki
 # what the arm waits for before it signals. 06-conformance.md's note owns the rest of the argument.
 repo="$(new_repo)"; rec="$work/rec-sig-reap"; mkdir -p "$rec"
 ( cd "$repo" && exec env --default-signal=INT,TERM PATH="$fakes:$private" RLOOP_FAKE_RECORD="$rec" RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=done" RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=implementer \
-    "$exe" --run-dir "$repo/run" --kill-after 20 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
+    "$exe" --fable --run-dir "$repo/run" --kill-after 20 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
 rpid=$!
 ipid=""; gc=""
 for _ in $(seq 1 150); do
@@ -1219,9 +1263,9 @@ repo="$(new_repo)"; rec="$work/rec-git"; mkdir -p "$rec"
 head0=$(cd "$repo" && git rev-parse HEAD); reflog0=$(cd "$repo" && git reflog | wc -l)
 ( cd "$repo" && PATH="$fakes:$shim:$private" RLOOP_FAKE_REAL_GIT="$real_git" RLOOP_FAKE_GIT_LOG="$rec/gitlog" RLOOP_FAKE_RECORD="$rec" \
     RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=done" \
-    "$exe" </dev/null >"$rec/stdout" 2>"$rec/stderr" ); e=$?
+    "$exe" --fable </dev/null >"$rec/stdout" 2>"$rec/stderr" ); e=$?
 ( cd "$repo" && PATH="$fakes:$shim:$private" RLOOP_FAKE_REAL_GIT="$real_git" RLOOP_FAKE_GIT_LOG="$rec/gitlog" RLOOP_FAKE_RECORD="$rec-seq" RLOOP_FAKE_RUNS="done,done,idle" \
-    "$exe" --auto </dev/null >"$rec/stdout2" 2>"$rec/stderr2" ); e2=$?
+    "$exe" --fable --auto </dev/null >"$rec/stdout2" 2>"$rec/stderr2" ); e2=$?
 bad_sub=$(grep -v -x -E 'rev-parse|status|diff|log' "$rec/gitlog" 2>/dev/null | sort -u | tr '\n' ' ')
 head1=$(cd "$repo" && git rev-parse HEAD); reflog1=$(cd "$repo" && git reflog | wc -l)
 [ -z "$bad_sub" ] || { ok=0; detail="$detail [git subcommands: $bad_sub]"; }
@@ -2069,7 +2113,7 @@ for signal in INT TERM; do
   repo="$(new_repo)"; rec="$work/rec-quota-signal-$signal"; mkdir -p "$rec"
   ( cd "$repo" && exec env --default-signal=INT,TERM PATH="$fakes:$private" RLOOP_FAKE_RECORD="$rec" \
       RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS='impl=ok;panel=all;judge=done' RLOOP_FAKE_MANAGER_CUT=1:1 \
-      "$exe" --run-dir "$repo/run" --quota-wait 25 --quota-poll 25 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
+      "$exe" --fable --run-dir "$repo/run" --quota-wait 25 --quota-poll 25 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
   rpid=$!; ready=0
   for ((q=0;q<1500;q++)); do
     if grep -q '^manager:1:end:' "$rec/trace" 2>/dev/null; then ready=1; break; fi
@@ -2088,7 +2132,7 @@ repo="$(new_repo)"; rec="$work/rec-quota-signal-check"; mkdir -p "$rec"
 ( cd "$repo" && exec env --default-signal=INT,TERM PATH="$fakes:$private" RLOOP_FAKE_RECORD="$rec" \
   RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS='impl=ok;panel=all;judge=done' RLOOP_FAKE_MANAGER_CUT=1:1 \
   RLOOP_FAKE_SLEEP_PROBE=20 RLOOP_FAKE_PROBE_SLEEP_CALL=1:3 RLOOP_FAKE_PROBE_CHILD_CALL=3 RLOOP_FAKE_GRANDCHILD_IGNORE_TERM=probe \
-  "$exe" --run-dir "$repo/run" --quota-wait 1 --quota-poll 1 --kill-after 1 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
+  "$exe" --fable --run-dir "$repo/run" --quota-wait 1 --quota-poll 1 --kill-after 1 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
 rpid=$!; ready=0
 for ((q=0;q<1500;q++)); do
   matching_paths "$rec"/*-probe-1.env
@@ -2114,7 +2158,7 @@ check_unexported_shellopts() {
   repo=$(new_repo); rec="$work/rec-unexported-shellopts"; mkdir -p "$rec"
   ( cd "$repo" && exec env -u SHELLOPTS PATH="$fakes:$private" RLOOP_FAKE_RECORD="$rec" \
       RLOOP_FAKE_PICK=ok:task RLOOP_FAKE_ROUNDS='impl=ok;panel=all;judge=done' RLOOP_FAKE_MANAGER_CUT='' \
-      "$exe" --run-dir "$repo/run" --quota-wait 1 --quota-poll 1 </dev/null >"$rec/stdout" 2>"$rec/stderr" )
+      "$exe" --fable --run-dir "$repo/run" --quota-wait 1 --quota-poll 1 </dev/null >"$rec/stdout" 2>"$rec/stderr" )
   e=$?
   quota_assert CNF-10 "unexported SHELLOPTS: exit $e" test "$e" = 0
   for ext in argv env; do
@@ -2237,7 +2281,7 @@ check_direct_start() {
     ( cd "$repo" && exec env ${direct_env[@]+"${direct_env[@]}"} PATH="$fakes:$private" \
         RLOOP_FAKE_RECORD="$rec" RLOOP_FAKE_PICK=ok:task \
         RLOOP_FAKE_ROUNDS='impl=ok;panel=all;judge=done' RLOOP_FAKE_MANAGER_CUT='' \
-        "$exe" --run-dir "$repo/run" --quota-wait 1 --quota-poll 1 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
+        "$exe" --fable --run-dir "$repo/run" --quota-wait 1 --quota-poll 1 </dev/null >"$rec/stdout" 2>"$rec/stderr" ) &
     rpid=$!; wait "$rpid"; e=$?
     quota_assert CNF-34 "$label: exit $e" test "$e" = 0
     quota_assert CNF-34 "$label: missing judge out" test -e "$repo/run/manager-judge-1.out"

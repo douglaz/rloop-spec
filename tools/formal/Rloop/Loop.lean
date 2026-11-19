@@ -141,7 +141,8 @@ success are inputs, not properties proved by this model. `0` is the pick, every 
 def sessionExhausted (k n : Nat) : Bool := if k == 0 then n ≥ 90 else n == 100
 
 /-- The agents' behaviour, total in the Round. `available` carries each Reviewer's combined
-family/session verdict (`unknown` is true). `familyAvailable` carries the family reading alone;
+family/session verdict (`unknown` is true); a Reviewer `AGT-11` leaves unseated is one whose
+`available` is false in every Round, since rloop calls it in none. `familyAvailable` carries the family reading alone;
 `sessionAvailable` carries the account verdict alone,
 so off-table claude Seats can read it too. `seat` carries preset identity and family membership
 separately. Defaults are codex Seats and no exhaustion. -/

@@ -614,7 +614,7 @@ both of `RUN-21`'s call sites, and `CNF-34` gained a watching straggler at each.
 and the mutant is red. Rebuilt against rloop-bash `18c8807`, gated on `RLOOP_FAKE_WATCH`'s value
 beginning `probe:` — what confines it to the two new Runs, where a gate on the variable merely being
 set would mutate the Checkpoint arm too, whose value is `implementer:rejected-1-task.md`
-(`conformance/run:933`) — and with the wait loop of that executable's `reap` inlined rather than
+(`conformance/run:977`) — and with the wait loop of that executable's `reap` inlined rather than
 reordered so the verdicts still see the status the reaping sets, it gives `[probe-0 watch: the
 probe's child saw probe-pick.md, so its group outlived the call and ran through the record]` and the
 same bracket for `probe-1` and `probe-1.md` as the item's whole detail, with every other verdict
@@ -631,7 +631,7 @@ reading a call's output leaves it no file to find, so a read taken before the re
 after look the same to it. The witness for the read is a straggler that *writes* into the capture
 `DIR-4` has the probe's standard output reach `entire and unmodified` — a line the reader acts on,
 since an inert one changes no verdict — and `CNF-34` gained one Run of it, at the probe before the
-pick (`conformance/run:872-914`). `RUN-22` is what makes the read observable there: it has rloop
+pick (`conformance/run:916-958`). `RUN-22` is what makes the read observable there: it has rloop
 `exit 2 without spawning any agent` on that probe's verdicts, so an executable that derives them
 from bytes the straggler's line has not reached yet calls the pick and runs on. The knob is
 `RLOOP_FAKE_WRITE_STDOUT`, which had only a role and a fixed line and now takes a first-write delay
@@ -989,7 +989,7 @@ it on whitespace`.
 one executable that handles newlines does not extend that obligation to other Implementations.
 The suite now collects quoted globs into arrays, filters unmatched patterns, counts files, and
 selects whole paths in glob order. `spawn_count` (`conformance/run:46`) uses that count;
-`record_of` (`conformance/run:737-743`) retains its missing-record guard. Environment checks also
+`record_of` (`conformance/run:781-787`) retains its missing-record guard. Environment checks also
 reject both absent and duplicate records. Sequence directory selection uses the same arrays;
 the fresh-directory comparison keeps full paths as NUL-separated records. PID and timestamp
 reads, fixed-filename listings and existence-only checks are not full-path selections.
@@ -3121,3 +3121,38 @@ Still open: no live Run has yet reached its last Round under the amended `PRM-2`
 yet run a tooling task with `--max-rounds 2`. `F32`'s rollout measurement can count both: Runs
 that ended at the cap with exit 2, and Runs whose ratings lines lack the evidence or clause a
 changed rating needs.
+
+## F35 — `--fable`: Reviewer fable is seated only when named (open 2026-11-19)
+
+The owner's decision of 2026-11-19: "we want to keep fable optional for code reviews. our new focus
+for fable is for the assistant", and for rloop, "Yes, in rloop too". Of the options put to the
+owner, the one chosen was "--fable flag, not-run line". `AGT-1` adds `--fable`, which takes no
+value. Without it, `AGT-11` leaves Reviewer `fable` unseated, rloop never calls it, and `RUN-15`
+writes its Feedback File as `REVIEWER NOT RUN (not seated)`. The five Feedback File names, their
+order in `{{FEEDBACK_FILES}}` and every placeholder stay as they were (`DIR-4`, `PRM-6`). With the
+flag the Panel is the five Reviewers every Round called before. `PRM-2` tells the judge what the
+not-seated line means, and `RUN-15`'s all-down exit counts only the seated Reviewers, because the
+unseated one is never run.
+
+The `fable` adviser of `PRM-1` and `PRM-2`'s Consultation is not a Reviewer and is unchanged: a
+Consultation still puts its question to fable, unless this Round's `REVIEWER NOT RUN
+(unavailable)` file shows the model could not answer. The availability probe still records a verdict
+for `fable` (`RUN-21`). An unseated `fable` that verdict reads `unavailable` gets the unavailable
+line, not the not-seated one: the judge reads that verdict off the Feedback Files, so a not-seated
+line in its place would have the Consultation call an adviser `RUN-20` says not to call.
+
+Rejected on the way:
+
+- **A four-file Panel with the flag.** That changes `DIR-4`'s names, `{{FEEDBACK_FILES}}`, the
+  probe records and every Conformance Suite item that lists the Panel, for no behaviour the
+  not-run line does not already give.
+- **Dropping fable from the Panel, with no flag.** That leaves a caller who wants fable's read no
+  way to ask for it.
+
+The Conformance Suite gives `--fable` to every Run but `CNF-39`'s, so its items keep reading the
+five-Reviewer Panel (`CNF-2`).
+
+This narrows `ADR-0011`'s choice of `A mandatory seat over optional selection` for `fable` alone:
+Grok's seat, and every other Reviewer's, stays mandatory.
+
+Still open: no live Run has been made without `--fable` yet.

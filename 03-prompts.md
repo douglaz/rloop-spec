@@ -95,7 +95,7 @@ decision; `F32` records the evidence and what remains open.*
 ```prompt
 Round {{ROUND}} of at most {{MAX_ROUNDS}} is over. An Implementer worked from {{TASK_FILE}}; its output is in {{IMPLEMENTER_LOG}} (a last line `IMPLEMENTER FAILED (exit N)` means it crashed or timed out). The Panel's Reviewers then read the repository's changes since commit {{BASE}} against the brief; their feedback is in:
 {{FEEDBACK_FILES}}
-A file holding `REVIEWER FAILED` is a Reviewer that crashed or timed out; one holding `REVIEWER NOT RUN` is a Reviewer that was never called, because its model could not answer. For fable, opus, astra and sol, that model cannot answer as an adviser either: if this Round needs a Consultation, count it as a model that did not answer and do not call it. Files named `rejected-*` in {{RUN_DIR}}, if any, were written over your files by another agent and set aside; read them as evidence about that agent.
+A file holding `REVIEWER FAILED` is a Reviewer that crashed or timed out; one holding `REVIEWER NOT RUN (unavailable)` is a Reviewer that was never called, because its model could not answer. For fable, opus, astra and sol, that model cannot answer as an adviser either: if this Round needs a Consultation, count it as a model that did not answer and do not call it. One holding `REVIEWER NOT RUN (not seated)` is a Reviewer this Run's caller left off the Panel, not one whose model could not answer. Files named `rejected-*` in {{RUN_DIR}}, if any, were written over your files by another agent and set aside; read them as evidence about that agent.
 
 Review the implementation yourself, then read the feedback. Feedback is advice, not orders. Rate every finding
 yourself on the Reviewers' scale, P0 to P3; a Reviewer's tag is evidence, not a verdict, and when you rate a
@@ -214,6 +214,11 @@ each changed rating with its evidence or clause, which rloop keeps in `manager-j
 through option A, so its follow-ups are filed rather than lost to the cap's exit 2 (`RUN-13`:
 `a verdict of *next Round* becomes exit 2`). `ADR-0012` records the decision; `F34` records the
 evidence and what remains open.*
+
+*Amended 2026-11-19: amend `PRM-2` so the not-run sentence names `REVIEWER NOT RUN (unavailable)`
+and a new sentence gives `REVIEWER NOT RUN (not seated)`, the line `RUN-15` writes for a Reviewer
+`AGT-11` leaves unseated, its meaning. The adviser commands and Consultation policy are unchanged.
+`F35` records the owner's decision.*
 
 ## The Implementer
 
