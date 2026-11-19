@@ -68,7 +68,7 @@ never retried (`RUN-24`).
 2. the Checkpoint (`DIR-6`);
 3. the Panel-site availability check (`RUN-21`, `AGT-18`) and its wait (`RUN-24`), completed
    before the Panel starts;
-4. the Panel: a call for every Reviewer of `AGT-11` that `RUN-21` did not record `unavailable` (`AGT-7`, `AGT-8`, `AGT-10`, `AGT-19`,
+4. the Panel: a call for every Reviewer `AGT-11` seats that `RUN-21` did not record `unavailable` (`AGT-7`, `AGT-8`, `AGT-10`, `AGT-19`,
    `PRM-4`), started concurrently and all waited for, and a Feedback File written in place for
    each one that was (`RUN-15`);
 5. the Checkpoint again;
@@ -340,9 +340,20 @@ differently need two different lines. Whether `and nothing else` excluded the ne
 by `rl-vcq`; the owner settled on 2026-09-22 that it does not, which is what rloop-bash already
 wrote — 31 bytes.*
 
-Both count as down. When **every** Reviewer of a Panel is down — failed, or not run — rloop MUST
-exit 2 without calling the judge. *One Reviewer down is a degraded Panel the Manager can weigh;
-five down is a broken environment.*
+A Reviewer `AGT-11` leaves unseated MUST NOT be called either. When `RUN-21` did not record it
+`unavailable`, rloop MUST write its Feedback File in its place holding exactly
+`REVIEWER NOT RUN (not seated)` followed by a newline, and nothing else; when it did, the file holds
+the unavailable line above. *Leaving a Reviewer unseated is the caller's choice, not a model that
+could not answer, so it gets a line of its own, and `PRM-2` tells the Manager the difference. The
+unavailable line wins because the judge reads that verdict off the Feedback Files (`RUN-20`).*
+
+A failed Reviewer and one not run, for either reason, count as down. When **every** Reviewer of a Panel is down — failed, or not run — rloop MUST
+exit 2 without calling the judge. Without `--fable` that is every seated Reviewer down, since the
+unseated one is not run. *One Reviewer down is a degraded Panel the Manager can weigh; every
+seated one down is a broken environment.*
+
+*Amended 2026-11-19: add the not-seated line for a Reviewer `AGT-11` leaves unseated. `F35`
+records the owner's decision.*
 `Rloop.panel_none_aborts` and `Rloop.panel_abort_off_judges` are the pair for failed Reviewers;
 `Rloop.not_run_and_failed_aborts` and `Rloop.not_run_down_off_judges` are the pair for Reviewers
 not run, and `Rloop.none_called_aborts` is the Panel that called none.

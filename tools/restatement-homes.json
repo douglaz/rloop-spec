@@ -348,5 +348,20 @@
     "owner": "RUN-21",
     "sha256": "f5b9ab65d602a971f26cc3ee73c8663097098cdf59968a71fd69205f6063c5b5",
     "reason": "Owns Grok's permanently unknown verdict; AGT-19 identifies the attempted call that unknown admits."
+  },
+  {
+    "owner": "RUN-15",
+    "sha256": "872353a36cbc51594292a60fe139fdbd4c3d3346b3dcc8c8673a8a90a309ce9c",
+    "reason": "Owns whether a Reviewer is called; AGT-11 supplies which Reviewer is unseated."
+  },
+  {
+    "owner": "RUN-15",
+    "sha256": "f52b3605a07ab87177e33fec6847544914ac288b03fdc07f55139a54c030c097",
+    "reason": "Owns the exact unseated-Reviewer Feedback File content, its terminating newline included; AGT-11 decides which Reviewer is unseated and RUN-21 the verdict that keeps the unavailable line."
+  },
+  {
+    "owner": "AGT-11",
+    "sha256": "bf4684d5f02a3061121501bf8b80d37ee1229ceeaae3528dea6513e37ed3408c",
+    "reason": "Owns Panel composition and seating; AGT-1 supplies the flag and RUN-15 the Feedback File written for the unseated Reviewer."
   }
 ]

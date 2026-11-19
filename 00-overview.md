@@ -70,7 +70,8 @@ nothing else. The Manager commits accepted work (`SEQ-8`, `ADR-0004`).
 - **No defence against a hostile agent.** The Checkpoint repairs a cooperative model's mistake and
   the threat model says so (`DIR-8`, `ADR-0003`).
 - **No configurability of the Panel or the prompts at run time.** The Panel is the five Reviewers
-  `02-agents.md` names; changing it is a change to this Specification.
+  `02-agents.md` names; changing it is a change to this Specification. The one choice a Run makes
+  is whether `--fable` seats Reviewer `fable` (`AGT-11`).
 
 ## How much to trust this
 

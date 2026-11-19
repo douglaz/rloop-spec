@@ -30,7 +30,9 @@ on standard error. The executable, and so every fake it spawns, runs with `PATH`
 directory, then that private directory, and nothing else; for the `CNF-19` items the `git` shim's
 directory sits between the two. The fakes directory and the private directory are under the
 scratch root `CNF-1` describes, so both entries of that `PATH` hold a space and a tab. `cmp` and
-`find` are the suite's own and are not on the executable's `PATH`. An executable that relies on
+`find` are the suite's own and are not on the executable's `PATH`. Every Run the suite starts is
+given `--fable`, so every item reads the five-Reviewer Panel, except `CNF-39`'s Runs, which leave
+it out. An executable that relies on
 anything more brings it itself; a wrapper that puts its own inputs on `PATH`, as a nix
 `writeShellApplication` does, satisfies this. *Why the
 host's `PATH` is withheld: rloop-bash `02c6206` compared `task.md` against `task-<r>.md` with
@@ -76,7 +78,7 @@ is a green check that asserts nothing.* (`RUN-11`)
 unknown option; `--max-rounds 0`; `--max-rounds x`; `--reviewer-timeout -1`;
 `--reviewer-timeout 0`; `--probe-timeout 0`; `--kill-after 0`; two `INSTRUCTION` arguments;
 `--auto --base HEAD`; `--auto --run-dir d`; `--auto --run-dir ''`, the value empty;
-`--auto --no-close`; `--no-close=x`;
+`--auto --no-close`; `--no-close=x`; `--fable=x`;
 `--implementer-model --max-rounds 1`, the value swallowed; `--=x`; `--auto=1`; `--help=x`;
 `--version=x`; `--manager gpt-6-astra`, a value outside the preset's set and the mistake a caller
 makes who means `--manager codex --manager-model gpt-6-astra`. `--version` and `--help` exit 0
@@ -87,6 +89,8 @@ The quota-option arms also reject zero, missing and nonnumeric values for each q
 with exit 2, a diagnostic and nothing spawned. (`AGT-1`, `AGT-2`, `SEQ-3`, `SEQ-5`, `SEQ-6`)
 
 *Amended 2026-11-09 (`rl-8pam`): add `--auto --no-close` and `--no-close=x`.*
+
+*Amended 2026-11-19: add `--fable=x`.*
 
 **CNF-6** Outside a git working tree the executable exits 2 and spawns nothing. (`RUN-1`)
 
@@ -276,6 +280,17 @@ and no Finished File. The exact spawn trace is compared in each arm. These are i
 outcomes the model's abstract Panel classes cannot prove. Failure-marker bytes belong to
 `CNF-15`; quota omission and chronology belong to `CNF-24`–`CNF-31`.
 (`AGT-11`, `AGT-19`, `RUN-8`, `RUN-15`)
+
+**CNF-39** Without `--fable`, three one-Round Runs. In the first, the pick writes a Task File, every
+called Reviewer succeeds and the judge writes `STATUS: done`: the Run exits 0, `fable` is never
+called and the other four are called once each, `feedback-1-fable.md` holds exactly
+`REVIEWER NOT RUN (not seated)` and a newline, compared byte for byte, `reviewer-1-fable.err` is
+empty, and the judge's prompt argument equals `PRM-2`'s fixture rendered as in `CNF-12`, the five
+Feedback File paths included. The second is the first with the Panel-site Probe reporting Fable
+exhausted: `fable` is still never called, and its file holds exactly
+`REVIEWER NOT RUN (unavailable)` and a newline. In the third, every called Reviewer fails:
+the Run exits 2 with no judge-site Probe, no judge and no Finished File, and its spawn trace is the
+pick, the Implementer and a Panel of the other four. (`AGT-1`, `AGT-11`, `PRM-2`, `RUN-7`, `RUN-15`)
 
 ## Concurrency, time and signals
 
