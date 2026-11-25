@@ -2,7 +2,7 @@ codex
 exec
 --dangerously-bypass-approvals-and-sandbox
 -m
-gpt-6.1-sol
+gpt-6.2-sol
 -c
 model_reasoning_effort=high
 <review prompt>

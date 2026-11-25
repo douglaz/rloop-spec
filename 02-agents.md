@@ -92,7 +92,7 @@ codex exec --json --dangerously-bypass-approvals-and-sandbox -m <manager model> 
 ```
 
 `<manager model>` is `--manager-model`'s value, which defaults to `claude-opus-5-5` under
-`--manager claude` and to `gpt-6-astra` under `--manager codex`. The two presets reach their
+`--manager claude` and to `gpt-6.2-astra` under `--manager codex`. The two presets reach their
 `<session id>` differently and `RUN-16` owns that rule: under `claude` it is a UUID rloop
 generated for this Run before the call, under `codex` it is the id the call reports. Either way
 rloop writes it to the Run Directory's `session` file (`DIR-4`).
@@ -117,6 +117,9 @@ suite can fix; the human-readable banner carries the same id on standard error, 
 cosmetic and a specification that matched one would break on a cosmetic change. The cost is that
 `manager-pick.out` holds JSONL under this preset, with the Manager's own words inside the
 `agent_message` items. The judge call needs no id back, so it stays prose.*
+
+*Amended 2026-11-25: the codex Manager's default moves to `gpt-6.2-astra`, the model
+`AGT-10` gives Reviewer `astra`.*
 
 **AGT-4** The judge call MUST be, with `--manager claude`:
 
@@ -145,7 +148,7 @@ claude -p <implementer prompt> --model <implementer model> --effort high --dange
 ```
 
 `<implementer model>` is `--implementer-model`'s value, which defaults to `claude-opus-5-5` under
-`--implementer claude` and to `gpt-6.1-sol` under `--implementer codex`.
+`--implementer claude` and to `gpt-6.2-sol` under `--implementer codex`.
 
 *Amended 2026-10-08 (`rl-4i7t`): both preset defaults changed, and effort is now the literal
 `high` for every Implementer model, including `--implementer-model` overrides. The override
@@ -153,6 +156,9 @@ remains available for weaker test models; there is no model-to-effort table.*
 
 *Amended 2026-10-13 (`rl-hhzu`): the codex preset's default is now `gpt-6.1-sol`, moving with
 Reviewer `sol`'s model. The claude default and the effort are unchanged.*
+
+*Amended 2026-11-25: the codex Implementer's default moves to `gpt-6.2-sol`, the model
+`AGT-10` gives Reviewer `sol`.*
 
 **AGT-6** The Implementer, with `--implementer codex`, MUST be:
 
@@ -167,7 +173,7 @@ sandbox blocks the network and `.git`, which breaks `nix`, `cargo fetch` and com
 2026-09-22 neither line carried a model flag and the CLI's configured default was the
 Implementer's model; that day `ADR-0008` needed every Seat to have a model rloop can name, and a
 Seat filled by a CLI's configured default is one rloop cannot Probe. The cost is live: an operator
-whose `claude` default is not `claude-opus-5-5`, or whose `codex` default is not `gpt-6.1-sol`,
+whose `claude` default is not `claude-opus-5-5`, or whose `codex` default is not `gpt-6.2-sol`,
 gets the preset's model unless they pass `--implementer-model`.*
 
 *Amended 2026-10-08 (`rl-4i7t`): the preset models changed to the defaults in `AGT-5`, and
@@ -214,13 +220,13 @@ harness's enforcement, and rb-lite's no-shell-plus-diff-file is what it replaces
 **AGT-10** Reviewer `astra` MUST be:
 
 ```text
-codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6-astra -c model_reasoning_effort=high <review prompt>
+codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6.2-astra -c model_reasoning_effort=high <review prompt>
 ```
 
 and Reviewer `sol` MUST be:
 
 ```text
-codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6.1-sol -c model_reasoning_effort=high <review prompt>
+codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6.2-sol -c model_reasoning_effort=high <review prompt>
 ```
 
 *`codex review --base` cannot take a prompt (codex 0.153.4 refuses the combination), and the
@@ -252,6 +258,10 @@ Implementer's default in `AGT-5` moved with it. `AGT-17` records the verificatio
 `model_reasoning_effort=high` for every codex call. Reviewer `sol` now uses `high`; its model, roster name and other
 arguments are unchanged. Running calls keep their effort until they restart. The
 earlier verification records above remain observations of their dated commands.*
+
+*Amended 2026-11-25: Reviewer `astra` uses `gpt-6.2-astra` and Reviewer `sol` uses
+`gpt-6.2-sol`. The pick and judge adviser lines (`PRM-1`, `PRM-2`) and the codex preset
+defaults (`AGT-3`, `AGT-5`) move with them. `AGT-17` records the partial verification.*
 
 **AGT-19** Reviewer `grok` MUST be a fresh official Grok Build CLI invocation each Round:
 
@@ -489,6 +499,11 @@ a single 74 KB tool result: the limit is not a hard cap. After a compaction the 
 the system and developer messages, the repository's agent instructions, the original prompt,
 and one opaque compaction item. This was a partial verification, not a real Implementer task
 at 250,000, and not a whole-roster check. These observations were not repeated by this Run.*
+
+*Partial verification, 2026-11-25: on codex-cli 0.172.0, each `AGT-10` command used
+`Reply with exactly: ok`, stdin from `/dev/null` and a 90-second bound. Both calls exited 0
+with `ok` on standard output. Their banners named `gpt-6.2-astra` and `gpt-6.2-sol`,
+respectively, each at `high` effort. This verifies CLI acceptance with a trivial prompt.*
 
 A fake agent accepts any flag, so the Conformance
 Suite cannot tell a wrong flag from a right one; a flag that a newer CLI rejects is found only by a
