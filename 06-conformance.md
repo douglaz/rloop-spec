@@ -80,8 +80,8 @@ unknown option; `--max-rounds 0`; `--max-rounds x`; `--reviewer-timeout -1`;
 `--auto --base HEAD`; `--auto --run-dir d`; `--auto --run-dir ''`, the value empty;
 `--auto --no-close`; `--no-close=x`; `--fable=x`;
 `--implementer-model --max-rounds 1`, the value swallowed; `--=x`; `--auto=1`; `--help=x`;
-`--version=x`; `--manager gpt-6-astra`, a value outside the preset's set and the mistake a caller
-makes who means `--manager codex --manager-model gpt-6-astra`. `--version` and `--help` exit 0
+`--version=x`; `--manager gpt-6.2-astra`, a value outside the preset's set and the mistake a caller
+makes who means `--manager codex --manager-model gpt-6.2-astra`. `--version` and `--help` exit 0
 and spawn nothing. `--auto --max-runs 08` with a Manager fake scripted idle spawns exactly one
 pick and exits 0; with nine scripted done, it stops after exactly eight picks and exits 2.
 
@@ -192,7 +192,7 @@ default model of each preset and a non-default value given on the command line u
 without changing the selected preset or its literal effort;
 `--manager codex` produces `AGT-3`'s and `AGT-4`'s second lists and the default produces their
 first; omitting `--implementer` and `--implementer-model` produces `AGT-6`'s list with
-`gpt-6.1-sol`, explicit `--implementer codex` produces that same list and model, and explicit
+`gpt-6.2-sol`, explicit `--implementer codex` produces that same list and model, and explicit
 `--implementer claude` produces `AGT-5`'s list with `claude-opus-5-5`; the five
 Reviewers' lists are `AGT-7`, `AGT-8`, `AGT-10` and `AGT-19`'s, one each, with their `RLOOP_REVIEWER` names.
 One further Run has the repository's own path and its `--run-dir` path each hold a space and a tab,
@@ -730,7 +730,7 @@ With session 90 before the pick, `--implementer claude` and both Seats at the cl
 default model, the same refusal assertions hold, now
 with both claude Reviewers `unavailable` too and the session line quoted verbatim, reset included.
 With a codex Implementer, independently refuse only the claude Manager, both on its default model
-and on `claude-sonnet-5` and `gpt-6-astra`, under session 90, 090 and 101. Each exact record has
+and on `claude-sonnet-5` and `gpt-6.2-astra`, under session 90, 090 and 101. Each exact record has
 only `manager`,
 `fable` and `opus` unavailable. This exposes base-ten reading, the pick's inclusive threshold,
 and off-table session exhaustion. Under `--auto`, session 90 exits 2 with empty standard output,
@@ -774,7 +774,7 @@ where it is observable, in `probe-pick.md` above.* (`RUN-22`, `RUN-21`, `DIR-4`,
 Fable, preserving both family rows.*
 
 With a codex Manager and session 90 before the pick, independently refuse the claude Implementer
-on its default model and on `claude-sonnet-5` and `gpt-6.1-sol`. Each Run satisfies the same refusal
+on its default model and on `claude-sonnet-5` and `gpt-6.2-sol`. Each Run satisfies the same refusal
 assertions,
 including the model, Seat and verbatim session line with reset on standard error, and an exact
 record with `implementer`, `fable` and `opus` unavailable and the other Seats unknown.

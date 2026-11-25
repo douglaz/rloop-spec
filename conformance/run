@@ -156,7 +156,7 @@ usage_error --=x
 usage_error --auto=1
 usage_error --help=x
 usage_error --version=x
-usage_error --manager gpt-6-astra
+usage_error --manager gpt-6.2-astra
 for args in "--version" "--help"; do
   rec="$work/rec-usage"; rm -rf "$rec"
   # shellcheck disable=SC2086
@@ -288,7 +288,7 @@ for timeout_case in default custom; do
   repo="$(new_repo)"; rec="$work/rec-manager-timeout-$timeout_case"
   timeout_args=(); expected_ms=3600000
   if [ "$timeout_case" = custom ]; then
-    timeout_args=(--manager-timeout 937 --manager-model gpt-6-astra); expected_ms=937000
+    timeout_args=(--manager-timeout 937 --manager-model gpt-6.2-astra); expected_ms=937000
   fi
   e=$(BASH_MAX_TIMEOUT_MS=5000 RLOOP_FAKE_PICK=ok:task \
     RLOOP_FAKE_ROUNDS="impl=ok;panel=all;judge=rewrite|impl=ok;panel=all;judge=done" \
@@ -363,7 +363,7 @@ check_call() { # check_call <record dir> <record tag> <argv fixture> <prompt fix
   [ "$seen" = 1 ] || { prompt_ok=0; prompt_detail="$prompt_detail [$7: prompt differs]"; }
 }
 check_call "$rec" manager-0 "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid" claude-opus-5-5 pick
-check_call "$rec" implementer-1 "$fx/argv/AGT-6.txt" "$fx/prompts/PRM-3.txt" "$sid" gpt-6.1-sol "default implementer"
+check_call "$rec" implementer-1 "$fx/argv/AGT-6.txt" "$fx/prompts/PRM-3.txt" "$sid" gpt-6.2-sol "default implementer"
 check_call "$rec" reviewer-1-fable "$fx/argv/AGT-7.txt" "$fx/prompts/PRM-4.txt" "$sid" x fable
 check_call "$rec" reviewer-1-opus "$fx/argv/AGT-8.txt" "$fx/prompts/PRM-4.txt" "$sid" x opus
 check_call "$rec" reviewer-1-astra "$fx/argv/AGT-10-1.txt" "$fx/prompts/PRM-4.txt" "$sid" x astra
@@ -386,7 +386,7 @@ $repo/run/feedback-1-grok.md"
 ok=1; detail=""
 [ "$e" = 0 ] || { ok=0; detail="$detail [run 2 (codex implementer): exit $e]"; }
 check_call "$rec" manager-0 "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid" claude-fable-5-2 "pick (clean, no instruction)"
-check_call "$rec" implementer-1 "$fx/argv/AGT-6.txt" "$fx/prompts/PRM-3.txt" "$sid" gpt-6.1-sol "codex implementer"
+check_call "$rec" implementer-1 "$fx/argv/AGT-6.txt" "$fx/prompts/PRM-3.txt" "$sid" gpt-6.2-sol "codex implementer"
 check_call "$rec" manager-1 "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid" claude-fable-5-2 "judge (clean)"
 argv2_ok=$ok; argv2_detail="$detail"
 # a third Run: the codex Manager preset, at its default model, resuming the id the pick reported,
@@ -405,8 +405,8 @@ $repo/run/feedback-1-astra.md
 $repo/run/feedback-1-sol.md
 $repo/run/feedback-1-grok.md"
 ok=1; detail=""
-check_call "$rec" manager-0 "$fx/argv/AGT-3-2.txt" "$fx/prompts/PRM-1.txt" "$sid" gpt-6-astra "codex pick"
-check_call "$rec" manager-1 "$fx/argv/AGT-4-2.txt" "$fx/prompts/PRM-2.txt" "$sid" gpt-6-astra "codex judge"
+check_call "$rec" manager-0 "$fx/argv/AGT-3-2.txt" "$fx/prompts/PRM-1.txt" "$sid" gpt-6.2-astra "codex pick"
+check_call "$rec" manager-1 "$fx/argv/AGT-4-2.txt" "$fx/prompts/PRM-2.txt" "$sid" gpt-6.2-astra "codex judge"
 argv3_ok=$ok; argv3_detail="$detail"
 # a hostile Run: the instruction holds placeholder names and bytes a rescanning or unquoted
 # substitution would change, and the Run Directory path holds {{INSTRUCTION}} (the cyclic case);
@@ -455,7 +455,7 @@ $P_RUN_DIR/feedback-1-grok.md"
 ok=1; detail=""
 [ "$e" = 0 ] || { ok=0; detail="$detail [whitespace paths: exit $e]"; }
 check_call "$rec_ws" manager-0 "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid_ws" claude-opus-5-5 "pick (whitespace paths)"
-check_call "$rec_ws" implementer-1 "$fx/argv/AGT-6.txt" "$fx/prompts/PRM-3.txt" "$sid_ws" gpt-6.1-sol "implementer (whitespace paths)"
+check_call "$rec_ws" implementer-1 "$fx/argv/AGT-6.txt" "$fx/prompts/PRM-3.txt" "$sid_ws" gpt-6.2-sol "implementer (whitespace paths)"
 check_call "$rec_ws" reviewer-1-fable "$fx/argv/AGT-7.txt" "$fx/prompts/PRM-4.txt" "$sid_ws" x "fable (whitespace paths)"
 check_call "$rec_ws" reviewer-1-opus "$fx/argv/AGT-8.txt" "$fx/prompts/PRM-4.txt" "$sid_ws" x "opus (whitespace paths)"
 check_call "$rec_ws" reviewer-1-astra "$fx/argv/AGT-10-1.txt" "$fx/prompts/PRM-4.txt" "$sid_ws" x "astra (whitespace paths)"
@@ -536,7 +536,7 @@ $repo_nc/run/feedback-1-sol.md
 $repo_nc/run/feedback-1-grok.md"
 P_DIRTY_AT_START=""; P_UNAVAILABLE=""
 check_call "$rec_nc" manager-0 "$fx/argv/AGT-3-1.txt" "$fx/prompts/PRM-1.txt" "$sid_nc" claude-opus-5-5 "pick (--no-close)"
-check_call "$rec_nc" implementer-1 "$fx/argv/AGT-6.txt" "$fx/prompts/PRM-3.txt" "$sid_nc" gpt-6.1-sol "implementer (--no-close)"
+check_call "$rec_nc" implementer-1 "$fx/argv/AGT-6.txt" "$fx/prompts/PRM-3.txt" "$sid_nc" gpt-6.2-sol "implementer (--no-close)"
 P_TRACKER_CLOSE="$tracker_close_no_close"
 check_call "$rec_nc" manager-1 "$fx/argv/AGT-4-1.txt" "$fx/prompts/PRM-2.txt" "$sid_nc" claude-opus-5-5 "judge (--no-close)"
 P_TRACKER_CLOSE="$tracker_close_default"
@@ -1552,7 +1552,7 @@ record_is "$repo/run/probe-pick.md" "claude-fable-5-2" unavailable unknown unava
 # Session refusal: both claude presets at their default models, then Manager alone with a codex Implementer.
 # Leading zeros and 101 also distinguish base ten and the pick's >= 90 rule.
 for shape in session90 session090 session101; do
-  for model in claude-opus-5-5 "$off_table_model" gpt-6-astra; do
+  for model in claude-opus-5-5 "$off_table_model" gpt-6.2-astra; do
     repo="$(new_repo)"; rec="$work/rec-session-manager-$shape-$model"
     e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK="$shape" run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager-model "$model" --implementer codex --quota-wait 1 --quota-poll 1)
     refused "$shape Manager $model"
@@ -1591,7 +1591,7 @@ e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=fable run_rloop "$repo" "$rec" --
 refused "Implementer's Seat on claude-fable-5-2"
 names "Implementer's Seat on claude-fable-5-2" implementer claude-fable-5-2 "$fable_line"
 record_is "$repo/run/probe-pick.md" "Implementer's Seat on claude-fable-5-2" unknown unavailable unavailable unknown unknown unknown unknown
-for model in claude-opus-5-5 "$off_table_model" gpt-6.1-sol; do
+for model in claude-opus-5-5 "$off_table_model" gpt-6.2-sol; do
   repo="$(new_repo)"; rec="$work/rec-session-implementer-$model"
   e=$(RLOOP_FAKE_PICK=fail RLOOP_FAKE_PROBE_PICK=session90 run_rloop "$repo" "$rec" --run-dir "$repo/run" --manager codex --implementer claude --implementer-model "$model" --quota-wait 1 --quota-poll 1)
   refused "session Implementer $model"
